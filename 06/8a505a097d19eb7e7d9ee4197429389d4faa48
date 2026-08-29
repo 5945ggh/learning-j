@@ -1,0 +1,18 @@
+.gitignore
+  h_c735ec7f46d14b 1-11
+backend/.python-version
+  h_c735ec7f46d14b 1
+backend/pyproject.toml
+  h_c735ec7f46d14b 1-7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "068a505a097d19eb7e7d9ee4197429389d4faa48",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
