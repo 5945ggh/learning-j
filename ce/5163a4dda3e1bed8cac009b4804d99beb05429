@@ -1,0 +1,18 @@
+backend/pyproject.toml
+  h_c735ec7f46d14b 7-9
+backend/uv.lock
+  h_c735ec7f46d14b 1-356
+.gitignore
+  h_c735ec7f46d14b 12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "ce5163a4dda3e1bed8cac009b4804d99beb05429",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
