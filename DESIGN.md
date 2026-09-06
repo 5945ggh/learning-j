@@ -42,7 +42,6 @@
 - Imagery/iconography: familiar monochrome symbols; material art may identify the work
 
 ## Components
-- Existing experiment components: reader shell and token/analysis interaction patterns in `experiments/immersive_reader_demo/`
 - New/changed production components: `DictionaryPopover`, `DictionaryDrawer`, `TokenActionButton`, `AnalysisDocView`, `TriagePanel`, `AggregateCard`, `ReviewCard`
 - Lookup states: closed; selected token; loading; one or more dictionary sources; no result; import required; error
 - Ownership: components remain shell-independent; a shell chooses whether lookup renders as a popover or drawer
