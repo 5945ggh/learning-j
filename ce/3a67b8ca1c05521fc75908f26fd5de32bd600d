@@ -1,0 +1,213 @@
+docs/task-packets/P0-integration.md
+  s_6d3ecc30c604a5::t_a11398cef85266 1-14
+docs/task-packets/P1-integration.md
+  s_6d3ecc30c604a5::t_8fbc1a920855df 1-11
+docs/task-packets/P4-frontend.md
+  s_6d3ecc30c604a5::t_8fbc1a920855df 1-21
+docs/task-packets/P5-backend.md
+  s_6d3ecc30c604a5::t_8fbc1a920855df 1-26
+docs/mvp-tech-and-phases.md
+  s_af2b73f7080690::t_1dbada26bdff3e 88,105
+  s_af2b73f7080690::t_3106b1d01eeb4e 108,112
+  s_af2b73f7080690::t_2e3bbd6e0ccc97 47
+  s_af2b73f7080690::t_ddb6c4069f89dc 132-133
+  s_af2b73f7080690::t_9d5a3f7c0f88a3 89,125-126,130
+  h_c735ec7f46d14b 1-13,15-19,21,23-28,30-46,48-61,64-87,90-104,106-107,109-111,113-124,127-129,131,134-213
+  s_af2b73f7080690::t_af892b0344f4f8 14,20,22,29,62-63
+docs/LearningJ-plan-v5.md
+  s_2d5caaed073af1::t_6338c6b01606cb 422-427
+  s_af2b73f7080690::t_111e3776ea7ced 144
+  s_af2b73f7080690::t_9e081029f8e997 337-339
+  s_6dababc169f7b4::t_02715ce103a350 293,295,444
+  h_c735ec7f46d14b 1-143,145-290,292,294,296-298,300-310,312-336,340-421,428-437,439-443,445-446
+  s_2d5caaed073af1::t_93cd2a7c027c33 311
+  s_6dababc169f7b4::t_0e8d396e035127 299
+  s_6dababc169f7b4::t_4904aba20685d6 291
+  s_2d5caaed073af1::t_d9168152d79e66 438
+docs/task-packets/P1-backend.md
+  s_6d3ecc30c604a5::t_8fbc1a920855df 1-27
+docs/task-packets/P1-frontend.md
+  s_6d3ecc30c604a5::t_8fbc1a920855df 1-29
+docs/task-packets/P2-frontend.md
+  s_6d3ecc30c604a5::t_8fbc1a920855df 1-22
+docs/task-packets/P5-frontend.md
+  s_6d3ecc30c604a5::t_8fbc1a920855df 1-22
+docs/task-packets/P5-integration.md
+  s_6d3ecc30c604a5::t_8fbc1a920855df 1-10
+docs/task-packets/P0-frontend.md
+  s_6d3ecc30c604a5::t_a11398cef85266 1-31
+docs/archived/README.md
+  h_c735ec7f46d14b 1
+docs/task-packets/P0-contract.md
+  s_6d3ecc30c604a5::t_a11398cef85266 1-20
+docs/task-packets/P2-integration.md
+  s_6d3ecc30c604a5::t_8fbc1a920855df 1-10
+docs/task-packets/P2-backend.md
+  s_6d3ecc30c604a5::t_8fbc1a920855df 1-25
+docs/task-packets/P4-integration.md
+  s_6d3ecc30c604a5::t_8fbc1a920855df 1-10
+docs/task-packets/P3-frontend.md
+  s_6d3ecc30c604a5::t_8fbc1a920855df 1-22
+docs/task-packets/P3-integration.md
+  s_6d3ecc30c604a5::t_8fbc1a920855df 1-10
+docs/task-packets/P0-backend.md
+  s_6d3ecc30c604a5::t_a11398cef85266 1-32
+docs/spike-checklist.md
+  h_c735ec7f46d14b 1-24,26-100,102-104,106-118,120-146,148-179
+  s_2d5caaed073af1::t_b7476ab81e3087 101,105
+  s_6dababc169f7b4::t_c4c74f3051e172 25,147
+  s_2d5caaed073af1::t_9639f2335db027 119
+docs/adr.md
+  s_af2b73f7080690::t_ae601243e14d06 20-39,207
+  s_af2b73f7080690::t_98e6bddc74fcfe 8
+  s_6dababc169f7b4::t_2ffa7d9dafc0e5 216-223
+  s_6dababc169f7b4::t_e8fbba2f9dbb55 258
+  s_6dababc169f7b4::t_73af5c1fbd9419 137-154
+  s_6dababc169f7b4::t_b5a0ce7bbdb8e9 76-77,383
+  s_2d5caaed073af1::t_bac458d7946c5f 317-318
+  s_af2b73f7080690::t_2911f09bd29707 5-7
+  s_af2b73f7080690::t_fa04a9f2c4cb00 9-11,17-19
+  s_6dababc169f7b4::t_ad67a8684a9e7f 78-80,134-136
+  s_6dababc169f7b4::t_c2424949ed43e8 224-226,255-257
+  s_6dababc169f7b4::t_53c7172c02d595 384-386
+  h_c735ec7f46d14b 1-4,12-16,40-75,81-133,155-206,208-215,227-254,259-316,319-382,387-421
+docs/task-packets/P3-backend.md
+  s_6d3ecc30c604a5::t_8fbc1a920855df 1-29
+docs/data-model.md
+  s_6dababc169f7b4::t_bb87179f9f1cdc 235
+  s_af2b73f7080690::t_644afb31aa1f3d 447
+  s_2d5caaed073af1::t_8918fa7a3fbb8a 157,457
+  s_2d5caaed073af1::t_804f549ed29a4b 429-430
+  s_af2b73f7080690::t_78e9c816f0df7f 460
+  s_2d5caaed073af1::t_5301225905a994 160
+  s_2d5caaed073af1::t_42425fdf5ba148 266
+  s_6dababc169f7b4::t_73af5c1fbd9419 159,167-170
+  s_2d5caaed073af1::t_9f6cc6e8020329 381-405,461-465
+  s_2d5caaed073af1::t_413f4eb0ceb651 308
+  s_af2b73f7080690::t_7215e02cfaa883 97
+  s_2d5caaed073af1::t_42950a67265560 196,458-459
+  s_af2b73f7080690::t_56378cef797172 100
+  s_6dababc169f7b4::t_2ffa7d9dafc0e5 17,190
+  s_2d5caaed073af1::t_070fece27b677b 13-15,25-26,35-61,87-88,108-109,132-133,174-175,184-185,189,191-194,204,213-214,218,236-265,267-286,310-312,328-329,348-349,358-359,377-378,413-414,442-443
+  s_2d5caaed073af1::t_24077cec1ee581 161
+  s_6dababc169f7b4::t_badffc1ecb7c85 466
+  s_af2b73f7080690::t_9862074b68b18b 67
+  s_2d5caaed073af1::t_06839c2d70a828 158
+  s_2d5caaed073af1::t_62df323ac13e6a 151
+  s_af2b73f7080690::t_ecbacceba6f1d5 16,68-81,427
+  s_af2b73f7080690::t_8e51f18c4a2b2f 93,115
+  s_2d5caaed073af1::t_eb90df75d7682d 10-12
+  s_2d5caaed073af1::t_2dcb5b608e6e19 27-29,32-34
+  s_af2b73f7080690::t_6cb01f39d7ac28 94-96
+  s_af2b73f7080690::t_55bc8ccd77eeb5 98-99
+  s_2d5caaed073af1::t_159a474fe81d4d 134-136,148-150
+  s_2d5caaed073af1::t_ed40467e90b694 152-156
+  s_2d5caaed073af1::t_f363eeb9091993 176-178,181-183
+  s_2d5caaed073af1::t_8626520050984f 186-188
+  s_2d5caaed073af1::t_85b5e2009999f3 195
+  s_2d5caaed073af1::t_d985fab92f3bd5 197-199,201-203
+  s_2d5caaed073af1::t_a6a236c5452146 205-207,210-212
+  s_2d5caaed073af1::t_9a4699b6ef1cbb 215-217
+  s_2d5caaed073af1::t_57dedcd8776b7b 287-289,305-307
+  s_2d5caaed073af1::t_a0cb802aaf22f1 309
+  s_2d5caaed073af1::t_5d5485d1f01cfa 313-315,325-327
+  s_2d5caaed073af1::t_dce0234f3051b8 330-332,345-347
+  s_2d5caaed073af1::t_931e5e4f37fbb4 350-352,355-357
+  s_2d5caaed073af1::t_c8c88cb8fb99ca 360-362,374-376
+  s_2d5caaed073af1::t_dc496fa6d87d9a 379-380
+  s_2d5caaed073af1::t_b07412f7d8f3bd 406-408,410-412
+  s_2d5caaed073af1::t_47aa97deaa500c 431-433,439-441
+  s_6dababc169f7b4::t_2f2f125d96535e 467-469
+  h_c735ec7f46d14b 1-9,18-24,30-31,62-66,82-86,89-92,101-107,110-114,116-131,137-147,162-166,171-173,179-180,200,208-209,219-234,290-304,316-324,333-344,353-354,363-373,409,415-426,428,434-438,444-446,448-456,470-477
+DESIGN.md
+  s_af2b73f7080690::t_9bbe6f1dfdce47 71-78
+  s_9e9bd85feee4c2::t_03381b0e3d572d 1-3,8-10,13-14,18-20,23-24,28-29,35-36,43-44,49-50,56-57,62-63,70,79-80,83-84,90-91,95
+  s_8c025957f19abd::t_617109630f9167 7
+  s_af2b73f7080690::t_f7adc438b542b3 4-6,11-12,15-17,21-22,25-27,30-34,37-42,45-48,51-55,58-61,64-69,81-82,85-89,92-94
+docs/task-packets/README.md
+  s_6d3ecc30c604a5::t_a11398cef85266 1-62
+docs/task-packets/_template.md
+  s_6d3ecc30c604a5::t_a11398cef85266 1-42
+docs/task-packets/P4-backend.md
+  s_6d3ecc30c604a5::t_8fbc1a920855df 1-29
+docs/prompt-contracts.md
+  s_2d5caaed073af1::t_90486ec5b0d73f 126,239,251,281,304
+  h_c735ec7f46d14b 1-3,5-69,81-83,85-110,112-125,127-141,146-153,155,160-184,186,189-198,200-205,208-212,214-224,226-236,238,240-249,252-280,282-292,297,299-301,303,305-328,330-331
+  s_6dababc169f7b4::t_4904aba20685d6 293
+  s_6dababc169f7b4::t_59cc182233904c 111,154,156-159,213,225,237
+  s_6dababc169f7b4::t_411ea9cd2dddb9 4,70-80
+  s_2d5caaed073af1::t_cf96e65bf16de2 250
+  s_2d5caaed073af1::t_e6953cb9db223a 84,206-207
+  s_6dababc169f7b4::t_73af5c1fbd9419 142-145,187-188,199,294-296,298,329
+  s_6dababc169f7b4::t_0e8d396e035127 302
+  s_6dababc169f7b4::t_54c225ed911474 185
+docs/archived/LearningJ-plan-v4.md
+  h_c735ec7f46d14b 1-622
+docs/archived/PRD.md
+  h_c735ec7f46d14b 1-183
+docs/archived/adr-v4-full.md
+  h_c735ec7f46d14b 1-558
+docs/notes/CHANGELOG.md
+  h_c735ec7f46d14b 1-131
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "ce3a67b8ca1c05521fc75908f26fd5de32bd600d",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_2d5caaed073af1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a07484-10d1-7573-b403-3576fce83b27",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_6d3ecc30c604a5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a074ec-57c1-7c50-9058-0026379c677c",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_6dababc169f7b4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a071f9-57bc-7af1-a9ff-fedde7762c17",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_8c025957f19abd": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a07546-6147-7861-94f6-b288eaaaca71",
+        "model": "gpt-5.6-luna"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_9e9bd85feee4c2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a067de-4dd1-7002-90a7-78f52d61b532",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_af2b73f7080690": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a074ce-c680-7430-b895-ed178c3f52ef",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
