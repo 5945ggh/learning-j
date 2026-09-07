@@ -1,0 +1,192 @@
+backend/tests/test_constraints.py
+  s_17da32dd82cd02::t_98ad3ac1061194 75-78
+  s_17da32dd82cd02::t_1f0bb594514675 72-74
+  s_17da32dd82cd02::t_ccd8f3359488bf 79-81
+  s_17da32dd82cd02::t_5030d7e6931e58 1-71,82-175
+backend/src/learningj/ingest/__init__.py
+  s_6bc984150d66ca::t_5d95b9237d93e6 2-16
+  s_6bc984150d66ca::t_2ce5233b41e4ee 1
+backend/src/learningj/db/models/span.py
+  s_17da32dd82cd02::t_14c5f604e96f5f 69-77,91,93,101,103
+  s_17da32dd82cd02::t_35199eb3776dfc 66-68
+  s_17da32dd82cd02::t_3b210bef9153c3 78-80,88-90
+  s_17da32dd82cd02::t_4f21d1fb67f15e 92
+  s_17da32dd82cd02::t_57e6e7af0c002b 94-96,98-100
+  s_17da32dd82cd02::t_dc4ffd7daeef4b 102
+  s_17da32dd82cd02::t_a307d407f238ce 104
+  s_17da32dd82cd02::t_8ca2e859c55e2d 1-65,81-87,97
+backend/alembic/versions/1c1fc8f7fc96_p0_initial_schema_full_data_model.py
+  s_17da32dd82cd02::t_8a2d37c37c86e9 396
+  s_17da32dd82cd02::t_ffa553c30a9688 259,346,380,424-429
+  s_17da32dd82cd02::t_2091af248f353e 58-73
+  s_17da32dd82cd02::t_c645ec1b3c625d 55-57
+  s_17da32dd82cd02::t_477306c0d6057d 74-76,256-258
+  s_17da32dd82cd02::t_36ed25a6a108b4 260-262,343-345
+  s_17da32dd82cd02::t_ce3f15b86b7c35 347-349,377-379
+  s_17da32dd82cd02::t_5e86d4786add54 381-383,393-395
+  s_17da32dd82cd02::t_85df54977dcea0 397-399,421-423
+  s_17da32dd82cd02::t_e4e8e424b9e58c 430-432
+  s_17da32dd82cd02::t_a0ddd71d5d96c7 1-54,77-255,263-342,350-376,384-392,400-420,433-555
+backend/tests/test_api_materials.py
+  s_6bc984150d66ca::t_4111e10c61954f 1-32,36-45
+  s_6bc984150d66ca::t_2e37e5f2304079 33-35
+backend/src/learningj/ingest/service.py
+  s_6bc984150d66ca::t_2ea2257e222089 129-130,134,257
+  s_6bc984150d66ca::t_0e47499966fa5a 75,236-238,240-249,360,368
+  s_6bc984150d66ca::t_ab0e7817ed3a0a 429-430
+  s_6bc984150d66ca::t_33df9ab94b16dd 11,367
+  s_6bc984150d66ca::t_a41617ea038b52 221-224
+  s_6bc984150d66ca::t_399756580243d0 168-169,182,187,189,191,195,198,200,229-230,232,323-326,329-357,372-383,385-389
+  s_6bc984150d66ca::t_f63b88f11d40c5 1-10,12-42,44-74,76-128,131-133,135-167,180-181,188,193-194,199,216-217,228,231,233-235,239,250-256,258-259,275-276,286-293,295-322,327-328,358-359,361-366,369-371,390-428,431-456
+  s_6bc984150d66ca::t_c76595a59d969d 43,170-179,183-186,190,192,196-197,201-215,218-220,225-227,260-274,277-285,294,384
+backend/src/learningj/domain/enums.py
+  s_17da32dd82cd02::t_e2ca2481351136 79-94,194
+  s_17da32dd82cd02::t_d32b7d14243a31 76-78
+  s_17da32dd82cd02::t_89bb17b2d9b2d8 95-97,191-193
+  s_17da32dd82cd02::t_2584be58948307 195-197
+  s_17da32dd82cd02::t_86dfc4b1433249 1-75,98-190,198-241
+backend/src/learningj/api/app.py
+  s_6bc984150d66ca::t_8377533e654df7 10,109
+  s_6bc984150d66ca::t_fac37095baf45b 8-9,80-84,88,94-97,99
+  s_6bc984150d66ca::t_55bd79ae3ec3b6 11-79,85-87,89-93,98,100-108,110-141
+  s_6bc984150d66ca::t_e63fa5dc208e0b 5-7
+  s_17da32dd82cd02::t_7c3c2f98a09cd4 1-4
+backend/src/learningj/db/models/knowledge.py
+  s_17da32dd82cd02::t_6b31fa0e599a9d 65-66,81-82
+  s_17da32dd82cd02::t_96069440435ce5 102,108,112,119,129,132,152,156,159,162,167,174,178-185,188,191
+  s_17da32dd82cd02::t_7e4798b16b75a3 16
+  s_17da32dd82cd02::t_0b9e855d4cb03d 34-37
+  s_17da32dd82cd02::t_2a5c316fdd276a 47-64,67-80,83-93,100,106,117,139,146-147,151,172
+  s_17da32dd82cd02::t_c1754b62a8c89a 13-15
+  s_17da32dd82cd02::t_c5bfcfef0ea6f6 17-19,31-33
+  s_17da32dd82cd02::t_7bc9e33cbf9176 38-40,44-46
+  s_17da32dd82cd02::t_7568399e29df93 94-99
+  s_17da32dd82cd02::t_c24dbd1215df45 101
+  s_17da32dd82cd02::t_898ca5cd35fe6b 103-105
+  s_17da32dd82cd02::t_abd1e1a3445e19 107
+  s_17da32dd82cd02::t_cf6485393d8bba 109-111
+  s_17da32dd82cd02::t_02ea3ebab79f87 113-116
+  s_17da32dd82cd02::t_0b460d60a7d6b2 118
+  s_17da32dd82cd02::t_663d51e97326b5 120-122,126-128
+  s_17da32dd82cd02::t_5d06cf6e14424e 130-131
+  s_17da32dd82cd02::t_6296a26008c8ba 133-138
+  s_17da32dd82cd02::t_4311e225864358 140-145
+  s_17da32dd82cd02::t_490b6a820dbb74 148-150
+  s_17da32dd82cd02::t_2e4c81d395c6ca 153-155
+  s_17da32dd82cd02::t_550f7e04156c7a 157-158
+  s_17da32dd82cd02::t_f89757b7844f5e 160-161
+  s_17da32dd82cd02::t_a4dd5b47ee90fa 163-166
+  s_17da32dd82cd02::t_f5e6afd88c25d0 168-171
+  s_17da32dd82cd02::t_e3d2064467f2d3 173
+  s_17da32dd82cd02::t_25caeb33ef5979 175-177
+  s_17da32dd82cd02::t_5442e4dd24eb2b 186-187
+  s_17da32dd82cd02::t_e25e4dc2d7b46f 189-190
+  s_17da32dd82cd02::t_54de52c214ed32 192-194
+  s_17da32dd82cd02::t_62fedd123f4d04 1-12,20-30,41-43,123-125,195
+backend/tests/invariants/test_invariants.py
+  s_6bc984150d66ca::t_fda8ecbc0de719 51-63
+  s_6bc984150d66ca::t_4ba2aec5d85b9a 48-50
+  s_6bc984150d66ca::t_f3a597a0e7fd7e 64-66
+  s_17da32dd82cd02::t_b7b2d52db10ff6 1-47,67-104
+backend/tests/test_ingest.py
+  s_6bc984150d66ca::t_490354b6fc6389 78
+  s_6bc984150d66ca::t_ba99b13daa348c 88,90
+  s_6bc984150d66ca::t_d14e3019e12911 1-24,26-38,54-77,79-87,91
+  s_6bc984150d66ca::t_012fdcaa640f24 39-53
+  s_6bc984150d66ca::t_0fad51e738873c 25
+  s_6bc984150d66ca::t_95bb119c794e45 92-102
+  s_6bc984150d66ca::t_8965ddc4877599 89,103-116
+backend/.gitignore
+  s_17da32dd82cd02::t_22d04441a038da 1-6
+backend/alembic.ini
+  s_17da32dd82cd02::t_91cc66a2a13ad0 1-39
+backend/alembic/env.py
+  s_17da32dd82cd02::t_13f735df9979d9 1-98
+backend/alembic/script.py.mako
+  s_17da32dd82cd02::t_7e253158e5d65e 1-27
+backend/src/learningj/__init__.py
+  s_17da32dd82cd02::t_3904a6974d9329 1-5
+backend/src/learningj/analysis/__init__.py
+  s_17da32dd82cd02::t_36a427dccc51df 1
+backend/src/learningj/api/__init__.py
+  s_17da32dd82cd02::t_b98efc6f6cbd5c 1
+backend/src/learningj/db/__init__.py
+  s_17da32dd82cd02::t_cc03a7e984ad4f 1
+backend/src/learningj/db/base.py
+  s_17da32dd82cd02::t_7dd323a72e11f2 1-66
+backend/src/learningj/db/models/__init__.py
+  s_17da32dd82cd02::t_b5199cd9c5a11e 1-76
+backend/src/learningj/db/models/analysis.py
+  s_17da32dd82cd02::t_ede3e3e7138091 1-199
+backend/src/learningj/db/models/annotation.py
+  s_17da32dd82cd02::t_e7654ed574302d 1-26
+backend/src/learningj/db/models/dictionary.py
+  s_17da32dd82cd02::t_e418004e9f77d7 1-120
+backend/src/learningj/db/models/invariant_triggers.py
+  s_17da32dd82cd02::t_c604f1942cfc94 1-69
+backend/src/learningj/db/models/lexeme.py
+  s_17da32dd82cd02::t_8008ea40906e6e 1-68
+backend/src/learningj/db/models/material.py
+  s_17da32dd82cd02::t_2f53623d02fdaf 1-82
+backend/src/learningj/db/models/memory.py
+  s_17da32dd82cd02::t_8ccf33d8ccf9ca 1-53
+backend/src/learningj/db/models/srs.py
+  s_17da32dd82cd02::t_69a4be82ea6bf7 1-73
+backend/src/learningj/db/session.py
+  s_17da32dd82cd02::t_7c47cb5724b4ea 1-41
+backend/src/learningj/db/types.py
+  s_17da32dd82cd02::t_c8257cede4d34d 1-76
+backend/src/learningj/domain/__init__.py
+  s_17da32dd82cd02::t_7700072b5f3350 1-4
+backend/src/learningj/domain/ids.py
+  s_17da32dd82cd02::t_106de5e58f1090 1-55
+backend/src/learningj/domain/lexeme.py
+  s_17da32dd82cd02::t_becfaeedb32ecc 1-35
+backend/src/learningj/domain/offsets.py
+  s_17da32dd82cd02::t_d648c49cb9b8e0 1-46
+backend/src/learningj/extraction/__init__.py
+  s_17da32dd82cd02::t_b1a6e013c6bc66 1
+backend/src/learningj/llm/__init__.py
+  s_17da32dd82cd02::t_7add88d6f37d27 1-6
+backend/src/learningj/memory/__init__.py
+  s_17da32dd82cd02::t_daf684f8cd6027 1
+backend/src/learningj/prompts/README.md
+  s_17da32dd82cd02::t_1c113354473615 1-8
+backend/src/learningj/srs/__init__.py
+  s_17da32dd82cd02::t_07e1a2622a7c37 1
+backend/tests/conftest.py
+  s_17da32dd82cd02::t_83e94678d43f06 1-28
+backend/tests/test_domain.py
+  s_17da32dd82cd02::t_63ad3611443832 1-82
+backend/tests/test_schema.py
+  s_17da32dd82cd02::t_e04b403737ce31 1-164
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "7877b3c5fa1fc520f9e04aad57e73910048a7358",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_17da32dd82cd02": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0a3fcce0-aeda-4f75-86ff-24b6fe833fa2",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_6bc984150d66ca": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a07636-a595-7341-a313-a22264e84e0c",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
