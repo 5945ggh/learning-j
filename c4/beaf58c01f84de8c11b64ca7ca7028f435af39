@@ -1,0 +1,85 @@
+docs/prompt-contracts.md
+  s_42567782209f55::t_534ec95426d6e3 318-319
+  s_42567782209f55::t_b675a486e6e5d0 220-228,234-252
+  s_42567782209f55::t_987858f254295e 262-265,267,269-270,274-277
+  s_42567782209f55::t_7207796bb7a2c9 348,354
+  s_42567782209f55::t_dd40af18c8bccb 285,287-295
+  s_42567782209f55::t_7ac76a57501a5b 355
+docs/mvp-tech-and-phases.md
+  s_feda4216668faa::t_2910d8a8f01426 26
+  s_42567782209f55::t_541c2225752570 91,93-101
+docs/notes/CHANGELOG.md
+  s_feda4216668faa::t_2910d8a8f01426 80
+docs/adr.md
+  h_c735ec7f46d14b 8,20-39
+  s_feda4216668faa::t_2910d8a8f01426 341
+  s_42567782209f55::t_af55ef96f71af9 392-580
+  s_42567782209f55::t_3e34e9eb9e0716 595
+  s_42567782209f55::t_49c0a92a4f5260 111-112
+  s_42567782209f55::t_ba088403dfc7e2 292-293
+docs/LearningJ-plan-v5.md
+  s_42567782209f55::t_223bf0342f0102 456,463
+  s_feda4216668faa::t_2910d8a8f01426 455,466-467
+  h_c735ec7f46d14b 148-163
+  s_42567782209f55::t_27add8efd996af 89
+  s_42567782209f55::t_255fa2ca783a8e 444-445
+docs/data-model.md
+  s_42567782209f55::t_1d1a3cefa59ccc 150-201
+  s_42567782209f55::t_a5a1f125c8ae9b 40,44
+  s_42567782209f55::t_860a7f9f5afd7f 332-334
+  s_42567782209f55::t_94600a58db10cf 17
+  s_42567782209f55::t_8f882937786da0 255-256
+  s_42567782209f55::t_8263d0a2015b0a 273-274
+  s_42567782209f55::t_72bd872cd59634 229-234
+  s_42567782209f55::t_40cd1161d0240b 539-543
+  s_42567782209f55::t_2db00094613afb 246-247
+  s_42567782209f55::t_567559e25a249f 136-142
+backend/pyproject.toml
+  s_6bc984150d66ca::t_5fdb0c78799045 14-17
+  s_6bc984150d66ca::t_488c8bbb4e63df 11-13
+  s_42567782209f55::t_2f13cae045fb45 4,9-10,19-34
+docs/task-packets/P3-backend.md
+  s_feda4216668faa::t_2910d8a8f01426 5,14
+docs/spike-checklist.md
+  s_42567782209f55::t_f03bc107a21ff2 15-23
+  s_42567782209f55::t_5c797bda99ea14 58-78,80,82,84,86,88-91,93-94,96-98,100
+backend/uv.lock
+  s_6bc984150d66ca::t_b3b0db609e8ad0 9-31,57,59-61,63-73,77-188,247-255,342-512,530-547,665-698,708-816,846-858
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "c4beaf58c01f84de8c11b64ca7ca7028f435af39",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_42567782209f55": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "dbbf7812-9cc8-44e2-be03-59b24ed7351e",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_6bc984150d66ca": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a07636-a595-7341-a313-a22264e84e0c",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_feda4216668faa": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a075e2-9dae-7500-9c1a-8d559359f2ca",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
