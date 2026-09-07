@@ -217,14 +217,39 @@ BYOK 下模型能力分布不均，多轮工具调用是高风险依赖。单句
   ],
   "candidates": [
     {
-      "anchor": "〜なんて",
-      "display_form": "普通形 + なんて",
-      "surfaces": ["使うなんて"],
+      "shape": "pattern",
+      "payload": {
+        "elements": [
+          {"type": "literal", "text": "使う"},
+          {"type": "literal", "text": "なんて"}
+        ]
+      },
+      "slot_bindings": {},
+      "display_form": "〜なんて",
       "tags": ["grammar"],
       "salience": "primary",
       "section_hint": ["knowledge", "grammar-gurai"],
       "reuse_kp_id": null,
       "brief": "把某事拎出来带感情色彩地评论"
+    },
+    {
+      "shape": "pattern",
+      "payload": {
+        "elements": [
+          {"type": "slot", "id": "N1", "category": "N", "form": "none"},
+          {"type": "literal", "text": "相手"},
+          {"type": "literal", "text": "に"}
+        ]
+      },
+      "slot_bindings": {
+        "N1": {"surface": "素人"}
+      },
+      "display_form": null,
+      "tags": ["grammar"],
+      "salience": "secondary",
+      "section_hint": ["knowledge", "grammar-aite"],
+      "reuse_kp_id": null,
+      "brief": "「面对 N」「以 N 为对象」"
     }
   ]
 }
@@ -234,18 +259,22 @@ BYOK 下模型能力分布不均，多轮工具调用是高风险依赖。单句
 
 | 字段 | 规则 |
 |---|---|
+| `shape` | `pattern` / `lexical` / `entity` / `opaque` 四选一 |
+| `payload` | 类型特定的结构化内容。`pattern` 时包含 `elements` 数组；`lexical` 时为 `{surface: str}`；`entity` 时为 `{entity_type, entity_label}`；`opaque` 时为 `{freeform: str}` |
+| `slot_bindings` | 槽位实例绑定。`pattern` 时键为槽位 id，值为 `{surface: str}`（后端定位后填充 `span_id`）；其他 shape 时为空对象 `{}` |
+| `display_form` | 可选的人工覆写展示形式。模型可留空，后端从 payload 渲染 |
 | `section_hint` | 从根 heading 到叶 heading 的唯一 id 路径；用于把抽取结果绑定到正文小节，不是自然语言摘要。没有可靠路径时为空数组，由后端按降级规则处理 |
-| `anchor` | 必须符合形态规范。**优先复用候选列表中已有的 anchor**（见 §5.3） |
-| `surfaces` | **非空的当前句原文子串数组，逐字照抄原句**。数组用于表达同一 anchor 在当前句中的多个独立出现位置；每个 surface 独立定位并生成 Occurrence。不给字符偏移、不给 token 索引。MVP 的 KP 抽取严格限于当前句；跨句解释可以出现在正文中，但不产生跨句 KP |
-| `salience` | `primary` 仅给第一段收尾小节点名的 1 到 3 条；其余一律 `secondary` |
+| `salience` | `primary` 仅给第一段收尾小节点名的 1-3 条；其余一律 `secondary` |
 | `reuse_kp_id` | 复用候选列表中的已有 KP 时填其 id，新建时为 null |
-| `brief` | 一句话要点摘要。落库进 Occurrence，供记忆注入与聚合视图使用 |
+| `brief` | 一句话要点摘要。所有 shape 都必填 |
+| `tags` | 与现有规则相同 |
 
 **模型不输出**（ADR-009）：
 
-- 字符偏移与 token 索引——由后端从 `surfaces` 定位与对齐推导；
-- `normalized_form / pos / reading_form` 三元组——由后端从 sidecar 取。模型会写出与 SudachiDict 字段不严格对齐的东西，污染别名表；
-- `lexical_anchors`——同上，由算法推导。
+- `anchor` 与 `anchor_key`：由后端从 `payload` 派生
+- 字符偏移与 token 索引：由后端定位
+- 三元组与 `lexical_anchors`：由后端从 sidecar 推导
+- `slot_bindings` 中的 `span_id`：由后端定位后填充，模型只给 `surface`
 
 **多 surface 的语义**：一个 candidate 代表一个 anchor 在当前句中的一种讲解，不为同一 anchor 的重复出现复制候选。每个 surface 独立定位；每个已定位的命中位置产生一条 Occurrence，并共享该 candidate 的 `kp_id`、`brief` 和 section 引用。单个 surface 多处命中时，按 `ambiguous` 规则为每处命中建立 Span / Occurrence；不同 surface 之间发生重叠时，各自独立定位，不合并、不静默丢弃。
 
@@ -253,9 +282,17 @@ BYOK 下模型能力分布不均，多轮工具调用是高风险依赖。单句
 
 ### 5.3 检索增强的「选择」
 
-抽取前先用模糊匹配从既有 KnowledgePoint 中取 top-k 候选，与规范一并交给模型，指令为：**复用其中之一，或在都不合适时按规范新建。**
+抽取前先用字面量倒排索引从既有 KnowledgePoint 中召回候选（按 `anchor_payload` 的 literal 部分），取 top-k 与规范一并交给模型。模型指令：**复用其中之一，或在都不合适时按规范新建。**
 
-这是把开放生成压回接近闭集选择的最便宜手段，也是别名表自然增长的来源。冷启动从 JLPT 语法表种子条目 + 种子别名起步。
+**三分支处理**（后端执行）：
+
+| 情形 | 动作 | 模型调用 |
+|-----|------|---------|
+| `anchor_key` 已存在 | 直接复用 | 零 |
+| 键不存在，但归一化近邻存在（槽位粒度不同、少一个字面量） | 问一次「复用还是新建」 | 一次小调用 |
+| 键不存在且无近邻 | 直接新建 | 零 |
+
+绝大多数句子的第二轮成本为零。这是把开放生成压回接近闭集选择的最便宜手段，也是别名表自然增长的来源。冷启动从 JLPT 语法表种子条目 + 种子别名起步。
 
 `k` 的临时值取 **10**，待 `spike-checklist.md` 实验 2 回写。
 
@@ -278,7 +315,8 @@ BYOK 下模型能力分布不均，多轮工具调用是高风险依赖。单句
 
 1. 输出非合法 JSON 或不符 schema；
 2. `candidates` 为空而正文超过阈值长度；
-3. 本次输出的全部 `surfaces` 均进入 `ExtractionRun.unresolved_surfaces`，即没有任何 surface 在原句中找到。
+3. 本次输出的全部 `surfaces` 均进入 `ExtractionRun.unresolved_surfaces`，即没有任何 surface 在原句中找到；
+4. **某个 candidate 的任一槽位绑定在原句中定位失败**（`find_all` 返回 0 或无法与 sidecar 对齐），该 candidate 记入 `ExtractionRun.unresolved_patterns`。
 
 **弱信号**（提示而非自动重跑）：
 
@@ -307,11 +345,13 @@ BYOK 下模型能力分布不均，多轮工具调用是高风险依赖。单句
 
 ---
 
-## 7. 形态规范
+## 7. 模式语言规范
 
 完整规范与决策表是 `spike-checklist.md` 实验 2 的交付物，尚未产出。
 
 ### 7.1 在此之前使用的临时规范
+
+> 完整的模式语言规范（DSL 定义 + category/form 枚举 + 校验规则）是 `spike-checklist.md` 实验 2 的交付物。在此之前使用以下临时规范，撞上无法表达的构式时走 `shape = opaque` + `opaque_reason = model_chosen`：
 
 抽取段当前使用以下规则，实验 2 完成后整体替换：
 

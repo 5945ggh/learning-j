@@ -14,6 +14,7 @@
 - **字符偏移**：所有持久化 `char_start` / `char_end` 均以 Unicode code point 计，使用半开区间 `[start, end)`。浏览器 DOM 的 UTF-16 偏移只能在渲染适配层转换，业务代码不得直接把持久化偏移交给 `String.slice` 或 `Range`。
 - **永不原地改写**：合并、修订、状态变化一律以新记录或新版本表达，不覆盖旧值。MVP 唯一例外是 `ReviewItem.retired_at`：它只能从空值单向写入时间戳，用于退役标记，不得修改或清除。
 - 版本戳（形态分析器版本、分析器词典版本、释义词典来源版本、prompt 版本、模型标识）在任何涉及外部资源的记录上都是必填项，不允许留空或用默认值。`analyzer_dict_version`（SudachiDict）与 `dictionary_source_version`（Yomitan 包等）属于不同命名空间，不得复用同一个 `dict_version` 含义。
+- **anchor_key 序列化规范**：采用 Unicode NFC 归一化，连续空格折叠为单个空格，去除前后空白。序列化只取 `category + form + literal 文本 + 顺序`，不取槽位 id。该规范版本化，当前为 v1，记录在 `pattern_grammar_version` 的大版本号中。
 - **MVP 作用域是单用户、本地数据集**：当前实体不要求 `user_id`；未来若支持本地多用户或托管后端，必须在作用域迁移设计中为用户学习意愿、KnownEvidence、ReviewItem、ReviewState 与笔记补充用户边界。
 
 ---
@@ -36,11 +37,11 @@
 
 Span 在逻辑上是值对象，在物理上使用独立的不可变 `spans` 表；每个 Span 有自己的 `span_id`。实体之间不使用多态 `owner_type / owner_id` 外键，而使用带真实外键的关联表：
 
-- `occurrence_spans(occurrence_id, span_id)`：MVP 中每条 Occurrence 恰好一条；
+- `occurrence_spans(occurrence_id, span_id, ordinal)`：**MVP 实现中每条 Occurrence 只用长度 1，但 schema 按有序数组设计**，`ordinal` 保证顺序，为将来不连续构式留位；
 - `analysis_section_spans(section_version_id, span_id, ordinal)`；
 - `annotation_spans(annotation_id, span_id, ordinal)`。
 
-关联表上的 `ordinal` 保证数组顺序，`span_id` 只能指向一个 `sentence_id`。这样既能复用同一套 Span 约束，也不会牺牲数据库的引用完整性。文档中的 `Occurrence.span`、`AnalysisSection.spans` 和 `Annotation.spans` 是上述物理关系的逻辑写法。
+关联表上的 `ordinal` 保证数组顺序，`span_id` 只能指向一个 `sentence_id`。这样既能复用同一套 Span 约束，也不会牺牲数据库的引用完整性。文档中的 `Occurrence.spans`、`AnalysisSection.spans` 和 `Annotation.spans` 是上述物理关系的逻辑写法。
 
 ### 定位规则
 
@@ -132,14 +133,71 @@ Span 在逻辑上是值对象，在物理上使用独立的不可变 `spans` 表
 | 字段 | 类型 | 说明 |
 |---|---|---|
 | `kp_id` | uuid | **自签发** |
-| `anchor` | string | 自然键。符合形态规范的锚点串。词汇类与语法类一视同仁 |
-| `display_form` | string | 展示用形式，可与 anchor 不同 |
+| `anchor_shape` | enum | **[不可推迟]** `pattern` / `lexical` / `entity` / `opaque` |
+| `anchor_payload` | json | **[不可推迟]** 类型特定的结构化内容，形状由 `anchor_shape` 决定 |
+| `anchor` | string | **由 `anchor_payload` 确定性派生**，模型不书写。保留唯一约束与并发 upsert |
+| `pattern_grammar_version` | string? | `shape = pattern` 时必填。记录创建时的枚举集合版本（小版本）与序列化算法版本（大版本），格式 `major.minor` 如 `0.1` |
+| `opaque_reason` | enum? | `shape = opaque` 时必填。`model_chosen` / `validation_failed` |
+| `zero_slot_lexeme_check` | json? | 0 槽位 pattern 写入时的 lint 结果：`{"passed": bool, "analyzer_dict_version": str}` |
+| `display_form` | string? | **可选的人工覆写**。默认由渲染器从 payload 生成 |
 | `tags` | string[] | **多值标签**，可为空、可重叠、可后加（ADR-021）。MVP 只保证 `grammar` 可靠打上 |
 | `retention` | enum | **[不可推迟]** `srs` / `reference`。**用户的决定**，见下 |
 | `retention_set_by` | enum | **[不可推迟]** `default` / `user`。为 `user` 时，重跑抽取与批量重抽**不得覆盖** |
 | `canonical_id` | uuid? | **[不可推迟]** 合并指向。空值表示自身即 canonical |
 | `lexical_anchors` | lexeme_id[] | **可空、可多。仅作索引，不参与身份判定** |
 | `origin` | enum | `extraction`（MVP 内唯一取值）/ 预留 `manual` |
+
+**完整示例**：
+
+```json
+// pattern shape 示例
+{
+  "anchor_shape": "pattern",
+  "pattern_grammar_version": "0.1",
+  "anchor_payload": {
+    "elements": [
+      {"type": "slot", "id": "N1", "category": "N", "form": "none"},
+      {"type": "literal", "text": "の"},
+      {"type": "literal", "text": "ない"},
+      {"type": "slot", "id": "N2", "category": "N", "form": "none"}
+    ]
+  },
+  "anchor": "N[none].の.ない.N[none]",
+  "display_form": null
+}
+
+// lexical shape 示例
+{
+  "anchor_shape": "lexical",
+  "anchor_payload": {
+    "surface": "向上心"
+  },
+  "anchor": "向上心",
+  "display_form": null
+}
+
+// entity shape 示例
+{
+  "anchor_shape": "entity",
+  "anchor_payload": {
+    "entity_type": "literary_work",
+    "entity_label": "夏目漱石《こころ》"
+  },
+  "anchor": "entity:literary_work:夏目漱石《こころ》",
+  "display_form": null
+}
+
+// opaque shape 示例
+{
+  "anchor_shape": "opaque",
+  "anchor_payload": {
+    "freeform": "〜ことができる"
+  },
+  "anchor": "hash:a3f8c9...",
+  "opaque_reason": "model_chosen",
+  "display_form": "〜ことができる"
+}
+```
 
 #### retention 的语义
 
@@ -168,6 +226,12 @@ Span 在逻辑上是值对象，在物理上使用独立的不可变 `spans` 表
 4. **合并永不原地改写**：合并即写入 `canonical_id`，Occurrence 保持指向它当初指向的 `kp_id`，查询时经 canonical 视图归并。合并可撤销。
 5. **MVP 不做写入时的 alias 查重。**模型给出的新 anchor 恰好是某个已有 KP 别名的情况，交由 `prompt-contracts.md` §5.3 的 top-k 候选检索在抽取前解决。
 6. `anchor` 必须有数据库唯一约束；并发抽取或重试通过幂等 upsert / 冲突重试收敛到同一 KP。该约束是并发安全与批量重跑的最低成本保障，不要求在写入时再做一套全量模糊查重。
+7. `anchor_shape` 与相关字段的完整性：
+   - `shape = pattern` → `pattern_grammar_version` 与 `anchor_payload.elements` 必填
+   - `shape = opaque` → `opaque_reason` 必填
+   - `shape = lexical` / `entity` → 上述字段均为 null
+8. `anchor_payload` 到 `anchor` 的派生可复现：按 `pattern_grammar_version` 序列化必得相同结果。
+9. 辅助渲染函数 `render_anchor_for_display(kp) -> str`：从 payload 生成展示字符串，供聚合视图、Anki 导出等场景使用。优先返回 `display_form`，若为 null 则从 payload 渲染。该函数版本化，改变渲染逻辑需新建函数。
 
 ### 3.2 Alias
 
@@ -179,6 +243,8 @@ Span 在逻辑上是值对象，在物理上使用独立的不可变 `spans` 表
 
 **约束**：别名表只服务 KP 层，Lexeme 不进此表。
 
+**用途退化说明**（ADR-034）：自由串漂移消失后，Alias 表不再承担吸收模型措辞变体的主要职责，退化为「JLPT 种子串 / 教材写法 → 模式」的映射与外部导入通道。规模从原估计的数千条降至数百条。
+
 ### 3.3 Occurrence
 
 | 字段 | 类型 | 说明 |
@@ -186,7 +252,8 @@ Span 在逻辑上是值对象，在物理上使用独立的不可变 `spans` 表
 | `kp_id` | FK | |
 | `sentence_id` | FK | |
 | `material_id` | FK | |
-| `span` | Span | **[不可推迟]** 该知识点在原句中的位置；物理上通过 `occurrence_spans` 关联 |
+| `spans` | Span[] | **[不可推迟]** 该知识点在原句中的位置。MVP 长度恒为 1，物理上通过 `occurrence_spans(occurrence_id, span_id, ordinal)` 关联 |
+| `slot_bindings` | json | 槽位实例绑定，键为槽位 id（如 "N1"），值为 `span_id`（引用 `spans` 表）。`shape` 为 `pattern` 时按模式槽位填充，其他 shape 时为空对象 `{}` |
 | `salience` | enum | **[不可推迟]** `primary` / `secondary`。批量与兜底路径下决定 ReviewItem 的创建优先级；不决定候选是否构成 KP（ADR-019） |
 | `brief` | string | 该次讲解的要点摘要，由抽取段给出。MVP 的 `content_source = analysis_section` 时必填；未来 `user_gloss` 来源可按其契约为空 |
 | `content_source` | enum | **[不可推迟]** `analysis_section`（MVP 内唯一取值）/ 预留 `user_gloss` |
@@ -203,6 +270,8 @@ Span 在逻辑上是值对象，在物理上使用独立的不可变 `spans` 表
 1. **Occurrence 无条件记录、永不去重**（ADR-019 第一层闸门）。
 2. 内容引用必须是 `section_id + section_revision`，**不得用字符区间指向解析原文**——解析文档可变，字符区间会碎。`content_source = analysis_section` 时二者均非空；未来其他来源必须另行定义引用约束。
 3. 抽取段输出的是原文子串，**字符区间、token 区间、三元组与 `lexical_anchors` 全部由后端推导，不由模型给出**（ADR-009）。
+4. **槽位绑定完整性**：`shape = pattern` 的 KP 所产生的 Occurrence，其 `slot_bindings` 必须包含该模式全部槽位的成功绑定；任一槽位定位失败则不产生 Occurrence，该 candidate 记入 `ExtractionRun.unresolved_patterns`。
+5. `slot_bindings` 的值为 `span_id`（surface 可从 Span 取，不冗余存储）。
 
 ---
 
@@ -260,6 +329,9 @@ Span 在逻辑上是值对象，在物理上使用独立的不可变 `spans` 表
 | `retry_of` | FK? | 指向被重跑的上一次 ExtractionRun |
 | `failure_reason` | enum? | `invalid_json` / `empty_candidates` / `all_unresolved` / `provider_error` |
 | `unresolved_surfaces` | string[] | 原句中找不到的 surface；可为空 |
+| `invalid_patterns` | json[] | 模型给出的 pattern 但未通过校验规则的条目，每条记录 `{candidate_index, failed_rules: [rule_id, ...]}` |
+| `unresolved_patterns` | json[] | 槽位绑定不完整的 candidate（任一槽位定位失败），记录 `{candidate_index, anchor, missing_slots: [slot_id, ...]}` |
+| `opaque_count` | int | 本次产出的 `shape = opaque` 的 KP 数量 |
 | `candidate_count` | int | 运行产出的候选数量 |
 | `started_at` / `finished_at` | timestamp | |
 
@@ -464,6 +536,11 @@ PDF **不在 MVP 内**，走「转纯文本」降级，落 `plain_text`。
 9. `Analysis.session_closed = true` 的记录不再新增 AnalysisMessage。
 10. 当 `Analysis.extraction_status = done` 时，其所有当前 AnalysisSection 的 `kind` 非空且属于「九个模块 + `takeaway` + `qa`」；抽取前允许为空。
 11. `KnowledgePoint.anchor` 在本地库内具有唯一约束；并发抽取与重试必须通过幂等 upsert / 冲突重试收敛到同一 KP，不要求写入时执行全量模糊 alias 查重。
+12. 任何 `shape = pattern` 的 KP，其 `anchor` 等于按 `pattern_grammar_version` 对 `anchor_payload` 序列化的结果。
+13. 任何 Occurrence 的 `slot_bindings` 键集合等于其 KP 的 `anchor_payload.elements` 中槽位 id 集合；`shape` 为 `opaque` / `lexical` / `entity` 时 `slot_bindings` 为空对象 `{}`。
+14. 任何 `shape = pattern` 的 KP 必有非空 `pattern_grammar_version`；任何 `shape = opaque` 的 KP 必有非空 `opaque_reason`。
+15. （`shape = pattern` 的 Occurrence）各槽位绑定在原句中的出现顺序与该模式 `elements` 中槽位的声明顺序一致；跨槽位的 Span 不相交。
+16. `slot_bindings` 的每个值必须是该 Occurrence 的 `spans` 数组中某个 Span 的 `span_id`。
 
 ---
 

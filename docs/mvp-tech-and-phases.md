@@ -23,7 +23,7 @@
 | 结构化输出 | prompt 要求纯 JSON → `json-repair` 兜一层 → Pydantic 校验 → 失败按 §5.5 重跑（上限 2 次） | ADR-017 决策四：不依赖 tool calling / provider 的 structured output，弱模型也要能跑 |
 | 模糊检索（top-k 候选） | `rapidfuzz` 内存匹配 anchor + alias 全表 | KP 规模 \(10^3\) 级，全表加载做模糊匹配是毫秒级。不需要向量库、不需要额外基础设施 |
 | SRS 算法 | `py-fsrs`（FSRS-5） | 现成、优于 SM-2、`ReviewState` 字段可直接对齐 FSRS 的 Card 形状 |
-| 密钥 | `keyring`，降级到 0600 的本地文件并明示 | 见审查文档第四节 |
+| Provider 配置与密钥 | 普通配置按 provider profile 保存；密钥优先进入 `keyring`，降级到同一应用配置目录下独立的 0600 secrets 文件并明示 | `name` / `base_url` / `model_list` 可持久化、导出和同步；主配置只保存稳定 `provider_id` 与 `credential_ref`，不得保存明文 `api_key`。keyring 不可用时才启用 secrets 文件，且日志、Analysis、ExtractionRun、诊断导出均不得包含密钥 |
 | 测试 | pytest + `hypothesis` | 不变量清单第 9 节要写成断言，property-based 测试是天然载体 |
 
 **明确不引入**：LangChain、LlamaIndex、Celery（第一阶段无批量，`asyncio` + 一张 `jobs` 表足够）、Redis、Postgres、向量数据库、GiNZA（ADR-025 建议改暂缓）。官方 provider SDK 只作为隔离在 `llm/` 内的 adapter；不作为业务抽象。
@@ -88,9 +88,17 @@ docs/                # 现有四份 spec，P0 打补丁
 2. 决定并写下：SQLite、Span 独立表形状、code point 约定、BYOK 密钥存储、ExtractionRun 实体（B2）、词典来源模型与 `analyzer_dict_version` / `dictionary_source_version` 的命名空间；
 3. 建后端骨架：uv 项目、FastAPI app、SQLAlchemy base、Alembic 初始 migration（**包含全部实体，即使 P1 只用到一部分**），包括 DictionarySource / DictionaryEntry / Definition / Asset / ImportRun；
 4. 建前端骨架：Vite + React + TS + Tailwind + ESLint 两条硬规则；
-5. `tests/invariants/` 建立，把不变量清单九条写成空壳测试（`pytest.mark.xfail`），后续阶段逐条点亮。
+5. `tests/invariants/` 建立，把不变量清单十六条写成空壳测试（`pytest.mark.xfail`），后续阶段逐条点亮。
 
-**验收**：`alembic upgrade head` 建出全部表；不变量测试全部以 xfail 状态存在；前端 `pnpm dev` 起得来且 ESLint 规则能拦住一次故意的反向 import。
+**验收**：
+
+1. `alembic upgrade head` 建出全部表；
+2. 不变量测试全部以 xfail 状态存在；
+3. 前端 `pnpm dev` 起得来且 ESLint 规则能拦住一次故意的反向 import；
+4. Occurrence 的 `occurrence_spans` 关联表支持有序数组：写入一条带两个 Span 的测试 Occurrence（`ordinal` 分别为 0 和 1），能正确读回且顺序保持；
+5. 不变量测试骨架包含 §9 全部 16 条（含修订后的 12-16），全部标记为 `pytest.mark.xfail`；
+6. KnowledgePoint 表包含 `anchor_shape` / `anchor_payload` / `pattern_grammar_version` / `opaque_reason` / `zero_slot_lexeme_check` 字段；
+7. ExtractionRun 表包含 `invalid_patterns` / `unresolved_patterns` / `opaque_count` 字段。
 
 **为什么迁移一次建全表**：不可推迟项的定义就是「后补代价是全量数据迁移」。第一天把字段全建出来（哪怕暂时不写入）比分五次加字段便宜得多。
 

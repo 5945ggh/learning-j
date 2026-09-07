@@ -2,7 +2,7 @@
 
 ## 读取范围
 
-公共前言见 `_template.md`。另读 `docs/prompt-contracts.md` §1–§4、`docs/data-model.md` §4、§6、§9，`docs/adr.md` 的 ADR-017、ADR-024、ADR-029。
+公共前言见 `_template.md`。另读 `docs/prompt-contracts.md` §1–§4、`docs/data-model.md` §4、§6、§9，`docs/adr.md` 的 ADR-017、ADR-020、ADR-024、ADR-029、ADR-032。
 
 ## 目标
 
@@ -11,7 +11,7 @@
 ## 必须完成
 
 - 内部 provider contract：`chat(messages, model, ...) -> (text, usage, raw)`；实现 OpenAI-compatible、Anthropic、Google adapters，业务层不泄漏 provider response 类型。
-- 密钥经 keyring，降级到权限为 0600 的本地文件；密钥不得进日志或持久化记录。
+- provider profile 使用稳定 `provider_id`；普通配置保存 `name`、`base_url`、`model_list` 与 `credential_ref`，不得保存明文 `api_key`。密钥以 `provider_id` 为索引优先存入 keyring；仅在 keyring 不可用时降级到同一应用配置目录下独立的 secrets 文件，并在 POSIX 平台创建或校验为 0600、向用户明示降级。普通配置导出、日志、错误消息、Analysis 与 ExtractionRun 均不得包含密钥。
 - `analysis_v1.md` 按 prompt contract 组装，`output_language` 与 UI 语言分离，译文明确标为参考。
 - 按 heading id → 段落边界 → `fallback_single` 切分，写入 section revision/origin metadata；fallback 是成功降级。
 - 追问只执行 `section_ops.add`；revise/merge 保留 schema 但拒绝执行。

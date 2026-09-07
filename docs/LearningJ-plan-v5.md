@@ -86,7 +86,7 @@ C 类在路线图上作为 B 类的留存阶段处理（ADR-001），但这不�
 
 结论：**它不是学习内容的划分，而是当初为了标识符空间做的划分**（词有 lemma ID，语法点没有），被误当成了前者。它漏掉了惯用搭配（気にする、腹が立つ）、缩约与音变形（〜ちゃう、〜とく）、语域与敬语级别等。
 
-在 ADR-005 的两层模型下这个问题被彻底解决：语法与词汇在 KnowledgePoint 层根本不需要区分，二者的自然键都是形态规范锚点串。区分只以**多值标签**形式存在（ADR-021），用于筛选与展示，不用于身份判定。
+在 ADR-005 的两层模型与 ADR-034 的模式语言下，这个问题被彻底解决：`anchor_shape` 是 payload 形状判别式（pattern / lexical / entity / opaque），不是学习内容划分。GRAMMAR / MWE / USAGE 的差异是生产性程度，落在 ADR-021 的多值标签中，不进判别式。
 
 ---
 
@@ -144,6 +144,22 @@ C 类在路线图上作为 B 类的留存阶段处理（ADR-001），但这不�
 **Sidecar**：分句与分词结果以 messagepack 随素材持久化，必须携带内容 hash 与三个版本戳。`analyzer_dict_version` 是 ADR-018 的硬性要求：Lexeme 的自然键建立在 `normalized_form` 之上，而它会随 SudachiDict 更新漂移，不记版本则第一次升级词典就是全量脏数据。释义词典另以 `dictionary_source_id` / `dictionary_source_version` 记录，不与分析器版本混用。进入系统的文本统一使用 NFC、LF 和 Unicode code point 偏移；前端渲染时由适配层转换为浏览器所需的 UTF-16 偏移。完整文本规范化契约见 `data-model.md` §0。
 
 内容 hash 的另一个用途是留口：将来 sidecar 可脱离本机复用（同一文件、他人已分析过的可直接取用）。零成本，现在不做。
+
+### 原始素材保留策略
+
+素材导入采用“原始资源、规范化文本、派生索引、用户状态”分层。
+
+- 视频素材默认行为是只保存外部 locator，不复制视频本体。
+- 视频素材、音频与文本素材（包括 EPUB）允许用户选择：
+  - `external_reference`：只保存用户提供的 locator；
+  - `managed_copy`：复制一份不可变原始文件到应用管理目录。
+- 是否复制必须由用户明确选择，或由产品根据文件大小给出可确认的默认建议；导入界面必须说明两种模式的后果。
+- `managed_copy` 只表示原始资源由应用管理，不表示修改原始文件。原始文件始终保持不可变。
+- `external_reference` 模式下，用户移动或删除原始文件可能导致原始布局、图片、CSS、字体和媒体资源不可用；已生成的规范化 Sentence 与 sidecar 可以继续保留。
+- `managed_copy` 模式下，后续阅读器可以从原始 EPUB/音频资源中恢复更接近原始布局的展示；派生 sidecar 仍然可以独立重建。
+- `Material.content_hash` 继续表示规范化 logical text 的 hash，不改作原始文件 hash。
+- 如需要校验原始文件，应额外记录 `source_sha256`；不得用原始 EPUB 二进制 hash 替换规范化文本 hash。
+- `copy_stored` 必须反映真实状态，不能因为导入接口暂未实现复制而对所有素材固定写入 `false`。
 
 ---
 
@@ -425,6 +441,8 @@ TTS 在此有一项原声无法替代的价值：**原声只能给出素材里�
 10. **`salience` 与 `retention` 两个枚举字段**
 11. **Sentence 的锚点两段式形状**（`anchor_type` + `anchor_payload`）
 12. 解析视图与复习组件独立于 shell（ADR-023）
+13. **KnowledgePoint 的锚点两段式形状**（`anchor_shape` + `anchor_payload` → 派生 `anchor`）
+14. **Occurrence 的 `spans` 为有序数组**（物理上 `occurrence_spans` 关联表带 `ordinal`）
 
 ---
 
@@ -434,13 +452,16 @@ TTS 在此有一项原声无法替代的价值：**原声只能给出素材里�
 
 1. **解析模块的默认组合**——已给临时值（`prompt-contracts.md` §1），待 `spike-checklist.md` 实验 5 回写
 2. **依存分析结果的持久化与否**——暂定懒生成、只缓存，待性能数据
-3. **后端的分发方式**（本地服务 / 打包发行版 / 托管）——见 ADR-020，直接决定 A 类可达时间。**附带一项小事**：本地形态下 BYOK 密钥的存储位置与是否加密，第一天就该定
-4. **形态规范的具体写法**——已给临时规范（`prompt-contracts.md` §7.1），待 `spike-checklist.md` 实验 2 产出决策表；应在产生大量持久化 KP 前完成，若提前使用临时规范，必须保留可迁移或可重算路径
+3. **后端的分发方式**（本地服务 / 打包发行版 / 托管）——见 ADR-020，直接决定 A 类可达时间。本地运行形态的 BYOK provider 配置与密钥存储机制已经确定，不随本项重开；若选择托管后端，服务端密钥托管另作安全决策
+4. **模式语言的枚举覆盖率与边界**——category / form 的六 + 八是否够用，由 `model_chosen` 的 opaque 率决定是否扩充；`Clause` 与 `V` 的边界、`none` form 的语义（改名为 `unrestricted` 或保持但明确文档）在 `grammar_enums_v1.yaml` 中定义；已给临时规范（`prompt-contracts.md` §7.1），待 `spike-checklist.md` 实验 2 产出决策表
 5. **平台其他盈利点、流量变现**——保持已有提议，暂不讨论
 6. **算法层解析的能力边界**——词向量、相关性、检索、推测等，另行探索
 7. **AI 解析之外的 KP 构造路径**——实质能力需求是「用户在 Span 上发起一次显式指认」，内容来源待定。可能方向：对该 Span 的一次微型解析。**不阻塞 MVP**
 8. **依存分析是否进 MVP**——ADR-025 仍为提议状态，需按「GiNZA 是否进 MVP」的口径拍板
 9. **B 类的准入路线**——自建播放器（需达到 asbplayer 水准）vs 承接 asbplayer / yomitan 已有工作流的下游（接住其导出的句子与截图，专注解析、沉淀、再遇）。后者砍掉大量工作且与「互操作是准入条件」自洽，代价是失去阅读体验控制且 A 类不可用。**尚未讨论**
 10. **BYOK 未配置时的降级路径**——AI 解析与抽取暂不可用，但完整浏览、算法查词／词形分析、Annotation 与 KnownEvidence 仍可用；需在 onboarding 设计时正面处理何时提示配置以及如何从降级路径恢复
+11. **跨语言扩展的命名空间**——当前 `pattern_grammar_version` 默认日语（格式 `0.1`）；若支持其他语言，改为 `{lang}_{version}`（如 `ja_0.1` / `zh_0.1`）。MVP 不涉及。
 
 > 原第 8 条（素材类型范围）已结：MVP 为字幕 + 纯文本 + EPUB，PDF 转纯文本降级。EPUB 锚点 payload 已定，见 `data-model.md` §8.2。
+>
+> 原附属于第 3 条的本地 BYOK 密钥存储问题已结：普通 provider 配置与秘密物理分离，系统 keyring 优先，独立 0600 secrets 文件为显式降级。见 ADR-020。
