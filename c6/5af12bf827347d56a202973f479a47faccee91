@@ -1,0 +1,39 @@
+docs/data-model.md
+  h_c735ec7f46d14b 31,36,54,127,135-145,147-160,162-190,192,194,196-200,641-643,649-656,658,660,662,664-692,694,696
+  h_c735ec7f46d14b 5-6,122,129-131,161,191,193,201,225,447,549-551,567,611-612,619,628,644-645,657,659,661,663,697-699,701
+AGENTS.md
+  h_c735ec7f46d14b 8-12
+DESIGN.md
+  h_c735ec7f46d14b 5-6,64-73,133
+docs/LearningJ-plan-v5.md
+  h_c735ec7f46d14b 4,98-102,118,140,142,163-169
+docs/adr.md
+  h_c735ec7f46d14b 7,16,21,26,50
+docs/adr/006-known-evidence.md
+  h_c735ec7f46d14b 9,13,17
+docs/adr/011-interop-evidence.md
+  h_c735ec7f46d14b 3-4,14,18
+docs/adr/016-tts-evidence.md
+  h_c735ec7f46d14b 3-4,10,18
+docs/adr/039-history-protection.md
+  h_c735ec7f46d14b 16,20
+docs/adr/040-evidence-and-query-projections.md
+  h_c735ec7f46d14b 1-41
+docs/mvp-tech-and-phases.md
+  h_c735ec7f46d14b 1,3-5,7,11,13-24,28-87,89-97,99,101,103,105,107,109,111,113,115-120,122,124,126,128,130,132,134-139,141,143,145,147,149,151-155,157,159,161,163,165,167,169,171-176,178,180,182,184,186,188,190,192-196,198,200,202,204,206,208,210,212-217,219,221,223,225,227,229-232,234,236,238,240-309
+docs/prompt-contracts.md
+  h_c735ec7f46d14b 4,23-24,107-114,177,195
+docs/spike-checklist.md
+  h_c735ec7f46d14b 4,96-125,128
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "c65af12bf827347d56a202973f479a47faccee91",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
