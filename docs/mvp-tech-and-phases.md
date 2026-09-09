@@ -1,221 +1,309 @@
-# LearningJ MVP 第一阶段：技术选型与阶段划分
+# LearningJ MVP 第一阶段：技术选型与校准后的阶段计划
 
-> 对应第一阶段链路：
-> 纯文本/字幕导入 → Sentence + sidecar → 单句算法解析 → 单句 AI 解析文档 → 一次追问 → 用户反馈/可选 note_ops → 用户触发抽取 → Span 定位 + AnalysisSection → KnowledgePoint + Occurrence → triage → 一个 ReviewItem → 复习视图回看
+> **计划基线（2026-09-09）：** 本文已经按最新核心契约、当前代码和反馈校准。现行行为以 [产品规划](LearningJ-plan-v5.md)、[数据模型](data-model.md)、[模型与 Agent 契约](prompt-contracts.md)、[ADR 索引](adr.md) 和 [DESIGN](../DESIGN.md) 为准；本文负责排列实施顺序，不复制第二份字段或状态机定义。
+>
+> 当前仓库处于“旧 P0/P1 实现切片已存在、当前契约迁移尚未完成”的状态。旧阶段验收通过不等于当前 P0/P1 完成；本文的阶段状态以 §2 为准。
 
----
-
-## 一、技术选型
+## 1. 技术选型与贯穿约束
 
 ### 1.1 后端
 
-| 层 | 选型 | 理由 |
+| 层 | 选型 | 约束 |
 |---|---|---|
-| 语言/框架 | Python 3.11 + FastAPI | 本地后端路线已定；最终分发形态仍见 ADR-020 未决项。SudachiPy 生态在此，LLM 调用同侧使元数据只有一个记录点 |
-| 包管理 | uv | 沿用 |
-| 数据库 | SQLite（WAL 模式） | 单用户本地数据集（`data-model.md` §0）。KP 层 \(10^2\)–\(10^3\)、Lexeme 层 \(10^4\)–\(10^5\)，SQLite 绰绰有余；且与 ADR-020「本地后端」路线自洽 |
-| ORM / 迁移 | SQLAlchemy 2.0 + Alembic | **Alembic 第一天就要在**。不可推迟项集中在数据层，没有迁移工具则每次补字段都是手工重建 |
-| 契约建模 | Pydantic v2 | 抽取 schema、note_ops、section_ops 全部建成 Pydantic 模型，直接复用为 JSON Schema 校验器 |
-| 分词 | SudachiPy + SudachiDict-core，**A mode** | ADR-018 已定 |
-| 词典释义 | **Yomitan ZIP 第一等导入格式**；内部使用 canonical dictionary model + 本地检索索引 | 用户自行导入、多词典并存、富文本定义与版权边界都与 Yomitan 生态一致。MVP 不实现原始 JMdict XML parser；未来通过 `DictionaryImporter` adapter 增加 |
-| Sidecar 序列化 | msgpack（`msgpack` 包） | plan §4 已定 |
-| LLM 调用 | **自有薄 provider 层 + 官方 SDK adapters**；OpenAI-compatible 使用 `openai`，Anthropic / Google 为可选 adapter，特殊端点保留 `httpx` fallback | 业务层只依赖内部 `ChatResult` 契约，保留 `provider` / `model` / `prompt_version` / usage / raw / request_id 审计字段；不引入 LangChain / LlamaIndex，不把任一家 SDK 的 response 类型泄漏到业务层 |
-| 结构化输出 | prompt 要求纯 JSON → `json-repair` 兜一层 → Pydantic 校验 → 失败按 §5.5 重跑（上限 2 次） | ADR-017 决策四：不依赖 tool calling / provider 的 structured output，弱模型也要能跑 |
-| 模糊检索（top-k 候选） | `rapidfuzz` 内存匹配 anchor + alias 全表 | KP 规模 \(10^3\) 级，全表加载做模糊匹配是毫秒级。不需要向量库、不需要额外基础设施 |
-| SRS 算法 | `py-fsrs`（FSRS-5） | 现成、优于 SM-2、`ReviewState` 字段可直接对齐 FSRS 的 Card 形状 |
-| Provider 配置与密钥 | 普通配置按 provider profile 保存；密钥优先进入 `keyring`，降级到同一应用配置目录下独立的 0600 secrets 文件并明示 | `name` / `base_url` / `model_list` 可持久化、导出和同步；主配置只保存稳定 `provider_id` 与 `credential_ref`，不得保存明文 `api_key`。keyring 不可用时才启用 secrets 文件，且日志、Analysis、ExtractionRun、诊断导出均不得包含密钥 |
-| 测试 | pytest + `hypothesis` | 不变量清单第 9 节要写成断言，property-based 测试是天然载体 |
-
-**明确不引入**：LangChain、LlamaIndex、Celery（第一阶段无批量，`asyncio` + 一张 `jobs` 表足够）、Redis、Postgres、向量数据库、GiNZA（ADR-025 建议改暂缓）。官方 provider SDK 只作为隔离在 `llm/` 内的 adapter；不作为业务抽象。
+| 语言／框架 | Python 3.11 + FastAPI | 本地后端路线已定，分发形态仍按 ADR-020 的未决项处理 |
+| 包管理 | uv | 沿用现有后端基线 |
+| 数据库 | SQLite（WAL） | 单用户本地数据集；不以实体数量推断性能，必须落实稀疏索引、增量摘要、短事务和版本发布 |
+| ORM／迁移 | SQLAlchemy 2.0 + Alembic | 当前旧 schema 只能前滚迁移，不能删除重建或清空历史 |
+| 契约建模 | Pydantic v2 | API、Agent 工具、提取输入输出和 JSON Schema 共享模型 |
+| 分词 | SudachiPy + SudachiDict-core，A mode | Lexeme ID 由规范化形／词性／读音确定性派生；分析器词典版本独立保存 |
+| 词典 | Yomitan ZIP → canonical dictionary model | 业务层不得泄漏 term_bank 等交换格式；定义保留纯文本投影、structured content、资源和来源版本 |
+| Sidecar | msgpack | sidecar 不可变；重分词生成新 ID，不能覆盖被引用版本 |
+| LLM | 自有薄 provider 层 + 官方 SDK adapter | 业务层只依赖内部 ChatResult；秘密不进入普通配置、日志、Analysis 或运行结果 |
+| 结构化输出 | JSON → 必要时 repair → Pydantic 校验 | 不把任一 provider 的 tool calling 当作领域契约 |
+| 模糊召回 | rapidfuzz，有界 top-k | 仅用于 KP 身份候选召回；不在每次页面查询中全表加载 |
+| SRS | py-fsrs（FSRS-5） | ReviewState 是当前投影，ReviewEvent 是追加事实；算法与参数版本可追溯 |
 
 ### 1.2 前端
 
-| 层 | 选型 | 理由 |
+| 层 | 选型 | 约束 |
 |---|---|---|
-| 形态 | **纯 Web SPA，配裸 FastAPI** | ADR-020 分发方式未决，但 B 类可直接跑裸后端。Tauri 打包是独立发行工程，不阻塞第一阶段 |
-| 构建 | Vite + React 18 + TypeScript（strict） | |
-| 包管理 | pnpm | |
-| 服务端状态 | TanStack Query | Analysis 有 `generating` / `ready` 双状态机 + 抽取异步，轮询与缓存失效交给它 |
-| 本地 UI 状态 | Zustand（少量） | 不上 Redux |
-| 路由 | React Router | 第一阶段只有两个 shell 入口，够用 |
-| 样式 | Tailwind + shadcn/ui | 组件源码进仓库、可控、无重型运行时依赖，符合 ADR-023「组件独立实现」的要求 |
-| Markdown 渲染 | react-markdown + remark-gfm | **后端已切分好 section，前端只渲染各 `body_md`**，不需要在前端解析 heading id |
-| 类型同步 | `openapi-typescript` 从 FastAPI 的 OpenAPI 生成 TS 类型 | 契约单一来源在后端 Pydantic |
+| 框架 | Vite + React 18 + TypeScript strict | shell 负责装配，组件只通过 props 和回调工作 |
+| 样式 | Tailwind + shadcn/ui 源码 | 以 DESIGN.md 为唯一视觉与交互依据 |
+| 数据请求 | 后端 OpenAPI 生成类型 + fixture | 不手写与后端平行的 Analysis、Session 或 retention 契约 |
+| 路由／状态 | React Router + 少量 Zustand | 不把会话状态藏在路由或组件 timer 中 |
+| Markdown | react-markdown + remark-gfm | 后端已切好的 body_md 按 section 渲染，前端不重新猜 heading 或 Span |
 
-**前端的两条硬约束（写进 ESLint）**：
+保留两条硬规则：src/components/** 不得依赖 src/shells/**；持久化文本区间使用 code point 和半开区间，前端通过 sliceByCodePoint() 适配，禁止裸 String.prototype.slice() 承担业务偏移。
 
-1. **组件不得 import shell**（ADR-023）。目录分为 `src/components/`（AnalysisDocView、TriagePanel、AggregateCard、ReviewCard、DictionaryPopover、DictionaryDrawer 等独立组件）与 `src/shells/`（reader、review）。用 `eslint-plugin-import` 的 `no-restricted-paths` 禁止 `components/**` 反向依赖 `shells/**`。这条规则本身就是 ADR-023 试金石的自动化形式。
-2. **禁止裸 `String.prototype.slice` 用于句子文本**（审查 A5）。统一走 `sliceByCodePoint(text, start, end)`，内部 `Array.from`。
+### 1.3 数据、执行与写入边界
 
-### 1.3 仓库结构建议
+- 学习队列查询 StudySession，不是 Inbox 实体，也不是内部执行任务队列。
+- 一次会话拥有一份 Analysis 工作文档；当前文档由 AnalysisRevision manifest 指向小节版本。被引用版本不可覆盖。
+- AgentRun、用户可见 AnalysisMessage、AgentToolCall 和工具副作用记录分开；工具写入由统一执行器做版本检查和 (agent_run_id, call_id, input_hash) 幂等。
+- 提取只接受固定、完整的 AnalysisRevision。ExtractionRun 固定输入版本，ExtractionSection 承担本次 kind/Span 映射；不得把旧小节映射套到新正文。
+- SessionConfirmation 记录本次 run 的用户决定。KP 的全局意愿、会话完成、ReviewItem 排程是三个不同维度。
+- KnownEvidence 只面向 Lexeme；查词、阅读、播放、Annotation、SRS 评分不自动写 KE。用户 known/unknown/clear、来源撤回和投影失效必须走明确写路径。
+- ReviewItem 的 active/paused/retired 与 retired_at 按数据模型 §7 表达；reference 是暂停，不是退役。
+- **模型调用不得在数据库事务内执行。** Provider I/O 在事务外；每次持久写入是短事务，携带 expected_revision 或等价版本检查。冲突必须返回给 Agent 刷新，不能长事务锁住 SQLite。
+- 多个会话的生成可以并行排队，但写入争用必须有明确边界：SQLite busy 重试有上限且可取消，持久写入按短事务串行化或有界重试，不依靠内存 asyncio 任务维持业务状态。
 
-```
-backend/
-  src/learningj/
-    domain/          # Pydantic 契约 + 纯函数（Span 定位、切分、对齐）
-    db/              # SQLAlchemy models + Alembic
-    ingest/          # 素材导入、分句、分词、sidecar
-    analysis/        # 第一段生成、追问、section 切分
-    extraction/      # 第二段抽取、Span 定位、KP/Occurrence 建立
-    memory/          # KP 检索注入、两类笔记与槽位校验
-    srs/             # ReviewItem、配额、FSRS
-    llm/             # provider contract + SDK/httpx adapters
-    dictionary/      # Yomitan importer + canonical dictionary model + lookup index
-    api/             # FastAPI routers
-  prompts/           # 版本化的 prompt 模板，文件名即 prompt_version
-  tests/
-    invariants/      # 不变量清单 §9 的九条 + 新增条目
-frontend/
-  src/components/    # 独立组件，不得依赖 shells
-  src/shells/
-  src/lib/
-docs/                # 现有四份 spec，P0 打补丁
-```
+### 1.4 本地持久任务队列
 
-**`prompts/` 目录的一条纪律**：prompt 文本以文件形式版本化，文件名（如 `analysis_v1.md`、`extraction_v1.md`）即写入 `Analysis.prompt_version` / `ExtractionRun.prompt_version` 的值。改 prompt 必须新建文件、不得原地改写——这是「永不原地改写」在 prompt 侧的形式，也是将来批量重抽能对照的前提。
+StudySession 的 preparation、普通多选分别排队和崩溃恢复需要持久任务记录。该队列是内部执行机制，不是产品 Inbox：
 
----
+- 记录任务类型、目标 session/agent run、queued/running/succeeded/failed/cancelled 状态、尝试次数、错误摘要、checkpoint 和版本；
+- bounded concurrency 由配置控制；重启时孤儿 running 任务变为可恢复的 failed/retryable 状态，不能重复提交同一个 revision 或工具副作用；
+- 取消只阻止未提交工作，已提交的用户事实和文档编辑保留；搁置前必须完成或明确取消在途写入；
+- 队列状态、恢复进度、取消和失败原因都能被 API 查询，不能仅存在前端 timer 或内存队列。
 
-## 二、阶段划分
+### 1.5 证据与查询性能的接入点
 
-六个阶段，每个都以**可运行 + 可验收**为边界。P1–P5 各自对应你链路上的一段。
+以下是 [ADR-040](adr/040-evidence-and-query-projections.md) 和 [数据模型 §§2、10–11](data-model.md#22-knownevidence-与用户裁定) 的阶段约束，不是可选的后期缓存工作：
 
-### P0　契约冻结与骨架（0.5–1 天）
+| 接入时点 | 同步交付 |
+|---|---|
+| P1 内容索引／重分词 | 不可变 sidecar 身份、MaterialLexemeCount 的正反向稀疏索引、完整版本发布和重建边界 |
+| P2 词汇判断／查词 | KE、词形／Lexeme 作用域裁定、撤回、按词摘要、写后读一致；查词不产生 KE |
+| 已知词表独立切片 | KnownImportRun/Entry、原始输入复用、规则版本幂等消解、未消解反馈、暂存／原子发布／批量撤回 |
+| P3 Agent 上下文 | 只批量读取当前句相关 Lexeme 的索引和有界摘要，区分讲解、人工裁定、导入支持和 SRS 估计，不自动写判断 |
+| P5 SRS／聚合 | ReviewEvent 资格、ReviewLexemeEligibility、带 as_of 的相关卡片估计；与显式证据覆盖分开 |
+| 每条写路径 | 同事务失效记录、版本检查、暂停／崩溃恢复和幂等重试；重建期间不显示假零或混合代次 |
 
-**做什么**
+实验 11 拆为两个门：P2 结束时做结构性验证，及 P5 结束时做真实规模端到端验证。前者提前证伪查询形状，后者才测预算、批大小和最终缓存策略；未完成对应实测时不宣称性能达标。
 
-1. 把审查文档 A1–A5 的补丁写回 `data-model.md` 与 `prompt-contracts.md`；
-2. 决定并写下：SQLite、Span 独立表形状、code point 约定、BYOK 密钥存储、ExtractionRun 实体（B2）、词典来源模型与 `analyzer_dict_version` / `dictionary_source_version` 的命名空间；
-3. 建后端骨架：uv 项目、FastAPI app、SQLAlchemy base、Alembic 初始 migration（**包含全部实体，即使 P1 只用到一部分**），包括 DictionarySource / DictionaryEntry / Definition / Asset / ImportRun；
-4. 建前端骨架：Vite + React + TS + Tailwind + ESLint 两条硬规则；
-5. `tests/invariants/` 建立，把不变量清单十六条写成空壳测试（`pytest.mark.xfail`），后续阶段逐条点亮。
+### 1.6 Prompt、备份、导出与迁移纪律
 
-**验收**：
+- prompt 是版本化产物，新增 analysis_v1.md、extraction_v1.md 等文件，禁止原地改写既有版本。
+- schema 迁移从当前旧库前滚；不得用删除重建、清空历史或“把旧字段当新状态”规避迁移债。
+- 每次迁移前自动生成带 schema/应用版本和时间戳的数据库备份，并在回归样本上验证备份可打开；迁移失败保留备份和诊断。
+- P1/P2 提供用户可触发的全库快照导出：包含数据库文件或等价逻辑快照、契约/schema 版本、sidecar/资源清单和导出时间；恢复验证在隔离数据库执行，不把导出与 Anki 外部发送混为一谈。
+- 自动处理不得覆盖用户决定；解析版本、提取结果、Occurrence、KnownEvidence 和 ReviewEvent 的历史引用必须保留。
+- 阶段任务包是交接材料，不是契约来源。任务包必须先同步本文和核心契约，才可派发；当前任务包的观察结果见 §6。
 
-1. `alembic upgrade head` 建出全部表；
-2. 不变量测试全部以 xfail 状态存在；
-3. 前端 `pnpm dev` 起得来且 ESLint 规则能拦住一次故意的反向 import；
-4. Occurrence 的 `occurrence_spans` 关联表支持有序数组：写入一条带两个 Span 的测试 Occurrence（`ordinal` 分别为 0 和 1），能正确读回且顺序保持；
-5. 不变量测试骨架包含 §9 全部 16 条（含修订后的 12-16），全部标记为 `pytest.mark.xfail`；
-6. KnowledgePoint 表包含 `anchor_shape` / `anchor_payload` / `pattern_grammar_version` / `opaque_reason` / `zero_slot_lexeme_check` 字段；
-7. ExtractionRun 表包含 `invalid_patterns` / `unresolved_patterns` / `opaque_count` 字段。
+## 2. 现状基线与重新排期
 
-**为什么迁移一次建全表**：不可推迟项的定义就是「后补代价是全量数据迁移」。第一天把字段全建出来（哪怕暂时不写入）比分五次加字段便宜得多。
+### 2.1 已核对的代码现状
 
----
+| 范围 | 当前事实 | 按本计划的判断 |
+|---|---|---|
+| 后端素材链 | txt/srt/vtt/epub ingest、NFC/LF、code point 分句、Sudachi A mode、sidecar、Lexeme 幂等，以及 materials/sentences/sidecar API 已存在 | 旧 P0/P1 的实现切片可复用；当前 P1 的内容索引、版本发布、备份导出和 OpenAPI fixture 仍欠交付 |
+| 后端 schema | 现有 analyses、extraction_runs、analysis_sections、analysis_messages、review_items 等旧契约表；缺当前会话、文档 manifest、AgentRun、ExtractionSection 和 ReviewEvent 等阶段实体，ReviewItem 也缺新的 status 语义 | 当前 P0 只做既有表拆债和迁移工具链；新实体 DDL 随实际使用它的阶段落地 |
+| 前端 | Vite/React/TS/Tailwind、素材和句子浏览及 code point 规则存在；MaterialWorkspace 还内嵌旧 AnalysisPanel，analysis.ts 调用后端不存在的分析／追问／抽取／retention 端点 | 前端基础可保留；旧 AI 原型不得作为新 Study 资产或完成证据，应删除／隔离 |
+| P2 | 没有算法解析、Yomitan importer、Annotation 或词汇判断入口 | 未开始 |
+| P3 | 没有 provider、版本化 analysis prompt、StudySession、持久生成队列或 Agent 执行器 | 未开始 |
+| P4 | 没有固定 revision 提取、ExtractionSection、KP/Occurrence 写入和 SessionConfirmation | 未开始；拆为 P4a/P4b，实验 2 在中间运行 |
+| P5 | 没有 ReviewEvent、FSRS、资格摘要、独立聚合查询或 Anki 导出 | 未开始；实验 11 的规模验证在本阶段末 |
 
-### P1　素材导入 → Sentence + Sidecar
+### 2.2 当前执行顺序
 
-**链路对应**：纯文本/字幕导入 → Sentence + sidecar
+旧代码的“P0→P1”标签不能作为新的依赖图。当前执行顺序是：
 
-**做什么**
+P0 契约迁移与基线修复 → P1 内容索引、素材浏览与快照导出 → P2 算法阅读器、词典与 Lexeme 证据入口 → P3a StudySession、持久队列、初始生成与只读 Study → P3b Agent 编辑与上下文执行器 → P4a 提取骨架、Lexical/Opaque 产物与种子库 → 实验 2 → P4b Pattern 严格校验与本次确认 → P5 SRS、ReviewEvent、知识聚合、复习与 Anki 导出。
 
-- 导入 `.txt` 与 `.srt`/`.vtt`，产出 Material（含 `title`、`content_hash`、`locator`、`kind`、`copy_stored`）；EPUB 仍属 MVP 范围，但其导入与 locator 适配需在 P1 的独立验收项中明确，不得默认为纯文本导入已经覆盖；
-- 分句：字幕按 cue 边界（一条 cue 一个 Sentence，`anchor_type = subtitle`）；纯文本按句末标点 + 引号/括号配对（`anchor_type = plain_text`）；
-- SudachiPy A mode 分词 → Sidecar（msgpack，带三个版本戳）；
-- Lexeme 表写入：`lexeme_id` 由三元组确定性派生，`first_seen_analyzer_dict_version` 必填；释义来源版本独立记录在 DictionarySource / lookup 结果中。
+P2 结束时运行实验 11a；P5 结束时运行实验 11b。已知词表导入是独立切片，可在 P2 之后并行，但不得阻塞阅读和词汇判断，也不得与 Yomitan 释义导入混为一谈。条件式的 GiNZA/依存分析不属于本计划；若进入 MVP，另排独立切片，不改变 P1–P5 依赖图。
 
-**验收**
+## 3. 阶段定义与验收边界
 
-1. 不变量 5 点亮（任何带三元组的记录必有非空 `analyzer_dict_version`）；
-2. **素材类型无关性测试**（plan §3 明确要求写成测试）：同一段文本分别以 `.txt` 与构造的 `.srt` 导入，除 `time_start/time_end` 与 `anchor_*` 外，下游可见的 Sentence 序列完全一致；
-3. `lexeme_id` 的确定性：同一句导入两次产生同一组 `lexeme_id`；
-4. 含 BMP 外字符（`𠮟られた`）的文本导入后，偏移与切片正确。
+每个阶段以“可运行 + 可验收 + 能交给下一阶段的 Public contract”为完成条件。新实体的 DDL 跟随首次真实使用它的阶段；旧任务包中的冲突条目不具有效力。
 
----
+### P0　契约迁移与基线修复
 
-### P2　单句算法解析 + 阅读器最小壳
+**目标：** 拆除旧实现的契约负债，建立安全前滚、备份、OpenAPI/fixture 和不变量验证基线；不提前创建尚未有真实使用场景的新领域表。
 
-**链路对应**：单句算法解析
+**必须完成：**
 
-**做什么**
+1. 停止旧 Analysis 上 session_closed、turn_count、extraction_status、extraction_trigger 等第二份状态机参与新的领域读写；为已有历史保留兼容读取/迁移说明，能安全移除的旧字段通过前滚迁移处理，不能无损映射的内容报告而不猜测。
+2. 修复当前既有表的约束：ReviewItem 的 status/retired_at 语义先在现有表和迁移工具中建立；ExtractionRun.analysis_revision_id 作为兼容迁移字段保留，最终外键约束在 AnalysisRevision 随 P3a/P4a 落地时完成，不用 P0 创建空的 AnalysisRevision 表。
+3. 建立迁移开发规范、迁移前自动备份、旧库回归样本、隔离恢复检查和失败诊断；空库及当前旧库均以前滚方式验证。
+4. 统一 Pydantic/API 模型与 OpenAPI 生成入口，提供前端可锁定的素材 fixture。不存在的分析端点不能继续被前端原型调用。
+5. 移除或隔离 analysis.ts、内嵌旧 AnalysisPanel 及其不存在端点调用；不把它改名后当作新 Study 实现。保留素材浏览的独立组件和 shell 边界。
+6. 将 data-model §9 当前 1–25 条不变量映射到测试入口，重写旧 xfail 的语义；不把旧数量或“表存在”当作语义完成证明。
 
-- 后端接口：`GET /sentences/{id}/analysis/algorithmic` → 分词序列、注音（读み）、每个 token 的词典候选释义（带 source/version provenance）；
-- Yomitan ZIP 导入脚本 + canonical dictionary model + 精确查找与 FTS5 索引；定义同时保留纯文本投影与 structured content；
-- 前端阅读器 shell 最小形态：左半屏句子列表、点击句子展开算法解析、右半屏解析视图（此阶段为空壳）；
-- **UI 区分来源**（ADR-009）：算法结果与将来的模型结果必须有视觉区分，此阶段先把「算法区」的样式语言定下来。
+**验收：** 迁移前备份可打开且包含版本标记；空库和旧库升级成功；新 API 不再暴露旧第二状态机作为权威；ReviewItem 当前约束测试通过；OpenAPI/fixture 生成可复现；前端 lint/build/test 通过且不请求不存在的 AI 端点；未实现不变量明确标为待点亮。P0 不验收未来空表的 introspect。
 
-**验收**：无 BYOK 配置时本阶段全部功能可用（未决 10 的降级路径）；注音与分词结果与 SudachiPy 直接输出逐 token 一致；未导入词典时仍能浏览和查看形态结果，导入词典后定义显示来源与版本。
+**Public contract：** 前滚迁移规范、备份/恢复检查、OpenAPI 生成命令、素材 fixture、旧状态兼容策略、当前不变量测试入口。
 
-**Yomitan 导入安全边界**：ZIP 路径不得穿越目标目录；限制压缩包与解压后大小、文件数量；未知 schema、重复文件和损坏资源必须给出可定位错误或警告；同一 archive hash 重复导入必须幂等；版权词典只允许用户自行导入，程序不随包分发具体词典内容。
+**不在 P0：** 不创建 StudySession、AnalysisRevision、AgentRun、ExtractionSection 或 ReviewEvent 等新领域表；不实现 LLM、Yomitan、算法词典、提取、ReviewItem 排程或视觉页面。
 
----
+### P1　素材导入、Sidecar、内容索引与快照导出
 
-### P3　单句 AI 解析文档 + 一次追问 + note_ops
+**目标：** 在保留现有 ingest 主链的基础上，完成当前素材数据模型、不可变 sidecar 身份、材料词频查询底座和用户可恢复的快照导出。
 
-**链路对应**：单句 AI 解析文档 → 一次追问 → 用户反馈/可选 note_ops
+**必须完成：**
 
-**做什么**
+- txt/srt/vtt/epub 的规范化、分句、定位、时间戳、EPUB spine 锚点、Sudachi A mode 和 Lexeme 确定性继续由同一素材无关链路处理；PDF 只走纯文本降级。
+- Material/Sidecar 补齐 storage_mode、source_sha256、current_sidecar_id 等当前契约需要的版本和资源边界；重分词不得覆盖被引用 sidecar。
+- 建立 MaterialLexemeCount 正向／反向稀疏索引。新 sidecar 的完整词频和索引通过校验后与 current 指针同次发布；导入、重建、取消、崩溃恢复和代次切换可观察且幂等。
+- 提供 materials、sentences、sidecar 和 fixture 的 OpenAPI 类型；素材列表、句子列表、加载／空／错误状态保持可用，未配置 BYOK 不影响浏览。
+- 提供全库快照导出和隔离恢复检查。导出包含 schema/契约版本、资源与 sidecar 清单及时间戳；不承诺已实现 Anki 外部发送。
+- 前端只做 Library/reader 的素材浏览和定位准备，不实现 AI 学习、候选、复习或假造阅读活动统计。
 
-- LLM provider 层 + 密钥管理；
-- `prompts/analysis_v1.md`：按 `prompt-contracts.md` §2.1 组装输入（含 `output_language`、九个模块开关、`style_free_text`、前后文、译文标注为参考、`user_question`）；
-- 记忆注入（§4.1/§4.2）：当前句 lexeme 序列 → 匹配已有 KP 的 `lexical_anchors` → 注入 anchor + `Occurrence.brief` + SRS 状态。**不按 `retention` 过滤**；两类笔记全量注入；
-- 后端 section 切分（§3.5 三级降级）→ AnalysisSection（`kind` 此时为 null，`heading_path` 与 `split_strategy` 写入）；
-- 追问一轮：`section_ops` 只实现 `add`（`revise` / `merge` 排除，schema 保留）；`note_ops` 由后端按槽位上限校验后落库；
-- 前端 AnalysisDocView 组件：小节化渲染 + 一次追问输入框 + note 写回的可见反馈。
+**验收：** 现有 txt/srt/vtt/epub、幂等、Unicode code point、素材类型无关性测试继续通过；材料词频与全量重建一致；查询响应携带 sidecar_generation_id，且同一响应内所有词频数据 generation 相同；重建期间旧代次持续可读，指针原子切换后才读新代次；fixture 能端到端还原 txt/srt 句子列表；导出可在隔离库恢复；组件无 shell 反向依赖。
 
-**验收**
+**Public contract：** Material/Sentence/Sidecar API、不可变 sidecar 版本、sidecar_generation_id、材料词频索引查询、素材浏览 fixture、快照导出/恢复格式。
 
-1. `turn_count` 默认为 1；追问后为 2；
-2. 槽位写满后 `add` 被后端拒绝，模型必须改用 `replace`/`merge`——**写一条测试把槽位填满再触发写回**（不变量 7 点亮，且必须由写入路径保证，不由清理任务）；
-3. 切分失败时降级为单一小节（`split_strategy = fallback_single`）是**通过**而非失败；
-4. 未配置 BYOK 时本阶段入口置灰，P1/P2 功能不受影响。
+### P2　算法阅读器、Yomitan 与 Lexeme 证据入口
 
-**风险点**：section 切分是这一阶段唯一有不确定性的部分。建议先用三五个真实模型输出（`references/` 里的实录）离线跑切分器，把三级降级的触发率记下来，再接前端。
+**目标：** 交付不依赖 BYOK 的算法阅读能力，并把“认识／不认识”落实为独立的 Lexeme 证据写路径。
 
----
+**必须完成：**
 
-### P4　用户触发抽取 → Span 定位 → KP + Occurrence → triage
+- GET /sentences/{id}/analysis/algorithmic 或等价当前 API：token 表层、规范化形、POS、reading、code point 区间、sidecar/analyzer 版本和词典来源/version provenance。
+- Yomitan ZIP 安全导入、archive hash 幂等、canonical dictionary model、精确查找/FTS5、结构化定义降级；词典导入不创建 KP。
+- Annotation 独立保存 Span，支持跨句有序范围、筛选和跳回原文；查词、Annotation、阅读和播放不创建 KP、ReviewItem 或 KE。
+- 提供 Lexeme 级和词形级 known/unknown/clear 当前裁定、user_asserted KE、来源撤回、写后读一致和投影失效；unknown 的优先级、clear 不复活旧断言等按 ADR-040 执行。
+- 前端阅读器按 DESIGN 支持 token 点击/键盘查词、来源区分、无词典/无结果/错误/响应式状态；没有 BYOK 时算法区仍可用。
 
-**链路对应**：用户触发抽取 → Span 定位 + AnalysisSection → KnowledgePoint + Occurrence → triage
+**测试边界：** P2 的“unknown 压过导入与 SRS”用测试夹具直接构造合成的 import/SRS 事实，验证裁定优先级；不因此提前实现 KnownImportRun 或 ReviewEvent 生产者。实际已知词表导入是独立切片，实际 SRS 资格在 P5 再做端到端验证。
 
-**做什么**
+**独立切片：** Anki/jpdb 已知词表导入可在本阶段后并行实现 KnownImportRun/Entry。它必须有版本化幂等消解、未发布暂存、未消解报告和撤回边界；普通牌组不得自动视为已知词表。
 
-- `prompts/extraction_v1.md`：**必须自足**（ADR-017 决策六），续轮只是快路径。输入含解析全文 + 形态规范 §7.1 + top-k 候选（k=10）；
-- 抽取执行两条路径都实现：续轮与独立调用，用同一个 prompt 文件；
-- `section_hint` → `heading_path` 匹配，回填 AnalysisSection 的 `kind` 与 `spans`；
-- Span 定位：`find_all` → 0/1/>1 三分支（A2 修订后的语义）；
-- KP upsert：`anchor` 唯一约束 + 冲突重试收敛（不变量 11）；Occurrence 无条件写入、永不去重；
-- 失败检测 §5.5 三条硬条件 → 自动重跑抽取（不重新生成解析），上限 2 次；三条弱信号 → 记入 ExtractionRun，UI 提示；
-- triage 页：逐条决定 `srs` / `reference`，**提交时一律写 `retention_set_by = user`**（审查 A4）。
+**验收：** token 与 Sudachi A mode 逐 token 对拍；词典来源和版本可见；ZIP 安全/幂等通过；Annotation/查词不产生 KP 或 KE；误点撤回、合成来源下的 unknown 优先级、clear 不复活旧人工 KE、词形/Lexeme 作用域和增量摘要测试通过；reader fixture 不依赖 provider。P2 末尾完成实验 11a：查询计划无全扫描、目标集合批量读取、代次可见性和增量/全量一致性通过，但不把 11a 当最终性能预算。
 
-**验收**
+**Public contract：** algorithmic response、dictionary provenance、Annotation API、Lexeme evidence/decision API、按词摘要查询、sidecar generation 约束及 reader fixtures。
 
-1. 不变量 1、2、6、8、9、10、11 点亮；
-2. **Analysis 与 Occurrence 分离验收**：删掉全部 Occurrence 后重跑抽取，能重建且不触碰 Analysis 正文；
-3. **独立调用路径验收**：清空会话历史、只喂「解析全文 + 规范 + 候选 KP」，抽取结果与续轮路径在 anchor 层面可比（这条是批量重抽的免费路径，必须现在就验）；
-4. 构造一个 surface 在句中出现两次的用例，确认产生两个 `ambiguous` Span 且不变量 6 仍成立；
-5. 构造一个 surface 找不到的用例，确认**不产生 Span**、进 `unresolved_surfaces`、且不触发全量重跑（因为不是「全部」找不到）。
+### P3a　StudySession、持久队列、初始生成与只读 Study
 
-**这一阶段是整个 MVP 风险最集中的地方**——ADR-017 代价 1 明写「抽取成为解析到知识点的唯一通道，规范层的质量直接决定沉淀质量」。建议在此之前完成实验 2（审查 B6）。
+**目标：** 先交付真正可运行的学习会话和 AI 解析价值；对话区先支持只读问答，工具编辑不与初始生成绑在同一全有或全无交付中。
 
----
+**必须完成：**
 
-### P5　ReviewItem + 复习视图 + 聚合视图浮层
+- 落地 StudySession、source sentence 关联、phase/status、return_position 和当前运行指针。创建即 active + preparation，可从素材卡、阅读器和全局队列打开；支持 parked 与学习记录查询。
+- 落地内部持久任务队列：queued/running/failed/cancelled/succeeded、bounded concurrency、checkpoint、busy 重试、取消和重启孤儿恢复。普通多选创建多个 interactive 单句会话，分别排队；automatic 只能显式选择，不能由多选或默认值推断。
+- 落地 provider profile/密钥边界、provider 能力检测和只读降级；没有 BYOK 时 reader/P1/P2 仍可用，Study 明确不可用或失败，不伪装为已生成。
+- 落地版本化 analysis_v1.md、初始完整解析、三级 section 切分和降级。初始提交形成首个 AnalysisRevision 与 manifest；流式草稿不可提取。
+- Study 主区渲染当前文档，右侧对话支持只读问答；AnalysisMessage 保存用户原始消息和可见回复，不把自动注入的文档正文写回用户消息。导航、切换句子、返回素材或关闭应用不结束讨论、不自动提取。
+- 新实体只落地实际需要的最小字段；P3b 使用工具循环后再以迁移扩展 AgentRun/AnalysisMessage 运行审计字段，不把未经使用的未来形状当作 P0 基线。
 
-**链路对应**：一个 ReviewItem → 复习视图回看
+**搁置验收：** 运行中的生成/问答写入必须先完成或明确取消，之后才能 parked；parked 从默认 active 队列消失但可从学习记录恢复到保存阶段。重启后任务状态可解释，不能留下隐藏后台写入。
 
-**做什么**
+**机器验收：** fake provider 证明模型调用发生在数据库事务外；同一任务重试不重复提交同一首稿；队列重启将孤儿 running 变为可恢复状态；查询响应返回真实 session phase/status、任务进度和 generation，而不是前端 timer 推导。
 
-- ReviewItem 创建：triage 提交后按 `retention = srs` 建立，每 KP 一条，受每日配额控制，待建队列按 `salience` 优先 + 同级 FIFO；
-- FSRS 接入 ReviewState；
-- ReviewCard 组件：正面 = anchor + 例句（Span 高亮）+ 音频（第一阶段纯文本/字幕，音频缺失是常态，**必须能处理缺失**，ADR-016）；背面 = 该 Occurrence 引用的 AnalysisSection（按 `section_id + section_revision` 取）；
-- 复习视图 shell：队列 + ReviewCard；
-- AggregateCard 组件：历次 Occurrence 并置，同时显示两个计数并**分别标注来源**（红线 §10）。
+**不在 P3a：** 文档编辑工具、笔记写工具、ExtractionRun 产物、KP/Occurrence、SessionConfirmation、ReviewItem。
 
-**验收（这是 ADR-023 的试金石，必须当作正式验收项）**
+**Public contract：** StudySession 生命周期和查询、持久任务队列状态/恢复 API、首个 AnalysisRevision、只读问答 API、学习队列/记录 fixture、Study shell props。
 
-1. **复习视图 shell 在不修改任何 `components/**` 文件的前提下装配出来**。用 git diff 验证：P5 中 `src/components/` 下的改动应当只有新增 ReviewCard 与 AggregateCard 本身，不含对 AnalysisDocView / TriagePanel 的修改；
-2. ESLint 的反向依赖规则全程未被 disable；
-3. 聚合视图中「被讲解过 n 次」与「在材料中出现过 m 次」两个数分开显示、各带来源标签、UI 上不存在任何把二者相加或校验的路径；
-4. 不变量 3、4 点亮（含 `retired_at` 修订后的形式）。
+### P3b　Agent 编辑、工具执行器与上下文控制
 
----
+**目标：** 在 P3a 的真实 provider 和持久会话上增加可验证的文档编辑、笔记工具和多轮上下文，而不复制业务写入路径。
 
-## 三、阶段间的三条贯穿纪律
+**必须完成：**
 
-**其一，不变量测试逐阶段点亮，不允许跳过。** `tests/invariants/` 里的 xfail 转 pass 是每个阶段的硬性交付物之一。文档 §9 已经说了「应写成断言或测试，而非依靠自觉」——把它做成 CI 门禁，而不是一份读过就忘的清单。
+- AgentRun、AgentToolCall 和必要运行审计字段随真实工具循环落地；工具以 (agent_run_id, call_id, input_hash) 幂等，结果与副作用记录分离。
+- 文档工具支持添加、替换、删除、移动／合并小节；每次有效编辑新增 AnalysisRevision 和变化的小节版本，携带 expected_revision，过期写入拒绝覆盖。
+- 作品笔记／画像工具沿用同一写入闸门，强制作用域、槽位、长度、版本和可见反馈；失败不能在回复中描述成成功。
+- 每轮上下文组装当前文档一次、必要的有界历史、学习上下文和用户原始消息；工具调用与结果成对裁切。当前文档块在运行注入记录中恰好出现一次，历史消息不含重复文档正文。
+- Provider 不支持可靠工具时明确只读降级；不维持第二套 provider 专属业务写入路径。预算耗尽暂停并保留现场，不自动提取。
 
-**其二，任何阶段发现 spec 与实现冲突，一律上报、不自行决定。** `data-model.md` 卷首明写「二者冲突时及时报告」，plan 卷首明写「本文与 spec 冲突时以 spec 为准，并回写本文」。这条要写进每个 subagent 的提示词。
+**机器验收：** fake provider 在事务外运行；一次成功工具调用重试不产生第二次 revision/笔记副作用；同 call 不同 input_hash 报协议冲突；并发编辑用 expected_revision 产生可见冲突；注入记录中当前文档出现次数为 1，持久化用户消息不含自动文档块；部分工具成功和失败均可见。
 
-**其三，`prompts/` 与 `docs/` 的改动不进 subagent 的可写范围。** subagent 可以读、可以提出补丁建议，但 spec 的修改由你本人执行。理由很直接：spec 是这个项目当前最有价值的资产，而 subagent 在实现受阻时最省力的路径永远是改契约。
+**不在 P3b：** 固定 revision 提取、KP/Occurrence、SessionConfirmation、ReviewItem。P3 不再保留“一次追问”或“只允许 add”作为产品限制。
+
+**Public contract：** 多轮 AgentRun/Message/Tool API、AnalysisRevision 编辑语义、笔记工具边界、上下文组装与预算状态、冲突/部分失败 fixture。
+
+### P4a　提取骨架、Lexical/Opaque 产物与种子库
+
+**开工条件：** P3a 已提供可提交的 AnalysisRevision；P4a 不等待实验 2，且不把 pattern DSL 当作冻结契约。
+
+**目标：** 先让固定版本提取、Span 定位和可运行的 lexical/opaque 路径真实存在，使实验 2 有可观察的运行基础。
+
+**必须完成：**
+
+- 落地 AnalysisRevision 到 ExtractionRun 的最终外键和固定输入版本；落地 ExtractionSection 及其有序 Span 关联。提取输入含原句、sidecar、完整 revision、section_id/revision 和当前临时形态规范。
+- 支持 standalone 与 continued_turn 两条路径，使用同一 extraction_v1 输入契约；continued_turn 只是快路径，不能成为唯一能力。
+- 后端执行 find_all 和 token 对齐，分类 0/1/>1 与 aligned/partial/ambiguous/unaligned；部分 surface/模式失败可记录，不能由模型提供偏移。
+- 只允许 lexical 和 opaque 两种产物进入 KP/Occurrence 写入。模型输出的 pattern-like payload 进入记录和离线诊断，不通过 pattern 严格校验器，也不以 pattern shape 建 KP；离线临时检查认为会失败的项记录 validation_failed，并降级为 opaque。
+- KP anchor 幂等 upsert；Occurrence 每个有效完整出现追加，引用 section_id + section_revision 和具体 run；同一 run 重试不复制，新的成功 run 不覆盖旧引用。
+- 建立实验 2 所需的 seed 候选库导入：使用版本化、带 hash 的离线 JLPT/种子 fixture 写入 Alias，source=seed；保留数据集版本与来源，不把普通词表或词典释义当作 seed。
+
+**验收：** 固定 revision 不会随当前文档指针变化；重复 surface 的 ambiguous Span、无法对齐仍保留的 Span、部分 unresolved 和 lexical/opaque 写入通过；删除 Occurrence 后重跑不改 AnalysisRevision 正文；Alias seed 可按版本重建；实验样本能同时跑 standalone/continued_turn。P4a 不验收 pattern 槽位完整性、pattern anchor 序列化或严格枚举。
+
+**Public contract：** ExtractionRun/ExtractionSection、standalone/continued extraction API、lexical/opaque KP/Occurrence、Span 分类、Alias seed fixture 和离线 pattern 诊断记录。
+
+### 实验 2　模式语言可校验性与身份稳定性
+
+**运行位置：** P4a 之后、P4b 之前。实验使用 P4a 的真实 extraction runner、P3a 的 AnalysisRevision 和 Alias seed 库；不再形成 P4 ← 实验 2 ← P4 的循环。
+
+**方法与交付：**
+
+- 在 JLPT seed 与前 20 句建立候选库，在剩余 30–80 句比较 standalone/continued_turn；模型可输出临时结构化 pattern，但 P4a 只记录候选和离线诊断，不能因临时规则拒绝整次提取。
+- 统计字面量顺序、槽位定位、POS/category 相容、可校验 form、零槽位 lint、model_chosen/validation_failed、键碰撞、复用、完整 surface 与槽位范围关系，以及无关历史与重复命中的影响。
+- 交付 grammar_enums_v1.yaml、validation_strictness_v1.json、grammar_decision_table_v0.md 和带模型/prompt/DSL/分析器词典/AnalysisRevision/seed 版本的实验报告。
+- “实验 2 完成”意味着数据、复现方法和决策记录齐全；只有在结果被接受后，P4b 才能开放 pattern shape 和严格校验。实验失败也必须产出“不开放哪些规则”的结论，而不是静默放宽门槛。
+
+### P4b　Pattern 严格校验、身份消解与本次确认
+
+**开工条件：** 实验 2 的报告和三个版本化交付物已登记；未完成时只能继续 P4a 的 lexical/opaque 路径。
+
+**目标：** 在实证结果约束下开放 pattern shape，并完成固定 revision 提取、KP/Occurrence 和 SessionConfirmation 的用户闭环。
+
+**必须完成：**
+
+- pattern 只能使用实验接受的 category/form、序列化和严格度版本；anchor 等于按 pattern_grammar_version 序列化的 payload。身份召回使用有界 top-k，近邻才触发额外消解调用。
+- 完整 surface 与 slot surface 分开定位；槽位完整、有序且跨槽位不相交，完整 Span 可以包含槽位 Span。任一槽位无法唯一绑定时该次 pattern 出现降级/拒绝并记录 unresolved_patterns，其余完整命中仍可提交。
+- 提取失败按当前 prompt contract 区分 schema/整体失败和部分候选失败；整体失败最多追加两次同 revision 重试，不重新生成 Analysis；成功候选与诊断在原子边界内提交。
+- interactive 会话由用户明确结束讨论后固定 revision；automatic 只能来自显式创建，跳过 discussion 但仍生成、固定、提取和确认。提取期间禁用讨论写入，导航/关窗不触发提取。
+- SessionConfirmation 按当前 run 的每个不同 KP 记录 srs/reference 和 user/inherited 决定；default 不是用户决定，reference 不是排除候选。允许部分确认、稍后继续、沿用已有用户决定；零候选需用户明确完成。
+- 确认结果进入排程服务的输入，但 P4b 不创建未获明确 srs 的 ReviewItem；完成会话不等待 P5 配额。
+
+**机器验收：** analysis_revision_id 与每个 ExtractionSection 属于同一 session/analysis；同一 run 提交幂等；重试保持 revision 不变；slot_bindings 的值均在 Occurrence.spans 中；用户确认写后立即可读且重跑不覆盖；同一 KP 从材料或全局视图确认后退出所有待确认查询；会话完成不依赖全局 retention。P4b 点亮不变量 1、2、6、8–17、19–20，并为 P5 的 18 提供决定接口。
+
+**Public contract：** pattern extraction API、grammar/strictness 版本、ExtractionSection/Span/KP/Occurrence、SessionConfirmation、提取/确认状态查询和 Study 候选 fixture。
+
+### P5　SRS、复习、知识聚合与互操作
+
+**目标：** 在用户确认之后实现受配额控制的复习状态、追加复习事实、来源可解释的聚合和显式 Anki 导出。
+
+**必须完成：**
+
+- 只有明确 user/inherited srs 决定的 KP 才进入待建队列；默认值不授权。已有卡在 reference 时暂停，改回 srs 恢复原 ReviewState，不退役、不消耗新卡配额。
+- ReviewItem 实现 active/paused/retired 与 retired_at 等价约束；ReviewState 保存当前 FSRS 投影，ReviewEvent 追加保存当时 Occurrence、评分、算法/参数和幂等键。
+- 配额按 salience 优先、同级 FIFO；Study、知识库和复习入口区分“用户选择 srs”“等待排程”“已加入复习”。会话完成不等待配额。
+- ReviewLexemeEligibility 和带 as_of 的相关卡片估计只使用合格的实际复习 Occurrence 及完整累计历史；不创建 srs_matured KE，不把 SRS 估计并入证据覆盖。
+- 知识库/材料聚合分别返回 KP、Occurrence“被讲解次数”、当前 sidecar“材料出现次数”、证据覆盖率和 SRS 估计；不同口径带来源，API、UI、导出均不得相加或互相校验。
+- Anki 导出只从用户明确选择的 ReviewItem/Occurrence 生成，字段映射和外部发送确认独立；音频等资源缺失不阻止导出。
+- 在 P5 末尾完成实验 11b：使用 10⁴/10⁵/10⁶ 级证据与评分历史、约 10⁵ token 材料和并行导入/重建/评分场景，验证查询计划、无关历史增长、写事务、代次切换、dirty 恢复、动态 as_of 缓存和最终聚合物化取舍。
+
+**验收：** reference 无有效 active 卡但保留 paused 卡、ReviewState 和 ReviewEvent；暂停恢复不重置进度；ReviewEvent 不能跨 KP/Occurrence 传播不合格 SRS 信号；聚合的两个计数独立且标明来源；重建不显示假零；Anki 缺媒体仍生成可用卡；P5 相关不变量 3、4、18、23–25 点亮；实验 11b 报告明确参考硬件、预算、批大小、缓存有效期和剩余风险。
+
+**Public contract：** ReviewItem/State/Event、配额、eligibility、知识聚合、证据覆盖查询、复习 shell、Anki 导出格式和确认边界。
+
+## 4. 可机检的关键观察点
+
+散文验收必须至少落成以下观察点；其余产品要求可继续保留为场景描述：
+
+| 约束 | 最小可机检断言 |
+|---|---|
+| sidecar 代次 | 查询响应携带 sidecar_generation_id；同一响应所有词频项值相同；重建期间旧代次可读，指针原子切换后才出现新代次 |
+| 会话队列 | 重启后 running 任务进入可恢复状态；同一任务重试不复制 revision 或副作用；parked 不出现在 active 队列但可恢复 |
+| 事务边界 | fake provider 在事务外调用；数据库只在短写事务中提交结果；busy 重试有上限且可取消 |
+| 文档上下文 | 运行注入记录中当前文档块出现次数为 1；AnalysisMessage 的用户原始消息不含自动拼接文档正文 |
+| revision 冲突 | 过期 expected_revision 写入必定拒绝；并发编辑不能覆盖已提交 revision |
+| 固定提取 | ExtractionRun 的 analysis_revision_id 不随当前指针变化；retry_of 使用同一 revision；旧正文和旧 Span 引用不被覆盖 |
+| 确认边界 | SessionConfirmation 必须属于当前成功 run 的 Occurrence；default 不生成用户决定；用户写后读立即可见 |
+| 统计口径 | “被讲解次数”“材料出现次数”“证据覆盖”“SRS 估计”由独立字段返回，静态检查和测试确认不存在相加/互校验路径 |
+
+## 5. 阶段间的验证与交接纪律
+
+1. 每阶段先锁定当前契约对应的不变量测试，再改实现；旧 xfail 不能机械沿用，不能通过改测试绕过行为。
+2. 每阶段必须输出 Public contract、fixture、启动命令、迁移 revision、已验证命令、备份/恢复检查和已知缺口。下一阶段只依赖上一阶段报告明确列出的内容。
+3. 模型 I/O 永远在事务外；所有写入路径都验证原子性、版本冲突、幂等和崩溃恢复。取消只停止未提交工作，不撤销已经提交的用户事实。
+4. 文档 revision、ExtractionRun、Occurrence、SessionConfirmation、KnownEvidence、ReviewEvent 的历史引用不得被自动清理或覆盖；当前状态允许更新但不能破坏引用完整性。
+5. 前端组件必须 shell-independent；Study、Reader、Knowledge、Review 由 shell 装配同一批组件，不在路由中复制状态机。
+6. 条件式 GiNZA/依存分析若被纳入，必须作为独立切片重新评估，不得塞入 P2 或改变既有依赖图。
+7. 任何 spec/实现冲突先停受影响部分并报告；不得修改 docs 或 prompt 来迁就代码。本文是本轮唯一获授权更新的阶段计划，任务包同步另行进行。
+
+## 6. 任务包同步前的明确结论
+
+docs/task-packets/ 当前仍是旧交接协议，不能直接派发：
+
+| 任务包范围 | 观察到的旧假设 | 同步方向 |
+|---|---|---|
+| P0 | 把旧表形和“全部实体首日建表”当作当前完成标准 | 收缩为既有表拆债、前滚迁移规范、自动备份、OpenAPI/fixture 和不变量入口；新实体 DDL 随 owning phase 落地 |
+| P1 | ingest 主链基本对应现状，但没有当前内容索引、发布屏障、快照导出和 fixture 生成机制 | 保留已通过的素材链，补 MaterialLexemeCount、代次、备份/导出、OpenAPI 和前端旧 AI 原型隔离 |
+| P2 | 算法／Yomitan 方向大体可用，但缺 ADR-040 的 KE/裁定/撤回与查询边界 | 补证据入口、Annotation、按词摘要、合成来源优先级测试和 P2 结构性实验 11 |
+| P3 | 仍以 Analysis 状态、一次追问和 add 为中心 | 拆为 P3a 的会话/队列/生成/只读 Study 与 P3b 的可编辑 Agent/工具执行器 |
+| P4 | 仍含旧 batch/background、section_hint、默认自动建卡和旧收件箱语义 | 拆为 P4a 提取骨架 + lexical/opaque + seed，实验 2 后再做 P4b pattern 严格校验与 SessionConfirmation |
+| P5 | 仍以 retired_at 表达 reference，并沿用旧批量排程口径 | 重写为 paused/retired 分离、ReviewEvent/资格摘要、证据与 SRS 分列、Anki 确认和 P5 规模实验 11 |
+
+在这些包完成同步、各包的读取范围链接到当前 ADR 单篇文件后，才可按本计划重新派工。本文不把任务包的旧验收文字当作阶段完成证明。

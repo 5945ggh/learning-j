@@ -2,8 +2,8 @@
 
 ## Source of truth
 - Status: Active (MVP interaction contract)
-- Last refreshed: 2026-09-08
-- Contract migration: [study session / Agent / history change guide](docs/changes/2026-09-08-study-session-agent-history.md); phase acceptance and task packets are not yet synchronized.
+- Last refreshed: 2026-09-09
+- Contract migration: study-session, Agent, history, evidence, and query-projection changes are reflected in the current contract documents; task packets still require a separate synchronization pass.
 - Primary product surfaces: desktop material reader, sentence analysis panel, dictionary lookup surface, AI study workspace, extracted knowledge review
 - Evidence reviewed: `docs/mvp-tech-and-phases.md`, `docs/LearningJ-plan-v5.md`, `docs/adr.md`, `docs/data-model.md`, `docs/prompt-contracts.md`
 - Accepted visual and interaction reference: `experiments/frontend_samples_v2/reader.html` and `study.html`; `player.html` supplies the dark media surface. These are mockups, not executable business contracts. Reader and player both use the independent Study flow specified below. Samples do not override the current document/editor conversation layout or session lifecycle.
@@ -60,6 +60,16 @@ Show actual stage totals, operation progress and local failures. No unread dots,
 Knowledge retains both srs and reference items. “仅作参考” pauses existing review; switching back restores progress, with no new-card quota charge for an existing card. A KP with no card waits for quota after an explicit srs choice. Do not label reference as deleted, rejected knowledge or failed learning.
 
 Counts and relationships identify their evidence: recorded explanations, algorithmic material occurrences, source links, and explicit merges are different facts. Full learning records remain accessible from each source occurrence. User intent, scheduled-card state and mastery estimates are distinct displays.
+
+### Evidence, coverage and query feedback
+
+- Show material occurrences, recorded evidence coverage, and eligible vocabulary-card review estimates separately. First-release evidence coverage uses the token denominator defined in data-model §10; label a distinct-Lexeme alternative explicitly. No evidence means an estimate has not been established, not zero mastery.
+- Evidence details identify the actual source and observation time. Allow withdrawal of an erroneous assertion or imported source. “目前不认识” overrides import and SRS in its scope; “清除我的判断” removes that scope’s override without reviving older assertions. A form-specific clear can still inherit a Lexeme-level decision; show the remaining scope rather than silently changing its meaning.
+- Do not equate a review choice, pause, retirement or successful generation with knowing a word. Import review previews selected known-list scope and unresolved/ambiguous/multi-token counts. An ordinary deck is not automatically a known list. Duplicate upload does not silently restore a withdrawn source.
+- Show a committed user judgment immediately. A background summary update cannot temporarily reverse it. Import and rebuild surfaces show actual progress, retry/cancel state and atomic publication; do not expose partial counts as a complete result.
+- Dynamic SRS estimates carry an evaluation time. Expired results and rebuilding summaries show updating/unavailable or an explicitly dated prior result; never show a fabricated zero during rebuild. Refresh visible data in bounded batches, not one request per token.
+- LexemeActivity and reading exposure are deferred. “材料中出现” is supported by the content index; “你读过／见过” requires a future reading/activity producer. Return position does not supply that evidence.
+- Orthography/kanji learning and candidate exclusion/extraction recovery remain decisions in plan §15. The current confirmation flow still confirms every distinct KP or parks the session; reference is not rejection of an extraction candidate.
 
 ## Design principles
 - Lookup keeps the source sentence visible in the material workspace. Study repeats that same Sentence text, retains material context and offers a precise return; it does not require the entire reader to remain alongside the AI document.
@@ -120,7 +130,7 @@ Counts and relationships identify their evidence: recorded explanations, algorit
 4. Escape closes the surface and returns focus to the invoking token. Clicking outside closes only the popover; the drawer has an explicit close button.
 5. The surface shows expression, reading, each dictionary source label/version, definitions, tags, and a clear “Start AI study” action that is separate from lookup.
 
-Starting AI study from lookup creates the same asynchronous learning session as the reader and preserves the current reading context. Optional “这个我认识” and annotation actions write to their own domains; neither creates a KP or ReviewItem. Provenance must name actual dictionary/analyzer resources; an AI claim about syntax or word sense must not be labeled algorithmically verified without supporting backend evidence.
+Starting AI study from lookup creates the same asynchronous learning session as the reader and preserves the current reading context. “这个我认识”, “目前不认识”, and “清除我的判断” are explicit user actions in the Lexeme domain; show whether the action targets the Lexeme or only this encountered form. Annotation remains separate. None of these actions creates a KP or ReviewItem. Provenance must name actual dictionary/analyzer resources; an AI claim about syntax or word sense must not be labeled algorithmically verified without supporting backend evidence.
 
 ## Content voice
 - Tone: calm, precise, concise, learner-respecting

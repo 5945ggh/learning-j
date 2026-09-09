@@ -4,7 +4,7 @@
 
 每篇 ADR 顶部的 YAML front matter 是机器可读元数据，状态值使用 `proposed`、`accepted`、`deferred`、`rejected`、`partially_superseded`、`superseded`、`merged`。`docs/adr/archived/` 只存不再属于当前决策面的历史条目；需要追溯历史时再读取。
 
-2026-09-08 将原单文件按编号拆分并精简；001–036 编号和合并关系保留，新增 037–039。被替代的条目只保留历史判断与新落点，不构成并行的现行要求。阶段文档和 task-packets 尚未同步，见 [变更指引](changes/2026-09-08-study-session-agent-history.md)。
+2026-09-08 将原单文件按编号拆分并精简；001–036 编号和合并关系保留，新增 037–039；2026-09-09 新增 ADR-040，细化证据与查询投影。被替代的条目只保留历史判断与新落点，不构成并行的现行要求。阶段计划已按当前核心契约校准，task-packets 尚未单独同步。
 
 | 编号 | 决策 | 状态 |
 |---|---|---|
@@ -13,17 +13,17 @@
 | <a id="adr-003"></a>ADR-003 | [暂缓解析共享缓存](adr/003-defer-sharing.md) | 暂缓 |
 | <a id="adr-004"></a>ADR-004 | [KP 全局身份与出现](adr/archived/004-redirect-005.md) | 已并入 |
 | <a id="adr-005"></a>ADR-005 | [知识点的身份模型](adr/005-kp-identity.md) | 已接受；历史写入措辞由 ADR-039 更新 |
-| <a id="adr-006"></a>ADR-006 | [已知状态是证据上的视图](adr/006-known-evidence.md) | 已接受 |
+| <a id="adr-006"></a>ADR-006 | [已知状态是证据上的视图](adr/006-known-evidence.md) | 已接受；证据来源／投影由 ADR-040 细化 |
 | <a id="adr-007"></a>ADR-007 | [已知状态的词形粒度](adr/archived/007-redirect-006.md) | 已并入 |
 | <a id="adr-008"></a>ADR-008 | [推荐卡片流](adr/archived/008-redirect-022.md) | 已并入 |
 | <a id="adr-009"></a>ADR-009 | [可校验内容由算法处理并区分来源](adr/009-algorithm-provenance.md) | 已接受 |
 | <a id="adr-010"></a>ADR-010 | [媒体身份与存储分离](adr/010-media-identity.md) | 部分替代：复制策略见 ADR-033 |
-| <a id="adr-011"></a>ADR-011 | [互操作分期，证据先行](adr/011-interop-evidence.md) | 已接受 |
+| <a id="adr-011"></a>ADR-011 | [互操作分期，证据先行](adr/011-interop-evidence.md) | 部分替代：阅读活动边界见 ADR-040 |
 | <a id="adr-012"></a>ADR-012 | [不为应试单建课程能力](adr/012-exam-boundary.md) | 已接受 |
 | <a id="adr-013"></a>ADR-013 | [Anki 导出保留显式选择](adr/013-anki-confirmation.md) | 已接受 |
 | <a id="adr-014"></a>ADR-014 | [可疑句发现后置](adr/014-suspicious-highlights.md) | 提议；不在 MVP |
 | <a id="adr-015"></a>ADR-015 | [核心分词不依赖 jpdb](adr/archived/015-redirect-018.md) | 已并入 |
-| <a id="adr-016"></a>ADR-016 | [TTS 与原声使用不同证据来源](adr/016-tts-evidence.md) | 已接受；选型后置 |
+| <a id="adr-016"></a>ADR-016 | [TTS 与原声使用不同证据来源](adr/016-tts-evidence.md) | 部分替代：区分保留，证据生产边界见 ADR-040；选型后置 |
 | <a id="adr-017"></a>ADR-017 | [解析是文档，提取为第二阶段](adr/017-analysis-document.md) | 部分替代：讨论与持久化见 ADR-038/039 |
 | <a id="adr-018"></a>ADR-018 | [Sudachi A mode 与确定性词形身份](adr/018-sudachi-identity.md) | 已接受 |
 | <a id="adr-019"></a>ADR-019 | [知识保留与复习闸门](adr/019-review-gates.md) | 部分替代：自动建卡策略见 ADR-037 |
@@ -47,3 +47,4 @@
 | <a id="adr-037"></a>ADR-037 | [学习会话、队列与知识库](adr/037-study-session.md) | 已接受（2026-09-08） |
 | <a id="adr-038"></a>ADR-038 | [可编辑解析文档与讨论 Agent](adr/038-document-agent.md) | 已接受（2026-09-08） |
 | <a id="adr-039"></a>ADR-039 | [分级历史保护与可更新当前状态](adr/039-history-protection.md) | 已接受（2026-09-08） |
+| <a id="adr-040"></a>ADR-040 | [证据、用户裁定与查询投影](adr/040-evidence-and-query-projections.md) | 已接受（2026-09-09） |
