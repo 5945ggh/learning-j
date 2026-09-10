@@ -5,15 +5,19 @@
 LearningJ's documents are a contract, not background reading. Before changing
 code, identify the phase and read the relevant sources in this order:
 
-**Contract migration status (2026-09-10):** the study-session, Agent, history,
-evidence, query-projection, and occurrence-review-target (ADR-041) contracts are
-reflected in the current product, data-model, prompt, ADR, design, and
-phase-plan documents; the task-packet catalogue (`docs/task-packets/CURRENT-PACKETS.md`)
-has been re-synced to ADR-041 (Occurrence-level confirmation, P4b creates queued
-ReviewItem, P5 owns first admission). P0-backend was implemented one round before
-this sync (three-state ReviewItem, no `admitted_at`) and requires a rework pass
-before its packet is done; P4b/P5 must not be dispatched until that rework is
-aligned. This status does not certify implementation or phase completion.
+**Contract migration status (2026-09-10, second pass):** the study-session, Agent,
+history, evidence, query-projection, and occurrence-review-target (ADR-041)
+contracts are reflected in the current product, data-model, prompt, ADR, design,
+and phase-plan documents; the task-packet catalogue
+(`docs/task-packets/CURRENT-PACKETS.md`) has been re-synced to ADR-041
+(Occurrence-level confirmation, P4b creates queued ReviewItem, P5 owns first
+admission) and registers a second bounded P0-backend rework. Entry naming is
+settled: entities stay 学习会话/学习记录/知识库, and the top-level navigation is
+主页/素材库/知识库/解析队列/学习中心, with “学习队列” retired. `data-model.md`
+§7.1/§7.2 put ReviewState creation at the first rating rather than at admission,
+so the already-approved P0-backend round (`306bb3c`) needs that second rework
+before P4b/P5 are dispatched. This status does not certify implementation or phase
+completion.
 
 1. `docs/LearningJ-plan-v5.md` for product intent, MVP boundary, and the
    project's only index of open decisions.

@@ -37,7 +37,7 @@
 
 ### 1.3 数据、执行与写入边界
 
-- 学习队列查询 StudySession，不是 Inbox 实体，也不是内部执行任务队列。
+- 解析队列查询 StudySession，不是 Inbox 实体，也不是内部执行任务队列。
 - 一次会话拥有一份 Analysis 工作文档；当前文档由 AnalysisRevision manifest 指向小节版本。被引用版本不可覆盖。
 - AgentRun、用户可见 AnalysisMessage、AgentToolCall 和工具副作用记录分开；工具写入由统一执行器做版本检查和 (agent_run_id, call_id, input_hash) 幂等。
 - 提取只接受固定、完整的 AnalysisRevision。ExtractionRun 固定输入版本，ExtractionSection 承担本次 kind/Span 映射；不得把旧小节映射套到新正文。
@@ -181,7 +181,7 @@ P2 结束时运行实验 11a；P5 结束时运行实验 11b。已知词表导入
 
 **不在 P3a：** 文档编辑工具、笔记写工具、ExtractionRun 产物、KP/Occurrence、SessionConfirmation、ReviewItem。
 
-**Public contract：** StudySession 生命周期和查询、持久任务队列状态/恢复 API、首个 AnalysisRevision、只读问答 API、学习队列/记录 fixture、Study shell props。
+**Public contract：** StudySession 生命周期和查询、持久任务队列状态/恢复 API、首个 AnalysisRevision、只读问答 API、解析队列/记录 fixture、Study shell props。
 
 ### P3b　Agent 编辑、工具执行器与上下文控制
 

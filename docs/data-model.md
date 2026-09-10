@@ -290,7 +290,7 @@ Occurrence 另有局部 `retention` 决定，取值为 `inherit` / `srs` / `refe
 2. 用户在学习会话确认中选择 Occurrence 时，记录 Occurrence 级决定；若需要同时开放整个 KP，必须明确选择该附加操作。知识库可以直接修改 KP 意愿。两类决定均追加可审计事件，重跑抽取不得覆盖用户决定。
 3. 后续抽取保留已有 KP 的默认策略，新 Occurrence 以 inherit 初始化，不复制旧 Occurrence 的局部决定或加入授权。标签可以并集补充；自动处理不覆盖人工 `display_form`。
    KP 为 `reference` 时，继承状态的 Occurrence 可在确认界面灰显或默认不选，但用户可明确选择局部 `srs`。KP 意愿变化不删除或退役卡片；只影响当前有效意愿继承该 KP 的 ReviewItem。
-4. 会话中的候选按本次成功 ExtractionRun 的 KP 折叠展示，但卡片选择以 Occurrence 为粒度。是否完成本次确认由 §4.2 的 SessionConfirmation 决定，**不再用 `retention_set_by = default` 作为学习队列或会话退出条件**。
+4. 会话中的候选按本次成功 ExtractionRun 的 KP 折叠展示，但卡片选择以 Occurrence 为粒度。是否完成本次确认由 §4.2 的 SessionConfirmation 决定，**不再用 `retention_set_by = default` 作为解析队列或会话退出条件**。
 5. KP 的 `reference → srs` 只恢复受该默认策略影响的既有非退役 ReviewItem：已获配额的恢复排程，未获配额的回到 `queued`。无 ReviewItem 的历史 Occurrence 不因此创建复习项；正常流程没有“已确认加入学习、等待以后建卡”的中间状态。详见 §7。
 
 #### 身份与合并
@@ -350,7 +350,7 @@ Occurrence 另有局部 `retention` 决定，取值为 `inherit` / `srs` / `refe
 
 ### 4.1 StudySession（学习会话）
 
-学习队列是未完成会话的查询视图，不是执行任务队列，也不新增 Inbox 实体。一次会话拥有一份解析工作文档、用户对话、执行记录与提取产物。
+解析队列是未完成会话（StudySession）的查询视图，不是执行任务队列，也不新增 Inbox 实体。一次会话拥有一份解析工作文档、用户对话、执行记录与提取产物。
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
@@ -370,7 +370,7 @@ Occurrence 另有局部 `retention` 决定，取值为 `inherit` / `srs` / `refe
 - discussion 中允许多轮对话和文档编辑。离页、切换材料、关闭浏览器均不结束讨论、不自动提取。
 - 用户“结束讨论并提取”时，等待当前文档写操作结束，原子选定 AnalysisRevision 并转入 extraction。提取期间不接受新的讨论写入；失败只重试该版本的提取。
 - 成功提取后进入 confirmation；两种模式均在此由用户确认复习意愿，不自动为默认候选建卡。
-- 当前 run 的所有不同 Occurrence 完成本次确认后进入 completed，退出学习队列；按 KP 折叠展示不改变确认粒度。零候选的合法结果显示原因，由用户明确“完成学习”，不伪造候选。
+- 当前 run 的所有不同 Occurrence 完成本次确认后进入 completed，退出解析队列；按 KP 折叠展示不改变确认粒度。零候选的合法结果显示原因，由用户明确“完成学习”，不伪造候选。
 - 已完成会话保留文档、对话和来源，可从学习记录访问。继续研究时创建新的关联会话，不修改已确认提取的输入。
 - 搁置移出默认队列但保留所有数据，恢复时回到保存阶段。运行中的操作必须先完成或确认取消再搁置，不允许搁置后隐藏后台写入。
 
@@ -378,8 +378,8 @@ Occurrence 另有局部 `retention` 决定，取值为 `inherit` / `srs` / `refe
 
 | 入口 | 数据依据 |
 |---|---|
-| 阅读器／播放器、素材卡片“学习队列” | `status = active` 且 `material_id` 匹配；可按阶段筛选 |
-| 全局“学习队列” | 相同查询，不限定材料 |
+| 阅读器／播放器、素材卡片“解析队列” | `status = active` 且 `material_id` 匹配；可按阶段筛选 |
+| 全局“解析队列” | 相同查询，不限定材料 |
 | 学习记录 | 全部会话，支持 completed / parked / 材料筛选 |
 | 知识库／材料知识视图 | KP 经 Occurrence 关联来源；独立显示用户意愿、实际排程、讲解次数与材料出现次数 |
 
@@ -548,24 +548,24 @@ ReviewItem 是复习调度绑定，不等同于最终渲染卡片。它固定连
 | `occurrence_id` | FK | 卡片固定引用的具体例句／讲解实例 |
 | `kp_id` | FK | 必须与 `occurrence.kp_id` 一致；用于归属、聚合和查询，不决定唯一性 |
 | `status` | enum | `queued` / `active` / `paused` / `retired` |
-| `admitted_at` | timestamp? | 首次获新卡配额并进入排程的时间；一经分配保留，用于区分 paused 恢复为 queued 或 active |
+| `admitted_at` | timestamp? | 首次获新卡配额并进入排程的时间；一经分配保留，用于区分 paused 恢复为 queued 或 active。**准入不等于首次评分**：ReviewState 在首次评分时建立 |
 | `retired_at` | timestamp? | 真正退役时单向设置；**reference 使用 paused，不使用退役标记** |
 
 - `status = retired` 当且仅当 retired_at 非空；queued/active/paused 的 retired_at 必须为空。退役同次提交状态与时间戳且不可恢复；queued/active/paused 之间的转换不删除历史。
-- queued 的 `admitted_at` 必须为空；active 必须已有 `admitted_at` 和 ReviewState。paused 可发生于准入前或准入后，保留原准入标记；retired 不清除该标记。
+- queued 的 `admitted_at` 必须为空；active 必须已有 `admitted_at`。**ReviewState 不在准入时建立**，而是在首次评分提交时与首条 ReviewEvent 同一事务建立；已准入但尚未首评的 active 项没有 ReviewState。paused 可发生于准入前、准入后未首评或已首评之后，保留原准入标记；retired 不清除该标记。
 - 用户明确选择 Occurrence 加入学习时立即创建 ReviewItem；每日配额不足时为 `queued`，按 salience 优先、同级 FIFO 转为 `active`。默认值或 KP 的 `srs` 意愿不单独授权创建。
 - 同一 Occurrence 默认至多一条非 retired ReviewItem；同一 KP 下不同 Occurrence 可以各自拥有 ReviewItem。未来不同卡片模板可扩展为多个 ReviewItem，但必须有明确用户操作。
-- 有效 retention 为 `reference` 时对应 ReviewItem 进入 `paused`，不进入到期队列；保留 ReviewState 与 ReviewEvent。KP 意愿变化只影响继承该意愿的 Occurrence，明确 `srs` 覆盖的 Occurrence 由用户决定是否暂停。
-- 有效意愿改回 `srs` 时，仅恢复已有非退役复习项。`admitted_at` 非空的恢复为 active，不重复消耗新卡配额，保留原 due 与学习进度；`admitted_at` 为空的恢复为 queued，仍须首次配额。暂停恢复不伪造复习或清零历史。
-- 每日新卡配额控制首次进入排程，不控制 ReviewItem 行的创建。queued 按 `salience` 优先、同级 FIFO 分配；准入前再次核对最新有效意愿，reference 不得因旧队列状态而激活。首次准入与 `admitted_at` 写入、配额扣减及 ReviewState 初始化原子提交；queued 时不提前运行排程。
+- 有效 retention 为 `reference` 时对应 ReviewItem 进入 `paused`，不进入到期队列；保留既有 ReviewState 与 ReviewEvent（尚未首评则两者均不存在）。KP 意愿变化只影响继承该意愿的 Occurrence，明确 `srs` 覆盖的 Occurrence 由用户决定是否暂停。
+- 有效意愿改回 `srs` 时，仅恢复已有非退役复习项。`admitted_at` 非空的恢复为 active，不重复消耗新卡配额，保留原 due 与学习进度；**若该项尚未首评，则没有 ReviewState、due 或进度可保留**。`admitted_at` 为空的恢复为 queued，仍须首次配额。暂停恢复不伪造复习或清零历史。
+- 每日新卡配额控制首次进入排程，不控制 ReviewItem 行的创建。queued 按 `salience` 优先、同级 FIFO 分配；准入前再次核对最新有效意愿，reference 不得因旧队列状态而激活。首次准入与 `admitted_at` 写入及配额扣减原子提交；**准入不构造 S/D，也不创建 ReviewState**，ReviewState 与首条 ReviewEvent 在首次评分时同一事务建立；queued 时不提前运行排程。
 - 知识库的逐 Occurrence 加入动作与会话确认使用同一事务和排程服务。KP 默认策略更新本身不创建 ReviewItem。会话确认完成不要求配额已分配。
 - 真正 retired 的卡片不恢复；用户另建卡须明确，不把 srs/reference 切换解释为退役重建。
 
 ### 7.2 ReviewState 与 ReviewEvent
 
-ReviewState 是已准入 ReviewItem 的当前 FSRS 排程投影，允许原地更新；首次准入前尚无 ReviewState，包括 queued 及准入前暂停的项目。具体算法字段沿用实现所选算法，不要求给每次状态更新保存整行版本。
+ReviewState 是**已首次评分** ReviewItem 的当前 FSRS 排程投影，允许原地更新；首次评分前尚无 ReviewState，包括 queued、已准入但未首评，以及暂停中的项目。FSRS 的初始稳定性由首次评分决定，因此准入时不存在可写入的 S/D，不能在准入阶段创建该行。具体算法字段沿用实现所选算法，不要求给每次状态更新保存整行版本。
 
-ReviewEvent 追加保存：`review_item_id`、该卡单调 `event_sequence`、当时的 `occurrence_id`、`reviewed_at`、评分、算法版本及重放所需的排程参数／结果。`(review_item_id, event_sequence)` 唯一；ReviewState 带覆盖到的事件序号与单调版本，供重建和资格摘要校验。同一次复习提交有幂等键；事件写入与当前状态更新同一事务。换例句、暂停和恢复不删除既有复习事件，也不伪造评分。
+ReviewEvent 追加保存：`review_item_id`、该卡单调 `event_sequence`、当时的 `occurrence_id`、`reviewed_at`、评分、算法版本及重放所需的排程参数／结果。`(review_item_id, event_sequence)` 唯一；ReviewState 带覆盖到的事件序号与单调版本，供重建和资格摘要校验。同一次复习提交有幂等键；**首条 ReviewEvent 与该 ReviewState 的建立**、以及后续事件写入与当前状态更新，均在同一事务内完成。换例句、暂停和恢复不删除既有复习事件，也不伪造评分。
 
 动态回忆估计在明确 as_of 时间按记录的算法／参数求值，不能仅把上次存储的概率当成当前值。SRS 向 Lexeme 提供信号须满足 §2.4；缺少来源的旧评分仍可用于既有排程，但不能凭空补齐传播资格。
 
