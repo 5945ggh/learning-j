@@ -1,0 +1,24 @@
+DESIGN.md
+  h_c735ec7f46d14b 1-182
+docs/adr/023-shell-independence.md
+  h_c735ec7f46d14b 17
+docs/adr/032-dictionary-provider.md
+  h_c735ec7f46d14b 19
+docs/adr/037-study-session.md
+  h_c735ec7f46d14b 20
+docs/adr/040-evidence-and-query-projections.md
+  h_c735ec7f46d14b 41
+docs/task-packets/CURRENT-PACKETS.md
+  h_c735ec7f46d14b 19,22,25,29,32,35,39
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "0996cb15524502756607ff96a769c231cc26354e",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
