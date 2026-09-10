@@ -1,8 +1,10 @@
 """数据层行为测试：写入路径上的约束实际生效。
 
 这部分是 P0 能落库的最小行为证明：不放行业务逻辑，只验证模型约束。
-ReviewItem 语义按 ADR-041 / `data-model.md` §7.1 重写：status 为
-queued/active/paused/retired，`admitted_at` 与 `retired_at` 单向写入。
+ReviewItem 语义按 ADR-041 / `data-model.md` §7.1/§7.2 重写：status 为
+queued/active/paused/retired；`admitted_at`/`retired_at` 单向写入。active 只
+要求 `admitted_at`——ReviewState 在首次评分时建立，因此“已准入但未首评”的
+active 合法且没有 ReviewState。
 """
 
 from __future__ import annotations
@@ -121,21 +123,26 @@ def _insert_review_state(conn, item_id: str) -> None:
 
 
 def _admit(engine: Engine, item_id: str, *, admitted_at: str = TS) -> None:
-    """合法首次准入：同一事务内 paused(admitted_at) → ReviewState → active。
+    """合法首次准入（§7.1）：只写 `admitted_at`，把状态转为 active。
 
-    ReviewState 通过外键依赖 ReviewItem 行，不能先于行存在；因此 active 只能
-    是 UPDATE 的目标。`paused` 是同一事务内的中间态（§7.1 允许 admitted_at
-    非空的 paused），对外不可见。
+    准入**不**创建 ReviewState、不构造 S/D；首次评分前没有 ReviewState 是
+    合法状态。首次评分由 `_first_rating` 模拟（P5 语义的 P0 schema 证明）。
     """
     with engine.begin() as conn:
         conn.exec_driver_sql(
-            "UPDATE review_items SET status = 'paused', admitted_at = ? WHERE id = ?",
+            "UPDATE review_items SET status = 'active', admitted_at = ? WHERE id = ?",
             (admitted_at, item_id),
         )
+
+
+def _first_rating(engine: Engine, item_id: str) -> None:
+    """首次评分（P5 语义的 schema 证明）：为已准入项建立 ReviewState。
+
+    P0 只证明 `trg_review_states_requires_admission` 允许“准入 → 首评”的写序；
+    不实现评分与排程算法。
+    """
+    with engine.begin() as conn:
         _insert_review_state(conn, item_id)
-        conn.exec_driver_sql(
-            "UPDATE review_items SET status = 'active' WHERE id = ?", (item_id,)
-        )
 
 
 # ---------------------------------------------------------------------------
@@ -209,22 +216,48 @@ def test_queued_rejects_retired_at(migrated_engine: Engine) -> None:
         )
 
 
-def test_direct_active_insert_is_rejected(migrated_engine: Engine) -> None:
-    """§7.1：active 必须已有 ReviewState；ReviewState 不可能先于 ReviewItem 行
-    存在，因此直接 INSERT active 一律拒绝（触发器）。"""
+def test_active_without_admitted_at_is_rejected(migrated_engine: Engine) -> None:
+    """§7.1：active 必须有 admitted_at（CHECK）——准入标记是 active 的必要条件。"""
     ids = _seed_minimal_world(migrated_engine)
     _insert_kp(migrated_engine, ids["kp"], "〜てしまう", "srs")
     _insert_occurrence(migrated_engine, ids, ids["occurrence"], ids["kp"])
-    with pytest.raises(Exception, match="must already have"):
+    with pytest.raises(Exception, match="admitted_at_semantics"):
         _insert_review_item(
             migrated_engine, str(uuid.uuid4()), ids["kp"], ids["occurrence"],
-            "active", admitted_at=TS,
+            "active",
         )
 
 
-def test_active_update_requires_review_state(migrated_engine: Engine) -> None:
-    """§7.1：转为 active 时必须已有 ReviewState（触发器），先写状态后补状态
-    的时序被拒绝。"""
+def test_admitted_ungraded_active_item_is_legal(migrated_engine: Engine) -> None:
+    """§7.1/§7.2：准入但尚未首评的 active 合法，且没有 ReviewState。
+
+    active 不再要求 ReviewState；直接插入带 `admitted_at` 的 active 是
+    “已准入、未首评”的合法落库形状。
+    """
+    ids = _seed_minimal_world(migrated_engine)
+    _insert_kp(migrated_engine, ids["kp"], "〜てしまう", "srs")
+    _insert_occurrence(migrated_engine, ids, ids["occurrence"], ids["kp"])
+    item_id = str(uuid.uuid4())
+    _insert_review_item(
+        migrated_engine, item_id, ids["kp"], ids["occurrence"], "active",
+        admitted_at=TS,
+    )
+    with migrated_engine.connect() as conn:
+        row = conn.exec_driver_sql(
+            "SELECT status, admitted_at FROM review_items WHERE id = ?", (item_id,)
+        ).fetchone()
+        state = conn.exec_driver_sql(
+            "SELECT review_item_id FROM review_states WHERE review_item_id = ?",
+            (item_id,),
+        ).fetchone()
+    assert row[0] == "active" and row[1] is not None
+    assert state is None
+
+
+def test_active_update_needs_admitted_at_not_review_state(
+    migrated_engine: Engine,
+) -> None:
+    """§7.1/§7.2：queued → active 只写 admitted_at；不需要已有 ReviewState。"""
     ids = _seed_minimal_world(migrated_engine)
     _insert_kp(migrated_engine, ids["kp"], "〜てしまう", "srs")
     _insert_occurrence(migrated_engine, ids, ids["occurrence"], ids["kp"])
@@ -232,33 +265,30 @@ def test_active_update_requires_review_state(migrated_engine: Engine) -> None:
     _insert_review_item(
         migrated_engine, item_id, ids["kp"], ids["occurrence"], "queued"
     )
-    with migrated_engine.begin() as conn:
-        conn.exec_driver_sql(
-            "UPDATE review_items SET status = 'paused', admitted_at = ? WHERE id = ?",
-            (TS, item_id),
-        )
-    with engine_raises_match(migrated_engine, "must already have a ReviewState"):
-        with migrated_engine.begin() as conn:
-            conn.exec_driver_sql(
-                "UPDATE review_items SET status = 'active' WHERE id = ?", (item_id,)
-            )
+    _admit(migrated_engine, item_id)
+    with migrated_engine.connect() as conn:
+        row = conn.exec_driver_sql(
+            "SELECT status, admitted_at FROM review_items WHERE id = ?", (item_id,)
+        ).fetchone()
+        state = conn.exec_driver_sql(
+            "SELECT review_item_id FROM review_states WHERE review_item_id = ?",
+            (item_id,),
+        ).fetchone()
+    assert row[0] == "active" and row[1] is not None
+    assert state is None
 
 
-def test_active_requires_admitted_at_check(migrated_engine: Engine) -> None:
-    """§7.1：active 必须有 admitted_at（CHECK）。
-
-    触发器同样保护该转换（`test_active_update_requires_review_state`），这里
-    单独移除状态守卫，隔离验证 CHECK 本身。
-    """
+def test_queued_to_active_without_admitted_at_is_rejected(
+    migrated_engine: Engine,
+) -> None:
+    """§7.1：缺 admitted_at 的 queued → active 转换被 CHECK 拒绝。"""
     ids = _seed_minimal_world(migrated_engine)
     _insert_kp(migrated_engine, ids["kp"], "〜てしまう", "srs")
     _insert_occurrence(migrated_engine, ids, ids["occurrence"], ids["kp"])
     item_id = str(uuid.uuid4())
     _insert_review_item(
-        migrated_engine, item_id, ids["kp"], ids["occurrence"], "paused"
+        migrated_engine, item_id, ids["kp"], ids["occurrence"], "queued"
     )
-    with migrated_engine.begin() as conn:
-        conn.exec_driver_sql("DROP TRIGGER trg_review_items_active_requires_state")
     with pytest.raises(Exception, match="admitted_at_semantics"):
         with migrated_engine.begin() as conn:
             conn.exec_driver_sql(
@@ -266,10 +296,24 @@ def test_active_requires_admitted_at_check(migrated_engine: Engine) -> None:
             )
 
 
-def test_legal_admission_sequence_satisfies_active_contract(
-    migrated_engine: Engine,
-) -> None:
-    """§7.1：合法准入后 active 已有 admitted_at 与 ReviewState，且没有退役标记。"""
+def test_pre_admission_paused_cannot_become_active(migrated_engine: Engine) -> None:
+    """§7.1：准入前暂停（admitted_at 为空）不得直接转 active（CHECK）。"""
+    ids = _seed_minimal_world(migrated_engine)
+    _insert_kp(migrated_engine, ids["kp"], "〜てしまう", "srs")
+    _insert_occurrence(migrated_engine, ids, ids["occurrence"], ids["kp"])
+    item_id = str(uuid.uuid4())
+    _insert_review_item(
+        migrated_engine, item_id, ids["kp"], ids["occurrence"], "paused"
+    )
+    with pytest.raises(Exception, match="admitted_at_semantics"):
+        with migrated_engine.begin() as conn:
+            conn.exec_driver_sql(
+                "UPDATE review_items SET status = 'active' WHERE id = ?", (item_id,)
+            )
+
+
+def test_admission_writes_admitted_at_only(migrated_engine: Engine) -> None:
+    """§7.1/§7.2：合法准入后 active 已有 admitted_at、无退役标记、无 ReviewState。"""
     ids = _seed_minimal_world(migrated_engine)
     _insert_kp(migrated_engine, ids["kp"], "〜てしまう", "srs")
     _insert_occurrence(migrated_engine, ids, ids["occurrence"], ids["kp"])
@@ -290,6 +334,25 @@ def test_legal_admission_sequence_satisfies_active_contract(
     assert row[0] == "active"
     assert row[1] is not None
     assert row[2] is None
+    assert state is None
+
+
+def test_first_rating_creates_review_state(migrated_engine: Engine) -> None:
+    """§7.2：首次评为已准入项建立 ReviewState。"""
+    ids = _seed_minimal_world(migrated_engine)
+    _insert_kp(migrated_engine, ids["kp"], "〜てしまう", "srs")
+    _insert_occurrence(migrated_engine, ids, ids["occurrence"], ids["kp"])
+    item_id = str(uuid.uuid4())
+    _insert_review_item(
+        migrated_engine, item_id, ids["kp"], ids["occurrence"], "queued"
+    )
+    _admit(migrated_engine, item_id)
+    _first_rating(migrated_engine, item_id)
+    with migrated_engine.connect() as conn:
+        state = conn.exec_driver_sql(
+            "SELECT review_item_id FROM review_states WHERE review_item_id = ?",
+            (item_id,),
+        ).fetchone()
     assert state == (item_id,)
 
 
@@ -322,7 +385,7 @@ def test_pre_admission_paused_has_no_review_state(migrated_engine: Engine) -> No
 
 
 def test_post_admission_paused_keeps_state_and_marker(migrated_engine: Engine) -> None:
-    """§7.1：准入后暂停保留 admitted_at 与 ReviewState；reference 走 paused。"""
+    """§7.1：已首评后暂停保留 admitted_at 与 ReviewState；reference 走 paused。"""
     ids = _seed_minimal_world(migrated_engine)
     _insert_kp(migrated_engine, ids["kp"], "〜てしまう", "srs")
     _insert_occurrence(migrated_engine, ids, ids["occurrence"], ids["kp"])
@@ -331,6 +394,7 @@ def test_post_admission_paused_keeps_state_and_marker(migrated_engine: Engine) -
         migrated_engine, item_id, ids["kp"], ids["occurrence"], "queued"
     )
     _admit(migrated_engine, item_id)
+    _first_rating(migrated_engine, item_id)
     with migrated_engine.begin() as conn:
         conn.exec_driver_sql(
             "UPDATE review_items SET status = 'paused' WHERE id = ?", (item_id,)
@@ -411,15 +475,13 @@ def test_status_retired_at_equivalence_is_enforced(migrated_engine: Engine) -> N
             migrated_engine, str(uuid.uuid4()), ids["kp"], ids["occurrence"],
             "retired",
         )
-    # active + 非 NULL retired_at：拒绝（UPDATE 侧，先满足 ReviewState 与
-    # admitted_at 前置条件，隔离等价 CHECK）。
+    # active + 非 NULL retired_at：拒绝（UPDATE 侧，先满足 admitted_at 前置
+    # 条件，隔离等价 CHECK；首评状态与本断言无关）。
     item_id = str(uuid.uuid4())
     _insert_review_item(
         migrated_engine, item_id, ids["kp"], ids["occurrence"], "paused",
         admitted_at=TS,
     )
-    with migrated_engine.begin() as conn:
-        _insert_review_state(conn, item_id)
     with pytest.raises(Exception, match="status_retired_at_equivalent"):
         with migrated_engine.begin() as conn:
             conn.exec_driver_sql(
@@ -444,8 +506,8 @@ def test_reference_kp_allows_paused_review_item(migrated_engine: Engine) -> None
 
 
 def test_reference_never_activates_queued_item(migrated_engine: Engine) -> None:
-    """ADR-041 / §7.1：reference 意愿绝不激活 queued 项——即使已有配额证据
-    （admitted_at + ReviewState），转 active 仍被拒绝。"""
+    """ADR-041 / §7.1：reference 意愿绝不激活 queued 项——即使写入准入标记
+    （admitted_at，准入只写该标记），转 active 仍被拒绝。"""
     ids = _seed_minimal_world(migrated_engine)
     _insert_kp(migrated_engine, ids["kp"], "〜文化梗", "reference")
     _insert_occurrence(migrated_engine, ids, ids["occurrence"], ids["kp"])

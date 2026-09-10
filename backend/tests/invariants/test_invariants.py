@@ -13,7 +13,8 @@ P0 已点亮（schema 层语义）：
 
 P0 已覆盖数据层、但仍按 P5 排程服务语义保留 xfail：不变量 3（reference
 不激活 queued/active）、不变量 4（retired ⇔ retired_at、active 须有
-ReviewState、queued 无 ReviewState），行为断言见 `tests/test_constraints.py`。
+admitted_at；ReviewState 在首次评分时建立，准入但未首评的 active 合法，且
+不得对未准入项插入 ReviewState），行为断言见 `tests/test_constraints.py`。
 
 待点亮清单（pending-invariant ledger，点亮阶段对齐
 `docs/mvp-tech-and-phases.md` §3 各阶段验收）：
@@ -165,7 +166,8 @@ def test_invariant_4_at_most_one_default_review_item_per_kp() -> None:
     Occurrence 可各自建卡，额外卡片必须有用户显式操作记录；status=retired 与
     retired_at 非空等价，暂停恢复不改变退役标记（§9.4 / §7.1 / ADR-041）。
     P0 数据层守卫：retired 等价 CHECK + retired_at/admitted_at 单向触发器 +
-    active 须有 ReviewState（见 test_constraints）。已知缺口：当前
+    active 须有 admitted_at；ReviewState 在首次评分时建立，P0 不实现排程
+    （见 test_constraints）。已知缺口：当前
     `UniqueConstraint("kp_id", "occurrence_id")` 是 ADR-041 之前的形状——它比
     §7.1 更严（挡住 retired 后为同一 Occurrence 另建卡），又不等于 Occurrence
     唯一（同句挂不同 kp_id 仍可两条）。**P5 前滚迁移**须把它换成
@@ -261,7 +263,8 @@ def test_invariant_18_new_review_items_require_user_decision_and_quota() -> None
     决定原子提交；default 或 KP 策略变化不构成授权。首次准入排程须满足
     配额，未准入项为 queued；已准入项的暂停恢复不重复消耗配额、不清除进度
     （§9.18 / §7.1 / ADR-041）。P0 数据层已区分 queued 与 active 的
-    admitted_at/ReviewState 语义；授权与配额服务待 P5。"""
+    admitted_at 语义（ReviewState 与首条 ReviewEvent 由首次评分在 P5 建立）；
+    授权与配额服务待 P5。"""
     raise NotImplementedError
 
 

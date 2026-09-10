@@ -4,13 +4,17 @@
 
   - `queued`：用户已明确加入但尚未获得新卡配额；`admitted_at` 与
     `retired_at` 均为空，且不得有 ReviewState；
-  - `active`：已写入 `admitted_at` 且已有 ReviewState；
+  - `active`：已写入 `admitted_at`；**不要求**已有 ReviewState——首次评分前
+    没有排程投影是合法的（§7.1/§7.2），ReviewState 在首次评分时与首条
+    ReviewEvent 同一事务建立；
   - `paused`：reference 意愿或用户暂停；可发生于准入前（`admitted_at`
-    为空）或准入后（保留原准入标记）；
+    为空）、准入后未首评或已首评之后，保留原准入标记；
   - `retired`：`status = retired` 当且仅当 `retired_at` 非空（CHECK 强制）。
     reference 的 KP 无 active 卡，paused 卡保留（§9 不变量 3，触发器强制）；
 - `admitted_at` 与 `retired_at` 都是单向标记：一经写入不得修改或清除
   （§7.1“一经分配保留”；触发器强制）。
+- ReviewState 不是准入产物：首次评分时建立；初始 S/D 由首次评分决定，
+  P0 只保留列形状，不实现该算法（P5）。
 - 同一 Occurrence 默认至多一条非退役 ReviewItem；同一 KP 下不同 Occurrence
   可各自建卡（§7.1 / ADR-041）。产品规划 §8 允许用户显式增加卡片。
   当前表仍保留 ADR-041 之前的 `UniqueConstraint("kp_id", "occurrence_id")`：
@@ -52,8 +56,9 @@ class ReviewItem(UuidPk, Timestamped, Base):
             " OR (status IN ('queued', 'active', 'paused') AND retired_at IS NULL)",
             name="status_retired_at_equivalent",
         ),
-        # §7.1：queued 的 admitted_at 必须为空；active 必须已有 admitted_at；
-        # paused/retired 保留原准入标记，准入前暂停与未准入退役都可以为空。
+        # §7.1：queued 的 admitted_at 必须为空；active 必须已有 admitted_at
+        # （ReviewState 可选，首次评分时建立）；paused/retired 保留原准入
+        # 标记，准入前暂停与未准入退役都可以为空。
         CheckConstraint(
             "(status = 'queued' AND admitted_at IS NULL)"
             " OR (status = 'active' AND admitted_at IS NOT NULL)"
@@ -90,8 +95,11 @@ class ReviewItem(UuidPk, Timestamped, Base):
 
 class ReviewState(Timestamped, Base):
     """标准 SRS 状态字段（间隔、易度、到期时间、复习历史），字段形状对齐
-    FSRS Card（`docs/mvp-tech-and-phases.md` §1.1）。选定算法后补行为；
-    列名保持 FSRS 术语。"""
+    FSRS Card（`docs/mvp-tech-and-phases.md` §1.1）。
+
+    §7.2：本行在**首次评分**时与首条 ReviewEvent 同一事务建立，准入本身不
+    创建它；FSRS 的初始 stability/difficulty 由首次评分决定（P5）。P0 只
+    保留列形状与占位默认值，不实现任何排程算法。列名保持 FSRS 术语。"""
 
     __tablename__ = "review_states"
     __table_args__ = (UniqueConstraint("review_item_id"),)
@@ -99,7 +107,8 @@ class ReviewState(Timestamped, Base):
     review_item_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("review_items.id"), primary_key=True
     )
-    # FSRS Card 形状。
+    # FSRS Card 形状。默认值只是列形状占位；首次评分（P5）必须按首评结果
+    # 写入 state/stability/difficulty，P0 不在此处发明初始 S/D 算法。
     state: Mapped[str] = mapped_column(Integer, nullable=False, default=0)
     stability: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     difficulty: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)

@@ -418,9 +418,9 @@ def build_regression_sample(out_path: Path, *, force: bool = False) -> Path:
     三种 sentence 锚点、sidecar 版本戳、analyses 第二状态机组合、消息与
     小节（含 superseded 链与 kind 空值）、提取 run 与 retry 链、occurrence
     与 spans（含 BMP 外字符偏移）、review_items 四种回填分支（有 ReviewState
-    的 active、无状态的三态 active→queued、reference→paused、retired）、
-    review_states 含 history 数组、known_evidence 全部 7 个遗留 source 值、
-    dictionary 五表链、两类记忆、annotation。
+    的 active、无状态的三态 active→queued——保守的契约解释、reference→
+    paused、retired）、review_states 含 history 数组、known_evidence 全部 7
+    个遗留 source 值、dictionary 五表链、两类记忆、annotation。
 
     安全护栏：目标已存在且非空时拒绝覆盖（`FileExistsError`），必须先显式
     传 `force=True`（CLI `--force`）。该命令是历史/迁移工具链的一部分，绝不
@@ -633,8 +633,11 @@ def build_regression_sample(out_path: Path, *, force: bool = False) -> Path:
          (occ3, kp_reference, sent_b1, material_b, "secondary", "analysis_section",
           sec_s1, 1, '{}', analysis1, run1, "gpt-x", "extraction-v0",
           "绝命：旧库 reference 卡迁移样本。", None, ts, ts)),
-        # 旧三态模型允许“active 但没有 ReviewState”：当前契约中 active 必须
-        # 已有排程状态，因此该行前滚为 queued（等待首次配额），admitted_at 为空。
+        # 旧三态模型允许“active 但没有 ReviewState”。现行 §7.1/§7.2 也承认
+        # “已准入但未首评”的 active，因此把它前滚为 queued 是**保守的契约
+        # 解释**而非不变量推论：旧 schema 没有记录准入时间或配额证据，无法
+        # 证明该行曾获配额；映射为 queued（等待首次配额、admitted_at 为空）
+        # 不伪造历史。该解释已登记在 P0-contract 审计与迁移 docstring。
         ("INSERT INTO occurrences (id, kp_id, sentence_id, material_id, salience,"
          " content_source, section_id, section_revision, slot_bindings,"
          " source_analysis_id, extraction_run_id, extractor_model,"

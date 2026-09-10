@@ -1,123 +1,188 @@
 # P0-backend · handoff
 
-> 回填说明（lead，2026-09-10）：本文件从实现 agent 在会话中返回的两轮报告转录而成。
-> 按 `reports/README.md` 的“一包一份、返工覆盖”约定，这里把两轮 handoff 与 reviewer
-> 的 `## Review` 段合并保留，避免初次实现的契约账本或复审结论随覆盖丢失。报告是 gate
-> 证据，不是规范；冲突时现行契约优先。
-
-## 轮次 2 · CR 返工（最终交付状态）
+> 本文件由第二轮有界返工（ReviewState 建立时机 = 首次评分，`data-model.md`
+> §7.1/§7.2 2026-09-10）覆盖 body；`## Review` 段保留评审者原文，由评审者更新。
+> 前几轮的完整报告与 CR 记录见 git 历史（`306bb3c`、`d297358`、`5484224`、
+> `880fc92` 及其之前的提交）。
 
 ```text
 STATUS: done
-PACKET: docs/task-packets/CURRENT-PACKETS.md → P0-backend（CR 返工轮）
-BASELINE: HEAD=7144293，全部改动仍未提交；只动 backend/；docs/、prompts/、DESIGN.md、frontend/、experiments/ 未触碰
+PACKET: docs/task-packets/CURRENT-PACKETS.md → P0-backend（第二轮有界返工：ReviewState 建立时机改为首次评分）
+BASELINE: HEAD=3539c1a（P0-frontend 入库提交，不含 backend/）；只改 backend/（8 个改动文件 + 1 个新迁移）；docs/ 只写本报告；保留工作区中 lead 对 DESIGN.md、docs/adr/*.md 的未提交改动，未触碰
 ```
 
-逐条处理（CR Finding → 修复）：
+Contract ledger:
 
-| CR 项 | 处理 | 落点 |
-|---|---|---|
-| #2 历史安全：`build_regression_sample` 无条件 `unlink` | 目标已存在且非空时 `FileExistsError` 拒绝覆盖，需显式 `force=True`/`--force`；覆盖前不自动备份的行为写入 docstring | `db/maintenance.py`（函数 + CLI + 帮助）|
-| #3 空库验收依赖 `uv` 缓存 | 子进程改为 `sys.executable -m alembic`，不再依赖 `uv` | `tests/test_schema.py` |
-| #4 备份“自动化”未强制 | `env.py` 在非空库前滚前自动 `backup_database`（no-op 到 head 与空库不备份）；`forward_upgrade` 通过 `LEARNINGJ_MIGRATION_BACKUP_TAKEN` 握手，同一次升级只产生一份备份 | `alembic/env.py`、`db/maintenance.py` |
-| #5 唯一性口径 docstring 误导 | docstring 改为 **Occurrence 粒度**，并明确当前 `UniqueConstraint("kp_id","occurrence_id")` 既比 §7.1 更严、也不等价于 Occurrence 唯一；把“换 occurrence 粒度 / `status != 'retired'` 部分唯一索引”显式登记为 **P5 前滚迁移项** | `db/models/srs.py`、`tests/invariants/test_invariants.py`（不变量 4 reason） |
-| #6 “与 Base.metadata 逐字一致”错误断言 | 注释改“约束/索引**命名**一致；重建后列/约束**顺序不保证**”（a51、c66 两处） | 两个 migration |
-| Residual#2 存量 invariant 3 未扫描 | c66 回填后增加 `reference + active` 计数断言，非零即让迁移失败（备份保留） | `c66997d83060` |
-| Residual#4 失败恢复指引 | 失败诊断与模块 docstring 写明“先从备份恢复再重试，SQLite DDL 非完全事务性，勿原地重跑” | `db/maintenance.py` |
-| Residual#3 带数据旧库恢复证据弱 | 见下方“新证据” | |
+- `data-model.md` §7.1（2026-09-10）— queued：`admitted_at` 为空、无 ReviewState；
+  active：`admitted_at` 非空、**ReviewState 可以缺失**（已准入但未首评）；paused
+  可发生于准入前／准入后未首评／已首评之后，保留原准入标记；reference 走 paused
+  并保留既有状态（尚未首评则 ReviewState 与 ReviewEvent 都不存在）。
+- `data-model.md` §7.2 — ReviewState 是**已首次评分** ReviewItem 的当前投影，在首次
+  评分时与首条 ReviewEvent 同一事务建立；准入不构造 S/D，因此不在准入阶段创建该行。
+- `CURRENT-PACKETS.md` P0-backend 行 — “active: admitted_at set, ReviewState created
+  only at first rating”；remove/replace `trg_review_items_active_requires_state`，
+  keep `trg_review_states_requires_admission` valid；P0 不创建 ReviewItem 行、不排程。
+- ADR-041 / §9 不变量 3、4、18 — reference 不得有 active 卡；retired ⇔ `retired_at`
+  非空；新建复习项须有明确加入决定；P0 只落 schema 层语义。
+- `docs/mvp-tech-and-phases.md` §3 P0 第 2 条/验收（第 116、122 行）与 §P5（第 260、
+  261 行）**仍写 “active 必须已有 admitted_at 与 ReviewState”“准入…初始化
+  ReviewState”**，与现行 §7.1/§7.2 冲突。依 AGENTS.md 权威规则（`data-model.md` 是
+  字段级真相来源；该文档自述不复制字段/状态机定义）本包按 current contract 实施，
+  未改该文档，冲突登记在 Open issues。本包 scope 与 current contract 一致，故不判
+  `blocked`。
+- 拒绝的假设：不把“active ⇒ ReviewState”继续当作数据层不变量；不臆造历史准入时间；
+  不为“旧三态中无 ReviewState 的 active”编造配额证据。
 
-新增测试：覆盖护栏、直接 `alembic upgrade` 自动备份（含 manifest 校验）、已到 head 不备份、`forward_upgrade` 恰好一份备份。
+Changed:
 
-新证据（本轮实跑）：
+- `backend/src/learningj/db/models/invariant_triggers.py` — 删除
+  `_ACTIVE_REQUIRES_STATE` / `trg_review_items_active_requires_state`（前提废止）；
+  删除 `_NO_DIRECT_ACTIVE_INSERT` / `trg_review_items_no_direct_active_insert`（active
+  的跨表前提消失，同表 CHECK 已覆盖，保留会挡掉 §7.1 允许的“带配额直接建 active”）；
+  保留并更正注释 `trg_review_states_requires_admission`；重写模块 docstring 的 P5
+  写序（准入只写 `admitted_at`）；新增 `RETIRED_TRIGGER_NAMES`；`TRIGGER_NAMES`
+  由 8 → 6。
+- `backend/alembic/versions/d8b3f6a1c204_p0_drop_retired_review_state_triggers.py` —
+  新增前滚 revision：`DROP TRIGGER IF EXISTS` 两个退役定义。安装器只
+  `CREATE TRIGGER IF NOT EXISTS`，故必须由迁移清理既有库。
+- `backend/src/learningj/db/models/srs.py` — active 语义 bullet 与 `admitted_at`
+  CHECK 注释改为“ReviewState 可选、首次评分建立”；ReviewState docstring 与默认值
+  注明初始 S/D 由首评决定、P0 不实现算法。
+- `backend/alembic/versions/c66997d83060_p0_review_item_queued_status_and_.py` —
+  docstring 把“无状态 legacy active → queued”重记为显式契约 owner 解释（非不变量
+  推论）；新增回填后 `active_without_state = 0` 断言，并写明它只耦合该保守映射、
+  不是 schema 不变量。
+- `backend/src/learningj/db/maintenance.py` — 回归样本注释与 docstring 同步该解释。
+- `backend/tests/test_constraints.py` — 断言翻转为 active 只需 `admitted_at`、
+  ReviewState 可选；新增“准入未首评的 active 合法”“未准入项插 ReviewState 仍被拒”
+  正向/反向覆盖。
+- `backend/tests/test_migration.py` — HEAD 改为 `d8b3f6a1c204`；新增“已在
+  `c66997d83060` 且装过退役触发器的库升级后不再带它们”的复演测试、回填
+  `active_without_state=0` 耦合测试、升级库 ReviewState 仍须准入测试。
+- `backend/tests/test_schema.py` — 退役触发器不得随安装器复活。
+- `backend/tests/invariants/test_invariants.py` — 只改 owner reason/台账说明；25 条
+  owner 结构不变。
 
-- `pytest`（**不带** `UV_CACHE_DIR`）：`70 passed, 23 xfailed in 5.24s`（此前 66/23；+4 新测试；#3 修复后不再需要工作区缓存变量）。
-- 带数据旧备份 → 恢复 → 升级：`legacy-backup-1c1fc8f7fc96-*.db` 复制为新路径后直接 `alembic upgrade head`，输出 `[learningj] pre-migration backup: …/restored-backup-1c1fc8f7fc96-….db`（#4 生效），版本 `1c1fc8f7fc96 → c66997d83060`。
-- 恢复前后 **26 张表逐表行数完全一致**（总计 53 行，`count diffs: {}`）；`review_items` 回填 `[('active',admitted,¬retired),('retired',¬admitted,retired),('paused',¬,¬),('queued',¬,¬)]`；`fk violations: []`；`active without state: 0`、`queued with state: 0`。
-- 覆盖护栏：二次 `build-regression-sample` 退出码 1，报“拒绝覆盖…本命令不会自动备份”；`--force` 可显式覆盖。
+Public contract:
 
-未在本包处理（需 lead/后续包裁决，不擅自改）：
+- migration 链：`1c1fc8f7fc96 → a51c2aeea6cf → c66997d83060 → d8b3f6a1c204`（head）。
+  最终 DDL 不变（`status` 枚举、两条语义 CHECK、`admitted_at`）；变化的是触发器集合。
+- 触发器集合（6）：`trg_review_items_valid_requires_srs`、
+  `trg_review_items_no_active_update`、`trg_knowledge_points_reference_switch_guard`、
+  `trg_review_states_requires_admission`、`trg_review_items_retired_at_monotonic`、
+  `trg_review_items_admitted_at_monotonic`；`RETIRED_TRIGGER_NAMES` 导出
+  `trg_review_items_no_direct_active_insert`、`trg_review_items_active_requires_state`。
+- 命令不变（`backend/` 下执行）：`python -m learningj.db.maintenance
+  build-regression-sample|backup|verify-backup|upgrade`；
+  `python -m learningj.api.export_openapi --out fixtures/openapi.json`；
+  `python -m learningj.fixtures.material_fixture --out fixtures/material-fixture.json`。
 
-- CR #1：P0-contract 交接报告不在仓库内，`clear` 无法独立复核。属 `docs/` 只读范围，建议把结论落进提交，实现方不改 docs。
-- Residual#1：旧 `active` 无 ReviewState → `queued` 的映射已在 `c66997d83060` docstring 记录，但“是否登记进 P0-contract unmappable 清单”需前置报告/契约 owner 确认。
-- CR #5 的实质修复（`occurrence_id` 粒度部分唯一索引）登记为 **P5 前滚迁移项**，P0 不改产品唯一性口径。
+Verified（真实输出）:
 
-主要交付物：`backend/alembic/versions/c66997d83060_p0_review_item_queued_status_and_.py`、`backend/src/learningj/db/models/srs.py`、`backend/src/learningj/db/models/invariant_triggers.py`、`backend/alembic/env.py`、`backend/src/learningj/db/maintenance.py`、`backend/tests/test_migration.py`、`backend/tests/test_constraints.py`。
+- `pytest` — `77 passed, 23 xfailed in 9.75s`（上轮基线 71/23；+6 新测试）。
+- `tests/test_constraints.py` — `21 passed`。
+- `tests/invariants/test_invariants.py` — `2 passed, 23 xfailed`（25 owner：2 点亮 +
+  23 strict xfail；台账未变）。
+- `tests/test_contract_surface.py` — `5 passed`（OpenAPI 路径精确集合、无幽灵端点、
+  可复现）。
+- `tests/test_schema.py tests/test_migration.py` — `31 passed`。
+- 迁移复演（`/tmp/p0replay.FfQoIQ`）：`build-regression-sample` →
+  `backup`（`integrity_check: ok`、`foreign_key_check: ok`、`schema_version_before:
+  1c1fc8f7fc96`）→ `verify-backup`（隔离副本同上）→ 恢复后 `upgrade`
+  （`schema_version: 1c1fc8f7fc96 -> d8b3f6a1c204`，输出自动备份路径）。升级后：
+  `schema_version=[('d8b3f6a1c204',)]`、`integrity_check: ok`、
+  `foreign_key_check: []`、回填
+  `[('active',admitted,¬retired),('retired',¬admitted,retired),('paused',¬,¬),('queued',¬,¬)]`、
+  `active_without_state=0`、`queued_with_state=0`、`reference_active=0`、
+  `retired_present=[]`、`current_missing=[]`。
+- **退役触发器关键证据**（`/tmp/p0replay2.LyH3xa`）：先升级到 `c66997d83060`，手工
+  装回两个退役定义（共 8 个触发器：含 `trg_review_items_active_requires_state`、
+  `trg_review_items_no_direct_active_insert`），再 `maintenance upgrade` →
+  `c66997d83060 -> d8b3f6a1c204`；升级后 6 个触发器，`retired still present: []`、
+  `current missing: []`，且产生迁移前自动备份（版本 `c66997d83060`）。即退役触发器
+  是从**已升级**的库中清除，而非仅“全新 `create_all` 不含”。
+- fixture 复现：两个生成物重生成前后 sha256 完全一致
+  （`openapi.json 16c8fff1…`、`material-fixture.json 99fa2f11…`）。
+- `alembic heads` — 单一 head `d8b3f6a1c204`。
 
-> 后续（非 agent 报告原文）：返工轮的 P2 修复后被 lead 追加一行——`_run_alembic` 也还原
-> `LEARNINGJ_MIGRATION_BACKUP_TAKEN`（否则同进程连续升级两个库会静默跳过备份），并加回归
-> 测试；该改动与返工内容一起提交为 `306bb3c`。
+Known limitations:
 
-## 轮次 1 · 初次实现
+- P0 仍不创建 ReviewItem 行、不实现配额/FSRS 排程；本包只把 schema 与触发器对齐
+  §7.1/§7.2。
+- 直接 `INSERT ... (status='active', admitted_at=…)` 现在合法；这是契约允许的
+  “准入但未首评”形状。配额扣减与准入授权仍由 P5 服务层负责，数据层不校验配额。
+- 未在真实历史库上穷举；旧库若含 a51 未纠正的 `reference + active` 行，迁移仍以断言
+  失败中止并保留备份（既有行为，未改）。
 
-```text
-STATUS: done
-PACKET: docs/task-packets/CURRENT-PACKETS.md → P0-backend 行（按 ADR-041 对既有实现返工）
-BASELINE: 提交 7144293（“使现行契约与阶段计划保持一致”）；所有既有脏文件均已保留（AGENTS.md、DESIGN.md、docs/*、上一轮 backend/*、frontend/、experiments/）。磁盘上不存在前置包的 handoff 报告文件——我在整棵树上检索 PACKET: / STATUS: done / handoff 产物，只找到协议模板，因此前置基线就是这份未提交的工作区本身。按派发指令视为 P0-contract 闸门已通过。
-```
+Gate for next packet:
 
-契约账本：
+- Ready: ReviewItem schema/枚举/约束/触发器与迁移链已按 §7.1/§7.2 对齐；“active ⇒
+  已有 ReviewState”已从数据层移除，“ReviewState ⇒ 已准入”仍生效；退役触发器在
+  已升级库中被清除；存储形状与 `create_all` 命名一致。P0-integration 可据此验证
+  前滚/恢复与 fixture 复现。
+- Not safe to assume: P5 仍需按“准入只写 `admitted_at`；首次评分同事务建立
+  ReviewState + 首条 ReviewEvent”实施；`docs/mvp-tech-and-phases.md` 的 P0/P5
+  验收文字尚未同步（见 Open issues），不能据其旧措辞回退本次实现。
 
-- ADR-041 + `data-model.md` §7.1 —— ReviewItem 状态为 `queued`/`active`/`paused`/`retired`；queued ⇒ `admitted_at` 为空且无 ReviewState；active ⇒ `admitted_at` + ReviewState；retired ⇔ `retired_at` 非空；reference 走 `paused`，且绝不激活 queued 项。
-- `data-model.md` §§0/7/9（不变量 3、4、18）—— 事实追加保存、当前投影可更新；不为迁就旧模型放宽断言。
-- `mvp-tech-and-phases.md` §1.3/§1.6/§2.1 与 §3 P0 第 2 条 —— 只前滚、迁移前备份、P0 不创建 ReviewItem 行、不实现排程；新实体 DDL 跟随首次真实使用。
-- ADR-020/039/040 已读；未发现冲突。
-- 拒绝的假设：不臆造历史准入时间。`admitted_at` 仅由已记录的 `ReviewState` 证据推导；旧三态中“无 ReviewState 的 active”映射为 `queued`（唯一契约合法的非退役状态），绝不猜成 `active`。
-- 仅动自有范围：`backend/`、migration、后端测试。
+CR focus:
 
-Changed：
+- 删除 `trg_review_items_no_direct_active_insert` 的取舍：active 的跨表前提已随
+  ReviewState 时机消失，带 `admitted_at` 的直接 INSERT 属 §7.1 合法形状；确认
+  不变量 3（reference 的 INSERT/UPDATE/KP 切换三条守卫）未受影响。
+- 退役触发器路径：`d8b3f6a1c204` 只 DROP，依赖 `env.py` 事后安装当前 6 个；确认
+  对“已在 `c66997d83060` 且装过旧定义”的库确实生效、no-op/重复升级安全、且不误伤
+  当前定义。
+- `c66997d83060` 新增 `active_without_state=0` 断言与保守回填的耦合是否表述清楚，
+  不会被误读为“active 必须有 ReviewState”的 schema 不变量。
+- `trg_review_states_requires_admission` 仍拒绝对未准入项插入 ReviewState；
+  `create_all` 与迁移两条路径的触发器集合一致。
 
-- `backend/src/learningj/domain/enums.py` —— `ReviewItemStatus` 新增 `QUEUED`（顺序 queued/active/paused/retired）。
-- `backend/src/learningj/db/models/srs.py` —— 新增 `admitted_at` 列；新增 `status_retired_at_equivalent` 与 `admitted_at_semantics` 两条 CHECK。
-- `backend/src/learningj/db/models/invariant_triggers.py` —— 新增 `trg_review_items_no_direct_active_insert`、`trg_review_items_active_requires_state`、`trg_review_states_requires_admission`、`trg_review_items_admitted_at_monotonic`；安装守卫现在要求 `status` + `admitted_at` + `review_states`。
-- `backend/alembic/versions/c66997d83060_p0_review_item_queued_status_and_.py` —— 新增前滚迁移。
-- `backend/src/learningj/db/maintenance.py` —— 回归样本覆盖全部四种回填分支（active+state、无状态 active→queued、reference→paused、retired）。
-- 测试：`tests/test_constraints.py`（重写）、`tests/test_migration.py`、`tests/invariants/test_invariants.py`（不变量 3/4/18 措辞 + P0 覆盖说明）、`tests/test_schema.py`（触发器集合）。
-- `backend/fixtures/{openapi.json,material-fixture.json}` 重新生成（字节相同）。
+Open issues:
 
-Public contract：
-
-- 迁移 revision `c66997d83060`（`down_revision = a51c2aeea6cf`）；最终 DDL：`status VARCHAR CHECK (status IN ('queued','active','paused','retired'))`、`ck_review_items_status_retired_at_equivalent`、`ck_review_items_admitted_at_semantics`、`admitted_at DATETIME NULL`。
-- 触发器集合（8 个名字）由 `TRIGGER_NAMES` 导出；`alembic/env.py` 在迁移后幂等安装。
-- 命令（在 `backend/` 下执行）：`python -m learningj.db.maintenance build-regression-sample|backup|verify-backup|upgrade`；`python -m learningj.api.export_openapi --out fixtures/openapi.json`；`python -m learningj.fixtures.material_fixture --out fixtures/material-fixture.json`。
-
-Verified（真实输出）：
-
-- `pytest` —— `66 passed, 23 xfailed`（返工前基线 49/23/6errors，6 个 error 只是 `test_schema.py` 里被沙箱限制的 `uv run`；把 `UV_CACHE_DIR` 放到工作区后通过，故无回归）。
-- 旧库（1c1fc8f7fc96，带数据）→ head：`schema_version: 1c1fc8f7fc96 -> c66997d83060`；回填结果 `[('active','2026-01-15 00:00:00.000000',None),('retired',None,'…'),('paused',None,None),('queued',None,None)]`；`PRAGMA foreign_key_check = []`；`active without state = []`、`queued with state = []`。
-- 空库 → head：`schema_version: none -> c66997d83060`；0 行；`foreign_key_check = []`。
-- 既有开发库副本（`learningj.db`，a51）→ head：`a51c2aeea6cf -> c66997d83060`，外键干净。
-- 迁移前备份 + 隔离恢复：`backup` → `integrity_check: ok`、`foreign_key_check: ok`；`verify-backup` → `integrity_check: ok`、`foreign_key_check: ok`、`schema_version: 1c1fc8f7fc96`。
-- `create_all` 与迁移 DDL 一致性：`metadata constraints == migration constraints: True`。
-- fixture 连续两次生成：sha256 完全一致。
-
-Known limitations：
-
-- P0 刻意不创建 ReviewItem 行、不实现配额/排程；只交付 schema、约束与触发器。
-- “active ⇒ ReviewState”无法做即时 CHECK（ReviewState 外键依赖 ReviewItem 行先存在），故由触发器承担：直接 `INSERT … active` 被拒绝，`UPDATE … active` 必须先有 ReviewState。对 P5 的后果：同一事务内准入需按 `paused + admitted_at` → 插入 ReviewState → `active` 的写序（已写入 `invariant_triggers.py` 文档）。
-- 旧三态中“无 ReviewState 的 active”回填为 `queued`（记录在迁移 docstring）；`admitted_at` 为证据推导而非精确值。
-- 既有 `backend/learningj-backup-1c1fc8f7fc96-*.db` 的 manifest 由更早版本工具生成，缺少 `foreign_key_check` 字段，因此当前 `verify-backup` 会以“必备字段缺失”拒绝它们。该行为早于本次改动；这些 DB 副本本身在重新生成经校验的备份后可正常前滚。
-
-Gate for next packet：
-
-- Ready：ReviewItem 的 schema/枚举/约束/触发器与前滚迁移已符合 ADR-041 §7.1；回归样本覆盖每条回填分支；P0-integration 可据此验证前滚/恢复与 fixture 复现。
-- Not safe to assume：P4b/P5 在未遵循“先写状态再转 active”的写序前，不应创建 ReviewItem 行；`admitted_at`/ReviewState 行为尚不存在。
-
-CR focus：
-
-- `c66997d83060` 的两阶段 SQLite 重建（放宽枚举 → 回填 → 落 admitted_at CHECK）；确认无历史丢失、且中间态不会放进非法行。
-- 触发器互锁：`trg_review_items_no_direct_active_insert` / `trg_review_items_active_requires_state` / `trg_review_states_requires_admission` 只有一种可满足写序；确认这是契约推论而非过度约束，并确认 reference 项永不可能到达 active。
-- 旧库真实历史行下 “无状态 active → queued”“reference → paused” 的回填映射。
-- `Base.metadata`（`create_all` 路径）与迁移之间的 CHECK/触发器一致性。
-
-Open issues：
-
-- 磁盘上没有 P0-backend 的前置 handoff 报告（只有未提交的那一轮实现）；我以工作区为基线并如实记录，未做猜测。未改任何 spec；`docs/`、`prompts/`、`DESIGN.md` 均未触碰。
+- **契约文档不一致（需 lead 处理；本包未改 docs）**：`docs/mvp-tech-and-phases.md`
+  第 46 行、§3 P0 第 116 行与第 122 行验收（“active 必须已有 admitted_at 与
+  ReviewState”）、§P5 第 260 行（同）、第 261 行（“准入…并初始化 ReviewState”）
+  仍描述旧语义，与 `data-model.md` §7.1/§7.2（2026-09-10）冲突。依 AGENTS.md 权威
+  规则，字段级语义以 `data-model.md` 为准，且该文档自述不复制字段/状态机定义；本包
+  按 current contract 实施并在此登记，建议 lead 同步上述段落，否则 P0/P5 验收文字会
+  与已批准实现相悖。本包 scope 与 current contract 一致，因此不判 `blocked`。
+- 无其它未决冲突。
 
 ---
 
 ## Review（CR，reviewer）
 
 > 2026-09-10 并入（lead 从 CR 会话转录）。按 `reports/README.md` 的“一包一份”约定，复审不再单独成文件；原 `P0-backend-cr.md` 的内容移至此处，其历史保留在 git。
+>
+> **2026-09-10 第二轮有界返工复审（当前）**：对 `306bb3c` 之上、把 ReviewState 建立时机改为“首次评分”的未提交返工（`data-model.md` §7.1/§7.2 2026-09-10）做独立复核。当前 verdict 见下方代码块；本轮之前的 Review 记录原样下移至“上一轮 Review 记录”。
+
+```text
+VERDICT: approve
+Findings: none
+Evidence checked:
+- 写范围：`git status --porcelain` = 8 个已跟踪 `backend/` 文件改动 + 新迁移 `backend/alembic/versions/d8b3f6a1c204_p0_drop_retired_review_state_triggers.py`（未跟踪）+ 本报告；`experiments/` 未跟踪且与本包无关；无 frontend/、prompts/ 或其它 docs/ 改动。
+- `git diff HEAD -- backend`：删除 `_NO_DIRECT_ACTIVE_INSERT`/`_ACTIVE_REQUIRES_STATE` 及两个触发器名；保留 `trg_review_states_requires_admission`，其主体 DDL 与 HEAD 一致（仅注释改写）；`TRIGGER_NAMES` 8→6，新增 `RETIRED_TRIGGER_NAMES`；`UniqueConstraint("kp_id","occurrence_id")` 内容与 HEAD 一致（`srs.py:71`）未被触碰。
+- `.venv/bin/python -m pytest -q` → `77 passed, 23 xfailed`（与声称一致）。
+- `.venv/bin/python -m pytest tests/test_constraints.py -q` → `21 passed`。
+- `.venv/bin/python -m pytest tests/invariants/test_invariants.py -q` → `2 passed, 23 xfailed`（25 条 owner 台账未变）。
+- `.venv/bin/python -m pytest tests/test_contract_surface.py -q` → `5 passed`（精确路径集合、无幽灵端点）。
+- `.venv/bin/python -m pytest tests/test_schema.py tests/test_migration.py -q` → `31 passed`。
+- 关键非显然点（已复现退役触发器从**已升级**库清除）：`pytest tests/test_migration.py::test_upgrade_drops_retired_triggers_from_already_migrated_db -v` → `1 passed`；并独立复演（`/tmp/p0cr2.6m01Bu`）：`alembic -x db_url=… upgrade c66997d83060` → 按上一轮定义手工装回两个退役触发器（8 个）→ `alembic … upgrade head` → 版本 `d8b3f6a1c204`、退役触发器 `[]`、当前 6 个齐备、`integrity_check ok`、升级前自动备份（`c66997d83060`）。
+- 迁移复演（`/tmp/p0cr.oXR66i`，maintenance CLI）：`build-regression-sample` → `backup`（`schema_version_before=1c1fc8f7fc96`、integrity/fk ok）→ `verify-backup`（ok/ok）→ 复制 → `upgrade`（`1c1fc8f7fc96 -> d8b3f6a1c204`）。升级后：`schema_version=d8b3f6a1c204`、`integrity_check=ok`、`foreign_key_check=[]`、四回填分支 `active(admitted,¬retired)/retired(¬admitted,retired)/paused(¬,¬)/queued(¬,¬)`、`active_without_state=0`、`queued_with_state=0`、`reference_active=0`、`retired_present=[]`、`current_missing=[]`。
+- `alembic heads` → 单一 head `d8b3f6a1c204`（链 `1c1fc8f7fc96→a51c2aeea6cf→c66997d83060→d8b3f6a1c204`）；新迁移 `downgrade()` 抛 `NotImplementedError`（forward-only）。
+- fixture：`export_openapi`、`material_fixture` 重生成到临时目录，sha256 与跟踪文件逐字节一致（`16c8fff1…`、`99fa2f11…`）。
+- 契约源：`data-model.md` §0/§7.1/§7.2/§9（不变量 3/4/18）、ADR-041、`CURRENT-PACKETS.md` P0-backend 行与 2026-09-10 第二遍说明、`mvp-tech-and-phases.md` §1/§3 P0/§P5、三个 protocol；并读新迁移与 `invariant_triggers.py`/`srs.py`/`c66997d83060` 全文。
+- 文档一致性：commit `63858ec` 已把 `mvp-tech-and-phases.md` 中 `active 必须已有 admitted_at 与 ReviewState`、`准入…初始化 ReviewState`（:46/:116/:122/:259-261）改为现行语义；handoff body 的 Open issue（:142-148）据此**已关闭**（body 按协议保留原文，本块记录关闭）。
+Gate assessment:
+- P4b/P5 可安全基于此实现：数据层已表达 queued（`admitted_at` NULL、无 ReviewState）/ active（`admitted_at` 非空、ReviewState 可缺）/ paused（保留原标记）/ retired（⇔`retired_at`），ReviewState 仅首次评分建立；`trg_review_states_requires_admission` 在 `create_all` 与升级库两条路径均生效（未削弱）；退役触发器在已升级库中被清除而非仅全新库不含。P4b 建 queued、P5 准入只写 `admitted_at`、首评同事务建 ReviewState+首条 ReviewEvent，与当前 schema 无冲突，且 `mvp-tech-and-phases.md` 验收文字已同步（commit `63858ec`）。
+- 不应当作前提：P4b/P5 不得再假设 `active ⇒ ReviewState`；`UniqueConstraint("kp_id","occurrence_id")` 的替换仍是 P5 前滚迁移项。
+Residual risks:
+- `c66997d83060` 新增的 `active_without_state=0` 断言只对该 revision 尚未运行的库生效，已记录该 revision 的库不会重跑它；该断言由保守回填 SQL 结构性保证，未见数据风险。
+- 真实历史库若存在 a51 未纠正的 `reference + active` 行，迁移仍以断言失败中止并保留备份（既有行为，未变；未在真实历史库穷举）。
+- `docs/mvp-tech-and-phases.md` §2（:90）仍称第二次有界返工“待完成 / 仍有 active⇒ReviewState 触发器”；本返工提交后需 lead 更新该状态行（属状态同步，非契约冲突）。
+```
+
+### 上一轮 Review 记录（第一轮实现 + ADR-041 返工，`306bb3c`，VERDICT: approve）
 
 ```text
 VERDICT: approve

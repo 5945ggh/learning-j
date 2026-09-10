@@ -18,15 +18,30 @@ the ADR-041 re-sync. It extends the already-forward-migrated schema (revision
     its admission marker; one without is a pre-admission pause (§7.1/§7.2);
   * legacy `active` with a ReviewState → `active`, `admitted_at` taken from
     `review_states.created_at` (the recorded admission evidence);
-  * legacy `active` without a ReviewState → `queued`. The current contract
-    requires active to have a ReviewState; an unmapped three-state "active"
-    without scheduling state is exactly "joined but not yet admitted".
+  * legacy `active` without a ReviewState → `queued`. This is a deliberate
+    contract-owner compatibility choice, not an implication of an invariant:
+    under §7.1/§7.2 (2026-09-10) "admitted but ungraded" is itself a legal
+    active state, so these rows could equally map to active. They are queued
+    because the legacy three-state schema recorded no admission time and no
+    quota evidence for them, and inventing one would fabricate history; the
+    P0-contract audit logs this as "deliberate compatibility interpretation,
+    not proof of historical quota admission".
   * `retired_at` is never rewritten; `admitted_at` is set from evidence only.
+
+The post-backfill assertion `active_without_state = 0` is meaningful **only
+because of that conservative choice**: every legacy state-less active row became
+queued, so no active row is left without a ReviewState. It checks this backfill's
+outcome rather than restating a schema invariant — active without a ReviewState
+is legal under the current contract (§7.1/§7.2).
 
 The current trigger set is installed by `alembic/env.py` after migrations
 (`learningj.db.models.invariant_triggers`, idempotent); the stale pre-rework
 definitions are dropped here so the SQLite table rebuild cannot trip over old
-bodies.
+bodies. That installed set still contained
+`trg_review_items_active_requires_state` and
+`trg_review_items_no_direct_active_insert`, which the first-rating contract
+retires; forward revision `d8b3f6a1c204` drops them from already-upgraded
+databases.
 
 Reversibility: this toolchain is forward-only (`mvp-tech-and-phases.md` §1.1);
 `downgrade` intentionally raises. History safety comes from the mandatory
@@ -178,6 +193,24 @@ def upgrade() -> None:
         raise RuntimeError(
             "invariant 3 violation after backfill: "
             f"{violations} active review item(s) belong to reference KPs"
+        )
+
+    # 回填结果断言：保守映射（无状态的 legacy active → queued）保证这一步之后
+    # `active ⇒ 已有 ReviewState` 成立。它只核验本次回填的选择与边界，**不是**
+    # 现行 schema 不变量——§7.1/§7.2 允许“已准入但未首评”的 active 没有
+    # ReviewState。若将来把无状态 active 改映射为 active，必须同时移除本断言
+    # 并重新论证历史解释。
+    active_without_state = op.get_bind().execute(
+        sa.text(
+            "SELECT count(*) FROM review_items r"
+            " WHERE r.status = 'active' AND NOT EXISTS ("
+            "   SELECT 1 FROM review_states rs WHERE rs.review_item_id = r.id)"
+        )
+    ).scalar_one()
+    if active_without_state:
+        raise RuntimeError(
+            "conservative backfill failed: "
+            f"{active_without_state} active review item(s) lack a ReviewState"
         )
 
     # 3) 再重建一次，落下 §7.1 的 admitted_at 语义 CHECK（此时全部行已满足）。

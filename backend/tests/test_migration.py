@@ -4,11 +4,12 @@
 - 空库与旧库回归样本（1c1fc8f7fc96，带数据）都能前滚到 head；
 - analyses 第二状态机列被移除、保留列数据完好；
 - review_items.status 回填到 ADR-041 语义：legacy active + ReviewState →
-  active（写 admitted_at）、无状态 active → queued、reference → paused、
-  retired 保持，并受 queued/active 语义 CHECK 约束；
+  active（写 admitted_at）、无状态 active → queued（保守的契约解释）、
+  reference → paused、retired 保持，并受 queued/active 语义 CHECK 约束；
 - extraction_runs.analysis_revision_id 兼容列存在且可空；
 - 触发器按 status/admitted_at 语义重建（reference 禁 active、允许 paused、
-  active 需 ReviewState、queued 无 ReviewState）；
+  ReviewState 须已准入）；前滚到 head 的库不再带首评契约已退役的
+  `trg_review_items_active_requires_state` / `trg_review_items_no_direct_active_insert`；
 - 备份可打开、含版本标记，验证在隔离副本执行；
 - 升级失败保留备份与诊断。
 """
@@ -36,7 +37,8 @@ from learningj.db.maintenance import (
 )
 
 LEGACY = "1c1fc8f7fc96"
-HEAD = "c66997d83060"
+PREVIOUS_HEAD = "c66997d83060"
+HEAD = "d8b3f6a1c204"
 LEGACY_TS = "2026-01-15 00:00:00.000000"
 DROPPED_COLUMNS = {"status", "extraction_status", "extraction_trigger", "session_closed", "turn_count"}
 
@@ -237,9 +239,11 @@ def test_upgraded_constraints_enforce_status_semantics(upgraded_sample: Engine) 
         # queued 的 admitted_at 必须为空。
         with pytest.raises(Exception, match="admitted_at_semantics"):
             _try({**base, "id": "c" * 32, "status": "queued", "admitted": ts})
-        # active 不能直接 INSERT（必须已有 ReviewState）。
-        with pytest.raises(Exception, match="must already have"):
-            _try({**base, "id": "d" * 32, "status": "active", "admitted": ts})
+        # active 必须有 admitted_at（准入标记）；缺标记的直接 INSERT 被 CHECK 拒绝。
+        with pytest.raises(Exception, match="admitted_at_semantics"):
+            _try({**base, "id": "d" * 32, "status": "active"})
+        # §7.1/§7.2：已准入但未首评的 active 合法——没有 ReviewState 也可以。
+        _try({**base, "id": "1" * 32, "status": "active", "admitted": ts})
 
 
 def test_upgraded_trigger_allows_paused_card_for_reference_kp(upgraded_sample: Engine) -> None:
@@ -294,7 +298,8 @@ def test_upgraded_trigger_allows_paused_card_for_reference_kp(upgraded_sample: E
             ),
             {"id": "f" * 32, "kp": reference_kp, "occ": "g" * 32},
         )
-    # 准入顺序：paused(admitted_at) → ReviewState → active。
+    # §7.1/§7.2 写序：准入只写 admitted_at（reference 项停在 paused），首次
+    # 评分再建立 ReviewState；随后转 active 的尝试被不变量 3 拒绝。
     with upgraded_sample.begin() as conn:
         conn.execute(
             text(
@@ -321,8 +326,11 @@ def test_upgraded_trigger_allows_paused_card_for_reference_kp(upgraded_sample: E
 
 
 def test_upgraded_database_has_current_trigger_set(upgraded_sample: Engine) -> None:
-    """前滚后当前触发器集合完整（旧定义已替换，含 admitted_at/ReviewState 守卫）。"""
-    from learningj.db.models.invariant_triggers import TRIGGER_NAMES
+    """前滚后触发器集合含当前定义，且不含首评契约已退役的两个定义。"""
+    from learningj.db.models.invariant_triggers import (
+        RETIRED_TRIGGER_NAMES,
+        TRIGGER_NAMES,
+    )
 
     with upgraded_sample.connect() as conn:
         triggers = {
@@ -332,6 +340,135 @@ def test_upgraded_database_has_current_trigger_set(upgraded_sample: Engine) -> N
             ).fetchall()
         }
     assert set(TRIGGER_NAMES) <= triggers, sorted(set(TRIGGER_NAMES) - triggers)
+    assert not (set(RETIRED_TRIGGER_NAMES) & triggers), sorted(
+        set(RETIRED_TRIGGER_NAMES) & triggers
+    )
+
+
+def test_upgrade_drops_retired_triggers_from_already_migrated_db(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """非显然点：安装器只 `CREATE TRIGGER IF NOT EXISTS`、从不 DROP，因此已跑过
+    `c66997d83060` 的库会带着首评契约已退役的定义；前滚迁移 `d8b3f6a1c204`
+    必须把它们从**已升级**的库中清除，而不只是让全新 `create_all` 不含它们。
+    """
+    monkeypatch.delenv(BACKUP_TAKEN_ENV, raising=False)
+    from learningj.db.models.invariant_triggers import (
+        RETIRED_TRIGGER_NAMES,
+        TRIGGER_NAMES,
+    )
+
+    db_path = build_regression_sample(tmp_path / "legacy.db")
+    _run_alembic(PREVIOUS_HEAD, db_path)
+
+    # 复刻上一轮 env.py 的安装结果：该库带着两个已退役定义。
+    retired_ddl = (
+        (
+            "trg_review_items_no_direct_active_insert",
+            "CREATE TRIGGER trg_review_items_no_direct_active_insert"
+            " BEFORE INSERT ON review_items WHEN NEW.status = 'active'"
+            " BEGIN SELECT RAISE(ABORT, 'retired definition'); END",
+        ),
+        (
+            "trg_review_items_active_requires_state",
+            "CREATE TRIGGER trg_review_items_active_requires_state"
+            " BEFORE UPDATE OF status ON review_items"
+            " WHEN NEW.status = 'active' AND NOT EXISTS ("
+            "   SELECT 1 FROM review_states WHERE review_item_id = NEW.id)"
+            " BEGIN SELECT RAISE(ABORT, 'retired definition'); END",
+        ),
+    )
+    conn = sqlite3.connect(db_path)
+    try:
+        with conn:
+            for name, ddl in retired_ddl:
+                conn.execute(f"DROP TRIGGER IF EXISTS {name}")
+                conn.execute(ddl)
+        before = {
+            row[0]
+            for row in conn.execute("SELECT name FROM sqlite_master WHERE type='trigger'")
+        }
+    finally:
+        conn.close()
+    assert set(RETIRED_TRIGGER_NAMES) <= before, "前置条件：应先在旧 head 上安装退役定义"
+
+    _run_alembic("head", db_path)
+
+    conn = sqlite3.connect(db_path)
+    try:
+        after = {
+            row[0]
+            for row in conn.execute("SELECT name FROM sqlite_master WHERE type='trigger'")
+        }
+        version = conn.execute("SELECT version_num FROM alembic_version").fetchall()
+    finally:
+        conn.close()
+    assert version == [(HEAD,)]
+    assert not (set(RETIRED_TRIGGER_NAMES) & after), sorted(
+        set(RETIRED_TRIGGER_NAMES) & after
+    )
+    assert set(TRIGGER_NAMES) <= after, sorted(set(TRIGGER_NAMES) - after)
+
+
+def test_upgrade_backfill_leaves_no_active_without_state(upgraded_sample: Engine) -> None:
+    """保守回填的耦合断言：无状态 legacy active → queued，因此前滚后不存在
+    “active 而无 ReviewState”的行。
+
+    这是本次回填结果的性质，**不是** schema 不变量——§7.1/§7.2 允许已准入但
+    未首评的 active 没有 ReviewState（见
+    `test_upgraded_constraints_enforce_status_semantics`）。
+    """
+    with upgraded_sample.connect() as conn:
+        active_without_state = conn.execute(
+            text(
+                "SELECT count(*) FROM review_items r WHERE r.status = 'active'"
+                " AND NOT EXISTS (SELECT 1 FROM review_states rs"
+                "                 WHERE rs.review_item_id = r.id)"
+            )
+        ).scalar_one()
+    assert active_without_state == 0
+
+
+def test_upgraded_review_state_requires_admission(upgraded_sample: Engine) -> None:
+    """§7.2：前滚后的库中，未准入项的 ReviewState 插入仍被触发器拒绝。"""
+    item_id = "a" * 32
+    with upgraded_sample.begin() as conn:
+        kp = conn.execute(
+            text("SELECT kp_id FROM knowledge_points WHERE retention = 'srs' LIMIT 1")
+        ).fetchone()[0]
+        conn.execute(
+            text(
+                "INSERT INTO occurrences (id, kp_id, sentence_id, material_id,"
+                " salience, content_source, section_id, section_revision,"
+                " source_analysis_id, extraction_run_id, extractor_model,"
+                " extractor_prompt_version, brief, created_at, updated_at)"
+                " SELECT :new_occ, :kp, sentence_id, material_id, 'primary',"
+                " content_source, section_id, section_revision, source_analysis_id,"
+                " extraction_run_id, extractor_model, extractor_prompt_version,"
+                " '测试出现', created_at, updated_at FROM occurrences LIMIT 1"
+            ),
+            {"new_occ": "9" * 32, "kp": kp},
+        )
+        conn.execute(
+            text(
+                "INSERT INTO review_items (id, kp_id, occurrence_id, status,"
+                " admitted_at, retired_at, created_at, updated_at)"
+                " VALUES (:id, :kp, :occ, 'queued', NULL, NULL,"
+                " '2026-01-15 00:00:00', '2026-01-15 00:00:00')"
+            ),
+            {"id": item_id, "kp": kp, "occ": "9" * 32},
+        )
+    with pytest.raises(Exception, match="requires an admitted review item"):
+        with upgraded_sample.begin() as conn:
+            conn.execute(
+                text(
+                    "INSERT INTO review_states (review_item_id, state, stability,"
+                    " difficulty, reps, lapses, history, created_at, updated_at)"
+                    " VALUES (:item, 0, 0.0, 0.0, 0, 0, '[]',"
+                    " '2026-01-15 00:00:00', '2026-01-15 00:00:00')"
+                ),
+                {"item": item_id},
+            )
 
 
 def test_foreign_keys_survive_table_rebuild(upgraded_sample: Engine) -> None:

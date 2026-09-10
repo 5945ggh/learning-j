@@ -141,7 +141,10 @@ def test_key_unique_constraints(upgraded_engine: Engine) -> None:
 
 
 def test_invariant_triggers_installed(upgraded_engine: Engine) -> None:
-    from learningj.db.models.invariant_triggers import TRIGGER_NAMES
+    from learningj.db.models.invariant_triggers import (
+        RETIRED_TRIGGER_NAMES,
+        TRIGGER_NAMES,
+    )
 
     with upgraded_engine.connect() as conn:
         triggers = {
@@ -151,6 +154,10 @@ def test_invariant_triggers_installed(upgraded_engine: Engine) -> None:
             ).fetchall()
         }
     assert set(TRIGGER_NAMES) <= triggers, sorted(set(TRIGGER_NAMES) - triggers)
+    # 首评契约已退役的定义不得随安装器复活。
+    assert not (set(RETIRED_TRIGGER_NAMES) & triggers), sorted(
+        set(RETIRED_TRIGGER_NAMES) & triggers
+    )
 
 
 def test_spans_is_standalone_table(upgraded_engine: Engine) -> None:
