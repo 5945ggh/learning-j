@@ -1,42 +1,35 @@
-# {阶段}-{职责}：{任务名称}
+# {packet}: {bounded delivery}
 
-将本文件开头的公共前言与本文件全文一起交给 subagent。阶段细节以对应的 `docs/` 文件为准。
+## Agent instruction
 
-## 公共前言
+Read `docs/task-packets/protocols/implementation.md` first, then every source named below. Resolve named ADRs through `docs/adr.md` and read their current files; never treat `archived/` as current behavior. Inspect the predecessor handoff and repository before editing.
 
-你正在参与 LearningJ 的实现。这是一个日语沉浸式学习辅助工具，核心链路是：素材导入 → 算法解析 → AI 解析 → 用户触发抽取 → 知识点沉淀 → 再遇与复习。
+## Start gate
 
-开始前按以下顺序阅读：
+- {exact prior public contract and evidence}
 
-1. `docs/LearningJ-plan-v5.md`：只读本阶段涉及章节、§14 MVP 边界、§15 未决事项。
-2. `docs/adr.md`：只读本任务点名的 ADR。
-3. `docs/data-model.md`：只读本任务涉及实体和 §9 不变量清单。
-4. `docs/prompt-contracts.md`：凡涉及解析、追问、抽取、记忆注入时必须阅读。
-5. `docs/mvp-tech-and-phases.md`：确认技术栈与阶段验收。
+## Scope
 
-发生冲突时，以当前 `docs/` 中的 `data-model.md` 与 `prompt-contracts.md` 为字段和输入输出契约，以 `adr.md` 为决策理由，以 `LearningJ-plan-v5.md` 为产品范围。不得以 `references/` 中的旧内容覆盖 `docs/`。
+- **Own:** {paths and responsibility}
+- **Do not change:** `docs/`, `prompts/`, `DESIGN.md`, {other paths}
+- **Out of scope:** {explicit exclusions}
 
-你不得修改 `docs/`、`references/`、`DESIGN.md` 或本任务未授权的目录。发现冲突、缺字段、无法满足的约束时，暂停受影响实现并在报告中说明，不自行选一个解释继续。
+## Contract reading path
 
-全项目硬约束：永不原地改写；外部资源记录必须有版本戳；字符偏移使用 Unicode code point；上层不得按素材类型分支；算法负责可校验的形态内容，模型只给语义和原文子串；Lexeme 统计与 KnowledgePoint 进度永不相加；不引入未经批准的依赖。
+- {source and exact sections, including ADRs}
 
-## 本任务
+## Required outcome
 
-- 阶段：{P0–P5}
-- 职责：{backend | frontend | integration}
-- 目标：{一句话}
-- 依赖：{上一阶段的 public contract}
-- 可写范围：{明确目录}
-- 禁写范围：{明确目录}
+- {observable behavior and invariants}
 
-## 执行要求
+## Acceptance evidence
 
-开始编码前，先列出已确认契约、任务外内容和潜在阻塞。先写或补充行为测试，再实现代码。不要顺手重构相邻模块，不要用放宽契约的方式解决集成问题。
+- {tests / commands / observable checks}
 
-## 验收
+## Publish to the next packet
 
-- {验收项}
+- {API, fixture, migration, component props, command, limitation}
 
-## 报告
+## Report
 
-使用 `docs/task-packets/README.md` 规定的交接报告格式。
+Use `docs/task-packets/protocols/handoff.md` exactly; list every untested risk or interpretation under `CR focus`.

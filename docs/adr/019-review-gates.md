@@ -7,7 +7,7 @@ superseded_by: [ADR-037]
 # ADR-019 知识保留与复习闸门
 ## 决策
 
-Occurrence 与有效提取的 KP 保留；新卡受每日配额、默认每 KP 一条及 salience/FIFO 优先级控制。所有会话模式新建复习项都须用户明确 srs 选择，取代旧 batch/background 默认自动建卡。
+Occurrence 与有效提取的 KP 保留；新卡受每日配额、按 Occurrence 的显式选择及 salience/FIFO 优先级控制。所有会话模式新建复习项都须用户明确选择，取代旧 batch/background 默认自动建卡；ReviewItem 的 Occurrence 粒度与双层 retention 见 ADR-041。
 
 ## 理由与取舍
 
@@ -15,4 +15,4 @@ Occurrence 与有效提取的 KP 保留；新卡受每日配额、默认每 KP �
 
 ## 当前落点
 
-[数据模型 §7](../data-model.md#7-srs)、[ADR-037](037-study-session.md)、[ADR-039](039-history-protection.md)
+[数据模型 §7](../data-model.md#7-srs)、[ADR-037](037-study-session.md)、[ADR-039](039-history-protection.md)、[ADR-041](041-occurrence-review-targets.md)

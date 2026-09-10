@@ -5,11 +5,15 @@
 LearningJ's documents are a contract, not background reading. Before changing
 code, identify the phase and read the relevant sources in this order:
 
-**Contract migration status (2026-09-09):** the study-session, Agent, history,
-evidence, and query-projection contracts are reflected in the current product,
-data-model, prompt, ADR, design, and phase-plan documents. The task packets
-still require a separate synchronization pass and are not ready for dispatch.
-This status does not certify implementation or phase completion.
+**Contract migration status (2026-09-10):** the study-session, Agent, history,
+evidence, query-projection, and occurrence-review-target (ADR-041) contracts are
+reflected in the current product, data-model, prompt, ADR, design, and
+phase-plan documents; the task-packet catalogue (`docs/task-packets/CURRENT-PACKETS.md`)
+has been re-synced to ADR-041 (Occurrence-level confirmation, P4b creates queued
+ReviewItem, P5 owns first admission). P0-backend was implemented one round before
+this sync (three-state ReviewItem, no `admitted_at`) and requires a rework pass
+before its packet is done; P4b/P5 must not be dispatched until that rework is
+aligned. This status does not certify implementation or phase completion.
 
 1. `docs/LearningJ-plan-v5.md` for product intent, MVP boundary, and the
    project's only index of open decisions.

@@ -48,3 +48,4 @@
 | <a id="adr-038"></a>ADR-038 | [可编辑解析文档与讨论 Agent](adr/038-document-agent.md) | 已接受（2026-09-08） |
 | <a id="adr-039"></a>ADR-039 | [分级历史保护与可更新当前状态](adr/039-history-protection.md) | 已接受（2026-09-08） |
 | <a id="adr-040"></a>ADR-040 | [证据、用户裁定与查询投影](adr/040-evidence-and-query-projections.md) | 已接受（2026-09-09） |
+| <a id="adr-041"></a>ADR-041 | [Occurrence 级复习对象与双层复习意愿](adr/041-occurrence-review-targets.md) | 已接受（2026-09-10） |

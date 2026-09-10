@@ -28,9 +28,10 @@
 | 解析工作文档 | 流式未提交草稿可更新；一次有效编辑提交新的文档 revision，只新增变化的小节版本 |
 | 被引用的文档／小节版本 | 内容和顺序不可覆盖、不可清理；提取固定引用整个文档版本，Occurrence 固定引用小节版本 |
 | 无外部引用的草稿版本 | 可按撤销保留策略清理；不按流式 token 建历史版本 |
-| KnownEvidence、LexemeKnowledgeDecision、KnownEvidenceRetraction、已发布导入结果、Occurrence、已提交提取结果、ReviewEvent | 追加保存；纠错或重跑记录新的事实，不重写来源 |
+| KnownEvidence、LexemeKnowledgeDecision、KnownEvidenceRetraction、已发布导入结果、Occurrence 的提取内容与来源、已提交提取结果、ReviewEvent | 追加保存；纠错或重跑记录新的事实，不重写来源 |
 | 会话阶段、任务状态、当前指针、访问时间 | 直接更新；无需为每次进度变化创建实体版本 |
 | KP retention／canonical_id | 更新当前值，同时追加用户意愿／合并决策事件；抽取不可覆盖用户意愿 |
+| Occurrence retention 与用户确认 | 会话内的局部选择由 `SessionConfirmation` 追加保存；知识库直接修改才追加紧凑的 `OccurrenceRetentionDecision`。两者与提取内容分离，不引入通用操作日志；局部值及所依赖 KP 策略使用版本检查，确认加入与建卡原子提交 |
 | 笔记、画像、批注 | 可编辑和删除；Agent 修改记录操作结果，允许有限撤销历史，不要求永久保留每次正文 |
 | ReviewState | 更新当前排程投影；复习事实保存在独立 ReviewEvent 中 |
 | 证据摘要、SRS 传播资格、材料词频与覆盖率缓存 | 可增量更新、清理和重建；不是唯一事实，版本一致性与时间有效性见 §§2.5、11 |
@@ -219,7 +220,7 @@ SRS 信号在统一 `as_of` 时间从版本化算法参数和状态计算。首�
 | `zero_slot_lexeme_check` | json? | 0 槽位 pattern 写入时的 lint 结果：`{"passed": bool, "analyzer_dict_version": str}` |
 | `display_form` | string? | **可选的人工覆写**。默认由渲染器从 payload 生成 |
 | `tags` | string[] | **多值标签**，可为空、可重叠、可后加（ADR-021）。MVP 只保证 `grammar` 可靠打上 |
-| `retention` | enum | **[不可推迟]** `srs` / `reference`。**用户的决定**，见下 |
+| `retention` | enum | **[不可推迟]** `srs` / `reference`。**KP 默认复习策略**，供 Occurrence 继承；不表示已有卡片或逐例句建卡授权 |
 | `retention_set_by` | enum | **[不可推迟]** `default` / `user`。为 `user` 时，重跑抽取与批量重抽**不得覆盖** |
 | `canonical_id` | uuid? | **[不可推迟]** 合并指向。空值表示自身即 canonical |
 | `lexical_anchors` | lexeme_id[] | **可空、可多，不参与身份判定**。由后端确定性派生；服务召回并作为 §2.4 传播资格的必要条件，变化须使相关资格／摘要失效 |
@@ -277,21 +278,27 @@ SRS 信号在统一 `as_of` 时间从版本化算法参数和状态计算。首�
 }
 ```
 
-#### retention 与用户决定
+#### KP 默认复习策略与 Occurrence 用户决定
 
-`retention` 只表达复习意愿：`srs` 允许排程，`reference` 暂停复习。两者都保留 KP、Occurrence、检索、聚合与记忆注入；知识点的存在不等于“已学会”。`srs` 也不等于已经获得复习配额。
+KP 的 `retention` 对用户称为“默认复习策略”，字段名保留。`srs` 允许已获逐例句授权的复习继续排程，`reference` 暂停继承该策略的已有复习项；两者都不是对全部历史或未来 Occurrence 的建卡授权，也不表示卡片数量或学习进度。两者都保留 KP、Occurrence、检索、聚合与记忆注入；知识点的存在不等于“已学会”。
 
-1. 新 KP 创建时可使用 `retention = srs`、`retention_set_by = default` 作为尚未确认的初值，**该初值不授权建立 ReviewItem**。任何生成模式都须获得用户明确选择才能新建复习项。
-2. 用户选择“安排复习”或“仅作参考”时更新当前值，并一律设置 `retention_set_by = user`，即使选择与默认值相同；追加 `KnowledgePointDecision(kp_id, previous_retention, retention, source, session_id?, created_at)`。`source` 为 `session_confirmation` / `knowledge_library`。
-3. 已有用户决定由后续抽取继承，不覆盖。标签可以并集补充；自动处理不覆盖人工 `display_form`。
-4. 会话中的候选按本次成功 ExtractionRun 的 KP 折叠。是否完成本次确认由 §4.2 的 SessionConfirmation 决定，**不再用 `retention_set_by = default` 作为学习队列或会话退出条件**。
-5. 知识库可随时改变意愿；它不改写以前的确认记录，也不重新打开完成的会话。`reference → srs` 恢复已有复习进度；尚无卡片时按配额等待创建，详见 §7。
+Occurrence 另有局部 `retention` 决定，取值为 `inherit` / `srs` / `reference`。`inherit` 使用其原始 `kp_id` 对应 KP 的当前默认策略；`srs` 与 `reference` 是用户对具体例句或讲解实例的明确覆盖。有效意愿由后端求值并带来源，不把局部选择无提示地写回 KP。
+
+**意愿值与用户是否确认分开**：`inherit` 本身不说明用户是否处理过该 Occurrence。会话内以 §4.2 的确认记录判断，知识库动作保留逐 Occurrence 的用户决策记录，不以当前 retention 值或 KP 是否有用户决定推导。用户明确沿用 KP 策略也必须确认具体 Occurrence；当次有效值为 `srs` 时，确认与 ReviewItem 的创建／复用原子提交。确认时为 `reference` 且没有 ReviewItem 的 Occurrence，后续仅因 KP 改为 `srs` 不会自动建卡，仍须用户明确加入。
+
+1. 新 KP 创建时可使用 `retention = srs`、`retention_set_by = default` 作为尚未确认的初值；Occurrence 默认 `inherit`。该初值不授权建立 ReviewItem。
+2. 用户在学习会话确认中选择 Occurrence 时，记录 Occurrence 级决定；若需要同时开放整个 KP，必须明确选择该附加操作。知识库可以直接修改 KP 意愿。两类决定均追加可审计事件，重跑抽取不得覆盖用户决定。
+3. 后续抽取保留已有 KP 的默认策略，新 Occurrence 以 inherit 初始化，不复制旧 Occurrence 的局部决定或加入授权。标签可以并集补充；自动处理不覆盖人工 `display_form`。
+   KP 为 `reference` 时，继承状态的 Occurrence 可在确认界面灰显或默认不选，但用户可明确选择局部 `srs`。KP 意愿变化不删除或退役卡片；只影响当前有效意愿继承该 KP 的 ReviewItem。
+4. 会话中的候选按本次成功 ExtractionRun 的 KP 折叠展示，但卡片选择以 Occurrence 为粒度。是否完成本次确认由 §4.2 的 SessionConfirmation 决定，**不再用 `retention_set_by = default` 作为学习队列或会话退出条件**。
+5. KP 的 `reference → srs` 只恢复受该默认策略影响的既有非退役 ReviewItem：已获配额的恢复排程，未获配额的回到 `queued`。无 ReviewItem 的历史 Occurrence 不因此创建复习项；正常流程没有“已确认加入学习、等待以后建卡”的中间状态。详见 §7。
 
 #### 身份与合并
 
 - `anchor` 是形式级自然键，数据库唯一；`kp_id` 是自签发主键。同一形式的不同义项共享 KP，差异保留在 Occurrence；归一锚点不归一内容。
 - 并发抽取以幂等 upsert / 冲突重试收敛；MVP 不做全库写入时 alias 模糊查重，候选召回与条件身份消解见 prompt 契约 §5。
 - `canonical_id` 是可更新、可撤销的当前合并指针。追加 `KnowledgePointMergeEvent(source_kp_id, previous_canonical_id?, canonical_id?, created_at)`，Occurrence 的原 `kp_id` 不改写。合并禁止自环和环；目标当前用户意愿须明确，不能由抽取借合并覆盖。
+- 合并／撤销不迁移 ReviewItem，不改写其 `occurrence_id`、原 `kp_id` 或既有 ReviewEvent；知识库通过当前 canonical 归属聚合，并可追溯原来源。canonical 聚合不自动替换 Occurrence 的默认策略来源，也不覆盖局部 `srs` / `reference` 决定；如需统一默认策略或修改局部决定，必须另作用户知情的明确操作。
 - `shape = pattern` 必有 `pattern_grammar_version` 和 `elements`；`opaque` 必有 `opaque_reason`；`lexical` / `entity` 的模式版本与 opaque 原因为空。
 - `anchor` 必须由 payload 按记录的版本确定性派生；槽位 id 不参与身份。
 - 展示优先使用人工 `display_form`，否则从 payload 渲染。被保存的导出产物记录渲染版本；当前 UI 渲染器可正常维护，不要求每次视觉修复新增永久函数。
@@ -318,6 +325,7 @@ SRS 信号在统一 `as_of` 时间从版本化算法参数和状态计算。首�
 | `spans` | Span[] | **[不可推迟]** 该知识点在原句中的位置。有序包含完整匹配与槽位 Span，物理上通过 `occurrence_spans(occurrence_id, span_id, ordinal)` 关联；不得限制为长度 1 |
 | `slot_bindings` | json | 槽位实例绑定，键为槽位 id（如 "N1"），值为 `span_id`（引用 `spans` 表）。`shape` 为 `pattern` 时按模式槽位填充，其他 shape 时为空对象 `{}` |
 | `salience` | enum | **[不可推迟]** `primary` / `secondary`。用于候选排序与用户决定后的新卡待建优先级；不决定 KP 的存在或复习意愿（ADR-019） |
+| `retention` | enum | **[不可推迟]** `inherit` / `srs` / `reference`。Occurrence 的局部复习意愿决定；`inherit` 使用 KP 当前意愿 |
 | `brief` | string | 该次讲解的要点摘要，由抽取段给出。MVP 的 `content_source = analysis_section` 时必填；未来 `user_gloss` 来源可按其契约为空 |
 | `content_source` | enum | **[不可推迟]** `analysis_section`（MVP 内唯一取值）/ 预留 `user_gloss` |
 | `section_id` | FK | **[不可推迟]** 指向 AnalysisSection 的逻辑小节，而非字符区间；MVP 必填 |
@@ -362,7 +370,7 @@ SRS 信号在统一 `as_of` 时间从版本化算法参数和状态计算。首�
 - discussion 中允许多轮对话和文档编辑。离页、切换材料、关闭浏览器均不结束讨论、不自动提取。
 - 用户“结束讨论并提取”时，等待当前文档写操作结束，原子选定 AnalysisRevision 并转入 extraction。提取期间不接受新的讨论写入；失败只重试该版本的提取。
 - 成功提取后进入 confirmation；两种模式均在此由用户确认复习意愿，不自动为默认候选建卡。
-- 当前 run 的所有不同 KP 完成本次确认后进入 completed，退出学习队列。零候选的合法结果显示原因，由用户明确“完成学习”，不伪造候选。
+- 当前 run 的所有不同 Occurrence 完成本次确认后进入 completed，退出学习队列；按 KP 折叠展示不改变确认粒度。零候选的合法结果显示原因，由用户明确“完成学习”，不伪造候选。
 - 已完成会话保留文档、对话和来源，可从学习记录访问。继续研究时创建新的关联会话，不修改已确认提取的输入。
 - 搁置移出默认队列但保留所有数据，恢复时回到保存阶段。运行中的操作必须先完成或确认取消再搁置，不允许搁置后隐藏后台写入。
 
@@ -383,15 +391,22 @@ SRS 信号在统一 `as_of` 时间从版本化算法参数和状态计算。首�
 |---|---|---|
 | `session_id` | FK | 本次会话 |
 | `extraction_run_id` | FK | 必须是本次当前、成功的提取结果 |
+| `occurrence_id` | FK | 本次确认的具体复习内容；必须是该 run 已提交 Occurrence |
 | `kp_id` | FK | 必须出现在该 run 的已提交 Occurrence 中 |
 | `retention_at_confirmation` | enum | 本次确认时的 `srs` / `reference` 快照 |
-| `decision_source` | enum | `user`（本次选择）/ `inherited`（用户确认沿用既有选择） |
-| `decision_id` | FK? | 对应的 KnowledgePointDecision；继承时关联所沿用的决定 |
+| `occurrence_retention_at_confirmation` | enum | 本次确认的局部值 `inherit` / `srs` / `reference`；与有效意愿快照分开 |
+| `review_item_id` | FK? | 当次明确加入学习所创建／复用的 ReviewItem；有效值为 srs 时必填，且须引用本 Occurrence |
+| `decision_source` | enum | `user`（本次 Occurrence 选择）/ `inherited`（沿用 KP 意愿） |
+| `decision_id` | FK? | 对应的 KP 或 Occurrence 意愿决定；继承时关联所沿用的决定 |
 | `confirmed_at` | timestamp | |
 
-`inherited` 只允许继承 `retention_set_by = user` 且具有非空 KnowledgePointDecision 的既有选择；default 初值不能继承，没有可引用用户决定时必须本次明确选择并记为 user。
+`inherited` 只允许继承已有用户明确决定的 KP 意愿；default 初值不能作为用户选择的替代。Occurrence 的局部 `srs` / `reference` 选择始终记录为 user。
 
-记录追加保存；同一会话、run、KP 的最后一次明确确认是当前确认结果。继承全局意愿不自动完成会话；可提供“一并沿用并完成”。确认一个新选择时，当前 KP 更新、决策事件与 SessionConfirmation 同一事务提交。会话结束后知识库修改不回写这些快照。
+无确认记录的 `inherit` 是尚未确认；存在 `inherited` 确认记录的 `inherit` 才表示用户明确沿用。`reference` 只作参考也是一次有效确认，不表示未处理。历史确认不授予其他 Occurrence 建卡权限，后续 KP 策略变化不改写当时的局部值、有效值或 ReviewItem 引用。
+
+记录追加保存；同一会话、run、Occurrence 的最后一次明确确认是当前确认结果。继承默认策略不自动完成会话；可提供列明具体 Occurrence 与结果的“一并沿用并完成”。确认一个新选择时，Occurrence 决定、必要的 KP 决定、SessionConfirmation 及所需 ReviewItem 的创建／复用同一事务提交；任何一步失败均不提交“已加入学习”，重试不重复创建。会话结束后知识库修改不回写这些快照。
+
+`SessionConfirmation` 本身就是会话内“用户是否处理并加入该 Occurrence”的审计事实，不另写一条重复的 Occurrence 决策事件。知识库直接修改局部意愿时使用紧凑的 `OccurrenceRetentionDecision(occurrence_id, previous_retention, retention, source, operation_key, created_at)`；相同值的重复写入不产生事件。该记录不保存页面状态、完整请求正文或重复的 Occurrence 内容。
 
 最后一项确认与会话完成在同一提交边界；等待配额不阻止会话完成。若确认期间全局意愿已被别处更新，按版本检查提示刷新，不静默覆盖。KP 合并影响正在确认的结果时同样刷新，不复制意愿。
 
@@ -526,25 +541,29 @@ Occurrence 的 `(section_id, section_revision)` 引用保持有效。当前小�
 
 ### 7.1 ReviewItem
 
+ReviewItem 是复习调度绑定，不等同于最终渲染卡片。它固定连接一个 Occurrence 与其排程状态；未来的 CardDefinition 可以在不改变 ReviewItem 或复习历史的前提下描述站内卡片模板或外部导出字段。
+
 | 字段 | 类型 | 说明 |
 |---|---|---|
-| `kp_id` | FK | |
-| `occurrence_id` | FK | 当前选用的例句；用户可更换，历史复习事件保留当时引用 |
-| `status` | enum | `active` / `paused` / `retired` |
+| `occurrence_id` | FK | 卡片固定引用的具体例句／讲解实例 |
+| `kp_id` | FK | 必须与 `occurrence.kp_id` 一致；用于归属、聚合和查询，不决定唯一性 |
+| `status` | enum | `queued` / `active` / `paused` / `retired` |
+| `admitted_at` | timestamp? | 首次获新卡配额并进入排程的时间；一经分配保留，用于区分 paused 恢复为 queued 或 active |
 | `retired_at` | timestamp? | 真正退役时单向设置；**reference 使用 paused，不使用退役标记** |
 
-- `status = retired` 当且仅当 retired_at 非空；active/paused 的 retired_at 必须为空。退役同次提交状态与时间戳且不可恢复；active ↔ paused 仅作用于未退役卡片。
-- 默认每 KP 一条非 retired ReviewItem，paused 也占此唯一位置；索引与查询统一用 `retired_at IS NULL` 判断非退役。额外卡片必须有用户显式操作记录。
-- `retention = reference` 时对应非退役卡片均 paused，不进入到期队列；保留 ReviewState 与 ReviewEvent。
-- 改回 `srs` 时恢复原卡片与学习进度；恢复不消耗新卡配额，不伪造一次复习，不清零稳定性或重置学习历史。原 due 保留，到期项按正常队列呈现。
-- 无卡片时，只有明确的用户 srs 决定才进入待建队列。所有会话模式均适用；默认 `srs/default` 不授权创建。
-- 新建仍受每日配额控制；待建按 `salience` 优先、同级 FIFO。建立前再次检查最新用户意愿，reference 不得因旧队列条目而建卡。
-- 知识库直接选择 srs 与会话候选确认使用同一排程服务。会话确认完成不要求配额已分配。
+- `status = retired` 当且仅当 retired_at 非空；queued/active/paused 的 retired_at 必须为空。退役同次提交状态与时间戳且不可恢复；queued/active/paused 之间的转换不删除历史。
+- queued 的 `admitted_at` 必须为空；active 必须已有 `admitted_at` 和 ReviewState。paused 可发生于准入前或准入后，保留原准入标记；retired 不清除该标记。
+- 用户明确选择 Occurrence 加入学习时立即创建 ReviewItem；每日配额不足时为 `queued`，按 salience 优先、同级 FIFO 转为 `active`。默认值或 KP 的 `srs` 意愿不单独授权创建。
+- 同一 Occurrence 默认至多一条非 retired ReviewItem；同一 KP 下不同 Occurrence 可以各自拥有 ReviewItem。未来不同卡片模板可扩展为多个 ReviewItem，但必须有明确用户操作。
+- 有效 retention 为 `reference` 时对应 ReviewItem 进入 `paused`，不进入到期队列；保留 ReviewState 与 ReviewEvent。KP 意愿变化只影响继承该意愿的 Occurrence，明确 `srs` 覆盖的 Occurrence 由用户决定是否暂停。
+- 有效意愿改回 `srs` 时，仅恢复已有非退役复习项。`admitted_at` 非空的恢复为 active，不重复消耗新卡配额，保留原 due 与学习进度；`admitted_at` 为空的恢复为 queued，仍须首次配额。暂停恢复不伪造复习或清零历史。
+- 每日新卡配额控制首次进入排程，不控制 ReviewItem 行的创建。queued 按 `salience` 优先、同级 FIFO 分配；准入前再次核对最新有效意愿，reference 不得因旧队列状态而激活。首次准入与 `admitted_at` 写入、配额扣减及 ReviewState 初始化原子提交；queued 时不提前运行排程。
+- 知识库的逐 Occurrence 加入动作与会话确认使用同一事务和排程服务。KP 默认策略更新本身不创建 ReviewItem。会话确认完成不要求配额已分配。
 - 真正 retired 的卡片不恢复；用户另建卡须明确，不把 srs/reference 切换解释为退役重建。
 
 ### 7.2 ReviewState 与 ReviewEvent
 
-ReviewState 是每 ReviewItem 的当前 FSRS 排程投影，允许原地更新。具体算法字段沿用实现所选算法，不要求给每次状态更新保存整行版本。
+ReviewState 是已准入 ReviewItem 的当前 FSRS 排程投影，允许原地更新；首次准入前尚无 ReviewState，包括 queued 及准入前暂停的项目。具体算法字段沿用实现所选算法，不要求给每次状态更新保存整行版本。
 
 ReviewEvent 追加保存：`review_item_id`、该卡单调 `event_sequence`、当时的 `occurrence_id`、`reviewed_at`、评分、算法版本及重放所需的排程参数／结果。`(review_item_id, event_sequence)` 唯一；ReviewState 带覆盖到的事件序号与单调版本，供重建和资格摘要校验。同一次复习提交有幂等键；事件写入与当前状态更新同一事务。换例句、暂停和恢复不删除既有复习事件，也不伪造评分。
 
@@ -620,8 +639,8 @@ Sidecar 是一次派生的不可变版本；重分词产生新 ID，不能覆盖
 
 1. Occurrence 指向存在的 KP；合并不改写其原 kp_id，canonical 指针无环。
 2. Occurrence 引用存在的小节版本，且该版本属于其 ExtractionRun 固定输入的 AnalysisRevision；被引用内容不得覆盖或清理。
-3. reference 的 KP 没有 active ReviewItem；paused 的卡片及复习历史保留。
-4. 同一 KP 默认至多一条非 retired ReviewItem，额外卡片必须有显式操作记录；status=retired 与 retired_at 非空等价，暂停恢复不改变退役标记。
+3. 有效 retention 为 reference 的 Occurrence 没有 active ReviewItem；paused 的卡片及复习历史保留。
+4. 同一 Occurrence 默认至多一条非 retired ReviewItem；同一 KP 下不同 Occurrence 可以各自拥有 ReviewItem。status=retired 与 retired_at 非空等价，暂停恢复不改变退役标记。
 5. 带三元组的记录有非空分析器词典版本来源；Lexeme 使用 first_seen_analyzer_dict_version，其余相关记录使用 analyzer_dict_version。
 6. Span 的 code point 半开区间非空、在原句内，切片等于 surface。
 7. 作品笔记／画像的条数与单条长度由写入路径强制限制。
@@ -635,7 +654,7 @@ Sidecar 是一次派生的不可变版本；重分词产生新 ID，不能覆盖
 15. 槽位顺序与模式一致，跨槽位 Span 不相交；完整匹配 Span 可以包含槽位 Span。
 16. 每个 slot_bindings 值均在该 Occurrence.spans 中；spans 是有序数组，不限长度 1。
 17. 会话完成只依据当前成功 run 的本次确认（零候选须明确完成），不依据 KP 当前全局 retention；后续意愿修改不复活旧会话。
-18. 任意模式的新建复习项均有用户 srs 决定并满足配额；default 不构成授权。暂停恢复不清除进度、不消耗新卡配额。
+18. 任意模式的新建复习项均有针对具体 Occurrence 的明确加入决定，并与该决定原子提交；default 或 KP 策略变化不构成授权。首次准入排程须满足配额，未准入项为 queued；已准入项的暂停恢复不重复消耗配额、不清除进度。
 19. 提取、确认、Agent 工具副作用与复习提交各自原子且幂等；失败不得留下宣称成功的部分产物。
 20. 当前状态可更新；历史引用、用户决定保护和关联完整性不因更新而失效。
 21. 用户当前裁定按作用域生效，unknown 压过导入和 SRS；clear 不复活旧用户 KE。撤回保留来源历史，并与失效记录原子提交。

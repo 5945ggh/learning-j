@@ -3,15 +3,18 @@
 ## Source of truth
 - Status: Active (MVP interaction contract)
 - Last refreshed: 2026-09-09
+- Design direction update: the application shell and material-library baseline now follow a modern, restrained Apple Books-like reading aesthetic. This is a product direction, not a pixel-level imitation of Apple UI.
 - Contract migration: study-session, Agent, history, evidence, and query-projection changes are reflected in the current contract documents; task packets still require a separate synchronization pass.
-- Primary product surfaces: desktop material reader, sentence analysis panel, dictionary lookup surface, AI study workspace, extracted knowledge review
+- Primary product surfaces: desktop application shell, material library, material reader/player, sentence analysis and dictionary lookup, AI study workspace, extracted knowledge review
 - Evidence reviewed: `docs/mvp-tech-and-phases.md`, `docs/LearningJ-plan-v5.md`, `docs/adr.md`, `docs/data-model.md`, `docs/prompt-contracts.md`
-- Accepted visual and interaction reference: `experiments/frontend_samples_v2/reader.html` and `study.html`; `player.html` supplies the dark media surface. These are mockups, not executable business contracts. Reader and player both use the independent Study flow specified below. Samples do not override the current document/editor conversation layout or session lifecycle.
+- Accepted visual and interaction reference: Apple Books and related Apple native applications as a reference for calm hierarchy, sidebar navigation, restrained controls, and content-first surfaces. `experiments/frontend_samples_v2/reader.html` and `study.html` remain useful interaction mockups; `player.html` supplies a media-surface reference. These are mockups, not executable business contracts. Samples do not override the current document/editor conversation layout or session lifecycle.
 
 ## Brand
 - Personality: focused, literate, technically capable, respectful of learner agency
+- Baseline mood: modern, quiet, tactile, and book-like; the interface should feel suitable for long reading sessions rather than a dashboard or chat tool
 - Trust signals: source context is visible; dictionary, parser, and AI output are clearly distinguished; provenance and persistence are previewed
-- Avoid: gamified streak pressure, classroom decoration, generic chat UI, marketing hero layouts, purple-gradient aesthetics
+- Inspiration: Apple Books, Finder, Photos, and other Apple native applications may inform spatial hierarchy, material surfaces, typography, and interaction restraint. Reuse the principles, not proprietary assets or an exact visual clone.
+- Avoid: gamified streak pressure, classroom decoration, generic chat UI, marketing hero layouts, decorative gradients, and indiscriminate translucency
 
 ## Product goals
 - Goals: keep authentic Japanese material primary; make lookup and syntax inspection immediate; turn deliberate AI study into reusable knowledge; preserve control over what is learned or reviewed
@@ -24,9 +27,12 @@
 - Key contexts of use: long desktop reading or viewing sessions with keyboard, mouse, headphones, and optional external Yomitan/Anki data
 
 ## Information architecture
-- Primary navigation: Library, Study, Knowledge, Review. Library remains the starting material context; Study contains the learning queue and learning records; Knowledge is the persistent knowledge library.
+- Application shell navigation, in order: “主页”, “素材库”, “知识图谱”, “解析”, “学习”. A settings entry remains anchored at the bottom of the navigation rail.
+- “主页” is reserved for a later product decision and is intentionally not specified in this revision.
+- “素材库” is the starting material context and contains the book/listen modes. “学习” owns the active learning queue, AI study workspace, and learning records. “知识图谱” is the presentation label for the persistent Knowledge domain; the first release may use list, detail, occurrence, and verified-relationship views, while a fully interactive graph remains deferred. “解析” is a reserved top-level entry for analysis-related records and flows; it must not create a second authority for StudySession, AnalysisRevision, or extraction state.
 - Material workspace: source text or player is primary, with a collapsible algorithm/dictionary area and a compact current-material learning queue. Three columns are not mandatory.
-- Material cards: provide a learning-queue entry with an accurately labeled active-session total; users can select a session without reopening the reader first.
+- Material library: provide a mode switch between “书目” and “视听”. Book materials use vertical cards with the cover as the visual anchor, concise metadata along the lower edge, and a three-dot overflow action for editing metadata and other material actions. Audio/video materials may use a different aspect ratio and playback affordances while reusing the same material-card ownership and spacing system.
+- Material cards: provide a learning-queue entry with an accurately labeled active-session total; users can select a session without reopening the reader first. The overflow menu must not turn a lightweight material action into a hidden learning or deletion action.
 - Study: desktop main area is the current analysis document; the right sidebar is the Agent conversation, with input and visible tool/edit feedback. A compact session navigator may collapse or open as a sheet; it must not displace the conversation or squeeze the document.
 - Knowledge: global and material-scoped lists/details show KP, occurrences, source, verified relationship types, retention choice and actual review state. AggregateCard is reusable here and in candidate confirmation. A full interactive graph is deferred; do not invent edges or promise automatic grammar matches.
 - Review: due cards with their recorded source content and optional audio.
@@ -79,17 +85,27 @@ Counts and relationships identify their evidence: recorded explanations, algorit
 - State transitions are legible: reading, lookup, focused study, and knowledge capture use distinct labels and surfaces.
 
 ## Visual language
-- Color: neutral white/black surfaces, grouped gray panels, charcoal/light text; blue identifies algorithm/dictionary support and purple identifies AI. Amber and green express labeled status, not a separate learning-content taxonomy. Use solid semantic accents rather than decorative gradients.
-- Light token references: background `#FFFFFF`, group `#F5F5F7`, secondary group `#EFEFF2`, text `#1D1D1F`, secondary text `#6E6E73`, algorithm/dictionary `#0071E3`, AI `#5E5CE6`.
-- Dark token references: background `#000000`, group `#1C1C1E`, secondary group `#2C2C2E`, text `#F5F5F7`, algorithm/dictionary `#0A84FF`, AI `#7D7AFF`. Reader, player and Study share semantic tokens. Low-contrast placeholder grays in the samples are not approved accessibility targets; adjust text/accent usage to meet the contrast requirement.
+- Color: ivory and deep gray form the default theme. The application shell uses a restrained glass-like background board; content surfaces remain opaque or nearly opaque where reading, definitions, and controls need reliable contrast. Algorithm/dictionary and AI accents remain semantic and subdued rather than defining the whole palette. Amber and green express labeled status, not a separate learning-content taxonomy.
+- Baseline token references: canvas `#EEEAE2`, glass surface `rgba(255, 255, 255, 0.62)`, page `#FFFCF5`, group `#F3F0E9`, secondary group `#E8E3DA`, text `#292929`, secondary text `#6F6B64`, divider `rgba(41, 41, 41, 0.12)`. These are initial references, not a substitute for contrast testing.
+- Semantic accent references: algorithm/dictionary uses a restrained blue and AI uses a restrained violet; status colors remain labeled and low-area. Accent values must be defined as semantic variables so a future theme pack can replace them without changing component logic.
+- Dark and alternate themes: do not hard-code light-theme values into components. Define semantic tokens for canvas, glass, opaque surface, page, grouped surface, text, border, shadow, algorithm, AI, warning, and success. Future color/style packs may change these variables while preserving interaction states and readable contrast.
 - Typography: Japanese serif for source text and quotations; compact sans serif for controls and metadata
 - Spacing/layout rhythm: 4/8px base rhythm; dense toolbars and lists; generous line height in the reading column
-- Shape/radius/elevation: small controls about 7px, actions 10px, grouped cards 14px; chips may be pill-shaped. Gray grouping, fine separators and restrained shadows follow the samples. Avoid making every paragraph a floating card.
+- Shape/radius/elevation: small controls about 7px, actions 10px, grouped cards 14px, and the reading page may use a restrained larger radius. Use fine separators and layered, soft shadows to establish the glass board/page relationship. Avoid making every paragraph a floating card or adding blur behind dense text.
 - Motion: 180-260ms opacity/transform/layout transitions; honor reduced motion
 - Imagery/iconography: familiar monochrome symbols; material art may identify the work
 
+### Application shell and material surfaces
+
+- The desktop shell is a glass-like background board with a left navigation rail and a spacious content region. Glass is a spatial material, not a content color: opaque or near-opaque pages, cards, dialogs, and text-heavy panels sit above it.
+- The navigation rail presents the five primary entries in the defined order and keeps settings visually separate at the bottom. Selected state uses a quiet surface change, clear label, and accessible state—not color alone.
+- The material library is the first detailed surface to design. Its two modes, “书目” and “视听”, share a view-switching pattern, page margins, search/import affordances, empty states, and material-card contracts.
+- Book cards are vertically oriented. The cover occupies most of the card, while the lower edge carries the name and only the most useful metadata. A three-dot action opens material management without competing with the cover or primary open action.
+- Entering a book opens a white or warm-white reading page over the glass board. The page is the reader’s stable content frame; background blur, decorative art, and shell motion must never reduce text legibility or shift the reading anchor.
+- Material-specific treatment may vary by mode or future style pack, but navigation, card actions, source context, and return-to-source behavior remain consistent.
+
 ## Components
-- Component responsibilities: dictionary lookup, token action, session list, analysis document/editor, Agent conversation, confirmation, aggregate and review card. Existing component names may be retained where ownership still fits; do not couple them to shells.
+- Component responsibilities: application shell/navigation rail, material mode switch, material card, material overflow menu, dictionary lookup, token action, session list, analysis document/editor, Agent conversation, confirmation, aggregate and review card. Existing component names may be retained where ownership still fits; do not couple them to shells.
 - Lookup states: closed; selected token; loading; one or more dictionary sources; no result; import required; error
 - Ownership: components remain shell-independent; a shell chooses whether lookup renders as a popover or drawer
 - Session lists, the document editor, conversation pane and confirmation components receive scope, records and callbacks through props. Shells assemble them without importing one another or hiding business lifecycle in route state.

@@ -1,8 +1,8 @@
 # LearningJ MVP 第一阶段：技术选型与校准后的阶段计划
 
-> **计划基线（2026-09-09）：** 本文已经按最新核心契约、当前代码和反馈校准。现行行为以 [产品规划](LearningJ-plan-v5.md)、[数据模型](data-model.md)、[模型与 Agent 契约](prompt-contracts.md)、[ADR 索引](adr.md) 和 [DESIGN](../DESIGN.md) 为准；本文负责排列实施顺序，不复制第二份字段或状态机定义。
+> **计划基线（2026-09-10）：** 本文按最新核心契约校准，含 [ADR-041](adr/041-occurrence-review-targets.md) 对 P0/P4b/P5 的边界调整（Occurrence 级确认、P4b 创建 queued ReviewItem、P5 负责首次准入排程）；任务包目录 [CURRENT-PACKETS.md](task-packets/CURRENT-PACKETS.md) 已同步。现行行为以 [产品规划](LearningJ-plan-v5.md)、[数据模型](data-model.md)、[模型与 Agent 契约](prompt-contracts.md)、[ADR 索引](adr.md) 和 [DESIGN](../DESIGN.md) 为准；本文负责排列实施顺序，不复制第二份字段或状态机定义。
 >
-> 当前仓库处于“旧 P0/P1 实现切片已存在、当前契约迁移尚未完成”的状态。旧阶段验收通过不等于当前 P0/P1 完成；本文的阶段状态以 §2 为准。
+> 当前仓库处于“旧 P0/P1 实现切片已存在、当前契约迁移尚未完成”的状态。P0-backend 已派发过一轮实现，但按 ADR-041 同步前的语义完成：ReviewItem 仍为 active/paused/retired 三态、缺 queued 与 admitted_at，需要返工校准后才验收。旧阶段验收通过不等于当前 P0/P1 完成；本文的阶段状态以 §2 为准。
 
 ## 1. 技术选型与贯穿约束
 
@@ -41,9 +41,9 @@
 - 一次会话拥有一份 Analysis 工作文档；当前文档由 AnalysisRevision manifest 指向小节版本。被引用版本不可覆盖。
 - AgentRun、用户可见 AnalysisMessage、AgentToolCall 和工具副作用记录分开；工具写入由统一执行器做版本检查和 (agent_run_id, call_id, input_hash) 幂等。
 - 提取只接受固定、完整的 AnalysisRevision。ExtractionRun 固定输入版本，ExtractionSection 承担本次 kind/Span 映射；不得把旧小节映射套到新正文。
-- SessionConfirmation 记录本次 run 的用户决定。KP 的全局意愿、会话完成、ReviewItem 排程是三个不同维度。
+- SessionConfirmation 按本次 run 的每个不同 Occurrence 记录用户决定。KP 的全局意愿、会话完成、ReviewItem 排程是三个不同维度；UI 按 KP 折叠展示不改变 Occurrence 确认粒度。
 - KnownEvidence 只面向 Lexeme；查词、阅读、播放、Annotation、SRS 评分不自动写 KE。用户 known/unknown/clear、来源撤回和投影失效必须走明确写路径。
-- ReviewItem 的 active/paused/retired 与 retired_at 按数据模型 §7 表达；reference 是暂停，不是退役。
+- ReviewItem 仅在用户明确加入 Occurrence 时创建；status 为 queued/active/paused/retired，按数据模型 §7 与 ADR-041 表达——queued 无 ReviewState 且 admitted_at 为空，active 必须已有 admitted_at 与 ReviewState，retired_at 只表达真正退役；reference 是暂停（paused），不是退役，也不激活 queued 项。
 - **模型调用不得在数据库事务内执行。** Provider I/O 在事务外；每次持久写入是短事务，携带 expected_revision 或等价版本检查。冲突必须返回给 Agent 刷新，不能长事务锁住 SQLite。
 - 多个会话的生成可以并行排队，但写入争用必须有明确边界：SQLite busy 重试有上限且可取消，持久写入按短事务串行化或有界重试，不依靠内存 asyncio 任务维持业务状态。
 
@@ -87,7 +87,7 @@ StudySession 的 preparation、普通多选分别排队和崩溃恢复需要持�
 | 范围 | 当前事实 | 按本计划的判断 |
 |---|---|---|
 | 后端素材链 | txt/srt/vtt/epub ingest、NFC/LF、code point 分句、Sudachi A mode、sidecar、Lexeme 幂等，以及 materials/sentences/sidecar API 已存在 | 旧 P0/P1 的实现切片可复用；当前 P1 的内容索引、版本发布、备份导出和 OpenAPI fixture 仍欠交付 |
-| 后端 schema | 现有 analyses、extraction_runs、analysis_sections、analysis_messages、review_items 等旧契约表；缺当前会话、文档 manifest、AgentRun、ExtractionSection 和 ReviewEvent 等阶段实体，ReviewItem 也缺新的 status 语义 | 当前 P0 只做既有表拆债和迁移工具链；新实体 DDL 随实际使用它的阶段落地 |
+| 后端 schema | P0-backend 已派发一轮：前滚迁移清理旧表与旧状态字段、迁移前备份/恢复、OpenAPI/fixture 生成与不变量测试入口已存在；但仍按 ADR-041 前语义实现，ReviewItem 为 active/paused/retired 三态、缺 queued 与 admitted_at，枚举与 CHECK 约束需调整；缺当前会话、文档 manifest、AgentRun、ExtractionSection 和 ReviewEvent 等阶段实体 | P0-backend 需按 ADR-041 以返工包补齐 queued/admitted_at 状态与约束并重跑验收后方视为完成；新实体 DDL 仍随实际使用它的阶段落地 |
 | 前端 | Vite/React/TS/Tailwind、素材和句子浏览及 code point 规则存在；MaterialWorkspace 还内嵌旧 AnalysisPanel，analysis.ts 调用后端不存在的分析／追问／抽取／retention 端点 | 前端基础可保留；旧 AI 原型不得作为新 Study 资产或完成证据，应删除／隔离 |
 | P2 | 没有算法解析、Yomitan importer、Annotation 或词汇判断入口 | 未开始 |
 | P3 | 没有 provider、版本化 analysis prompt、StudySession、持久生成队列或 Agent 执行器 | 未开始 |
@@ -113,17 +113,17 @@ P2 结束时运行实验 11a；P5 结束时运行实验 11b。已知词表导入
 **必须完成：**
 
 1. 停止旧 Analysis 上 session_closed、turn_count、extraction_status、extraction_trigger 等第二份状态机参与新的领域读写；为已有历史保留兼容读取/迁移说明，能安全移除的旧字段通过前滚迁移处理，不能无损映射的内容报告而不猜测。
-2. 修复当前既有表的约束：ReviewItem 的 status/retired_at 语义先在现有表和迁移工具中建立；ExtractionRun.analysis_revision_id 作为兼容迁移字段保留，最终外键约束在 AnalysisRevision 随 P3a/P4a 落地时完成，不用 P0 创建空的 AnalysisRevision 表。
+2. 修复当前既有表的约束：ReviewItem 的 status 枚举（queued/active/paused/retired）与 admitted_at/retired_at 语义按数据模型 §7 和 ADR-041 在现有表和迁移工具中建立——queued 无 ReviewState 且 admitted_at 为空，active 必须已有 admitted_at 与 ReviewState，retired 等价 retired_at 非空，reference 走 paused；P0 不创建 ReviewItem 行、不实现配额或排程。ExtractionRun.analysis_revision_id 作为兼容迁移字段保留，最终外键约束在 AnalysisRevision 随 P3a/P4a 落地时完成，不用 P0 创建空的 AnalysisRevision 表。
 3. 建立迁移开发规范、迁移前自动备份、旧库回归样本、隔离恢复检查和失败诊断；空库及当前旧库均以前滚方式验证。
 4. 统一 Pydantic/API 模型与 OpenAPI 生成入口，提供前端可锁定的素材 fixture。不存在的分析端点不能继续被前端原型调用。
 5. 移除或隔离 analysis.ts、内嵌旧 AnalysisPanel 及其不存在端点调用；不把它改名后当作新 Study 实现。保留素材浏览的独立组件和 shell 边界。
 6. 将 data-model §9 当前 1–25 条不变量映射到测试入口，重写旧 xfail 的语义；不把旧数量或“表存在”当作语义完成证明。
 
-**验收：** 迁移前备份可打开且包含版本标记；空库和旧库升级成功；新 API 不再暴露旧第二状态机作为权威；ReviewItem 当前约束测试通过；OpenAPI/fixture 生成可复现；前端 lint/build/test 通过且不请求不存在的 AI 端点；未实现不变量明确标为待点亮。P0 不验收未来空表的 introspect。
+**验收：** 迁移前备份可打开且包含版本标记；空库和旧库升级成功；新 API 不再暴露旧第二状态机作为权威；ReviewItem 新 status 语义约束测试通过（含 queued 无 ReviewState、active 必须已有 admitted_at 与 ReviewState、retired 等价 retired_at 非空、reference 走 paused）；OpenAPI/fixture 生成可复现；前端 lint/build/test 通过且不请求不存在的 AI 端点；未实现不变量明确标为待点亮。P0 不验收未来空表的 introspect。
 
 **Public contract：** 前滚迁移规范、备份/恢复检查、OpenAPI 生成命令、素材 fixture、旧状态兼容策略、当前不变量测试入口。
 
-**不在 P0：** 不创建 StudySession、AnalysisRevision、AgentRun、ExtractionSection 或 ReviewEvent 等新领域表；不实现 LLM、Yomitan、算法词典、提取、ReviewItem 排程或视觉页面。
+**不在 P0：** 不创建 StudySession、AnalysisRevision、AgentRun、ExtractionSection 或 ReviewEvent 等新领域表；不创建 ReviewItem 行、不实现配额/FSRS 排程或视觉页面，也不实现 LLM、Yomitan、算法词典或提取。
 
 ### P1　素材导入、Sidecar、内容索引与快照导出
 
@@ -243,12 +243,12 @@ P2 结束时运行实验 11a；P5 结束时运行实验 11b。已知词表导入
 - 完整 surface 与 slot surface 分开定位；槽位完整、有序且跨槽位不相交，完整 Span 可以包含槽位 Span。任一槽位无法唯一绑定时该次 pattern 出现降级/拒绝并记录 unresolved_patterns，其余完整命中仍可提交。
 - 提取失败按当前 prompt contract 区分 schema/整体失败和部分候选失败；整体失败最多追加两次同 revision 重试，不重新生成 Analysis；成功候选与诊断在原子边界内提交。
 - interactive 会话由用户明确结束讨论后固定 revision；automatic 只能来自显式创建，跳过 discussion 但仍生成、固定、提取和确认。提取期间禁用讨论写入，导航/关窗不触发提取。
-- SessionConfirmation 按当前 run 的每个不同 KP 记录 srs/reference 和 user/inherited 决定；default 不是用户决定，reference 不是排除候选。允许部分确认、稍后继续、沿用已有用户决定；零候选需用户明确完成。
-- 确认结果进入排程服务的输入，但 P4b 不创建未获明确 srs 的 ReviewItem；完成会话不等待 P5 配额。
+- SessionConfirmation 按当前 run 的每个不同 Occurrence 记录局部 retention（inherit/srs/reference）与当次有效意愿快照，决定来源为 user 或继承已有明确用户决定的 KP 意愿（inherited）；default/inherit 初值不是用户决定，reference 也是有效确认而不是排除候选。UI 可按 KP 折叠展示，不改变 Occurrence 确认粒度；KP 的全局修改是独立的明确操作。允许部分确认、稍后继续、沿用已有用户决定；零候选需用户明确完成。
+- 当次有效值为 srs 的明确加入与 ReviewItem 的创建／复用同一事务提交，status = queued；不消耗每日配额、不创建 ReviewState、不执行 FSRS 排程。有效值为 reference 的确认对应 ReviewItem 进入 paused；无 ReviewItem 的 Occurrence 不因未来 KP 改为 srs 自动建卡。确认记录本身就是会话内审计事实（data-model §4.2），不重复写通用操作日志。完成会话不等待 P5 配额。
 
-**机器验收：** analysis_revision_id 与每个 ExtractionSection 属于同一 session/analysis；同一 run 提交幂等；重试保持 revision 不变；slot_bindings 的值均在 Occurrence.spans 中；用户确认写后立即可读且重跑不覆盖；同一 KP 从材料或全局视图确认后退出所有待确认查询；会话完成不依赖全局 retention。P4b 点亮不变量 1、2、6、8–17、19–20，并为 P5 的 18 提供决定接口。
+**机器验收：** analysis_revision_id 与每个 ExtractionSection 属于同一 session/analysis；同一 run 提交幂等；重试保持 revision 不变；slot_bindings 的值均在 Occurrence.spans 中；用户确认写后立即可读且重跑不覆盖；同一 Occurrence 从材料或全局视图确认后退出所有待确认查询，会话完成按当前 run 的所有不同 Occurrence 判断；确认、局部意愿与 ReviewItem 创建（queued）同一事务提交，不存在“已加入但尚未建卡”的中间状态；会话完成不依赖全局 retention、不等待配额。P4b 点亮不变量 1、2、6、8–17、19–20，并完成不变量 18 的“明确 Occurrence 加入决定 + 原子建卡”部分（配额首次准入与暂停恢复不重复消耗由 P5 完成）。
 
-**Public contract：** pattern extraction API、grammar/strictness 版本、ExtractionSection/Span/KP/Occurrence、SessionConfirmation、提取/确认状态查询和 Study 候选 fixture。
+**Public contract：** pattern extraction API、grammar/strictness 版本、ExtractionSection/Span/KP/Occurrence、SessionConfirmation、ReviewItem queued 创建绑定、提取/确认状态查询和 Study 候选 fixture。
 
 ### P5　SRS、复习、知识聚合与互操作
 
@@ -256,15 +256,15 @@ P2 结束时运行实验 11a；P5 结束时运行实验 11b。已知词表导入
 
 **必须完成：**
 
-- 只有明确 user/inherited srs 决定的 KP 才进入待建队列；默认值不授权。已有卡在 reference 时暂停，改回 srs 恢复原 ReviewState，不退役、不消耗新卡配额。
-- ReviewItem 实现 active/paused/retired 与 retired_at 等价约束；ReviewState 保存当前 FSRS 投影，ReviewEvent 追加保存当时 Occurrence、评分、算法/参数和幂等键。
-- 配额按 salience 优先、同级 FIFO；Study、知识库和复习入口区分“用户选择 srs”“等待排程”“已加入复习”。会话完成不等待配额。
+- 只有用户明确加入的 Occurrence 才创建 ReviewItem，创建即 queued；默认值或 KP 默认策略不授权建卡。已有卡在 reference 时暂停（paused），改回 srs 仅恢复既有非退役项：admitted_at 非空的恢复原 ReviewState 与进度、不重复消耗新卡配额，admitted_at 为空的回到 queued 仍须首次配额；没有 ReviewItem 的历史 Occurrence 不因 KP 改为 srs 自动补建。
+- ReviewItem 实现 queued/active/paused/retired 与 admitted_at/retired_at 等价约束；queued 无 ReviewState，active 必须已有 admitted_at 与 ReviewState，retired 等价 retired_at 非空；ReviewState 保存当前 FSRS 投影，ReviewEvent 追加保存当时 Occurrence、评分、算法/参数和幂等键。
+- 配额按 salience 优先、同级 FIFO，只决定 queued 首次进入 active（写入 admitted_at 并初始化 ReviewState），不决定 ReviewItem 行是否创建；准入前再次核对最新有效意愿，reference 不得因旧队列状态激活 queued。Study、知识库和复习入口区分“用户选择 srs”“等待排程（queued）”“已加入复习”。会话完成不等待配额。
 - ReviewLexemeEligibility 和带 as_of 的相关卡片估计只使用合格的实际复习 Occurrence 及完整累计历史；不创建 srs_matured KE，不把 SRS 估计并入证据覆盖。
 - 知识库/材料聚合分别返回 KP、Occurrence“被讲解次数”、当前 sidecar“材料出现次数”、证据覆盖率和 SRS 估计；不同口径带来源，API、UI、导出均不得相加或互相校验。
 - Anki 导出只从用户明确选择的 ReviewItem/Occurrence 生成，字段映射和外部发送确认独立；音频等资源缺失不阻止导出。
 - 在 P5 末尾完成实验 11b：使用 10⁴/10⁵/10⁶ 级证据与评分历史、约 10⁵ token 材料和并行导入/重建/评分场景，验证查询计划、无关历史增长、写事务、代次切换、dirty 恢复、动态 as_of 缓存和最终聚合物化取舍。
 
-**验收：** reference 无有效 active 卡但保留 paused 卡、ReviewState 和 ReviewEvent；暂停恢复不重置进度；ReviewEvent 不能跨 KP/Occurrence 传播不合格 SRS 信号；聚合的两个计数独立且标明来源；重建不显示假零；Anki 缺媒体仍生成可用卡；P5 相关不变量 3、4、18、23–25 点亮；实验 11b 报告明确参考硬件、预算、批大小、缓存有效期和剩余风险。
+**验收：** reference 无有效 active 卡但保留 paused 卡、ReviewState 和 ReviewEvent，且不激活 queued 项；queued 卡不被误认为 active、没有 ReviewState，配额不足时 ReviewItem 行仍然存在；暂停恢复不重置进度；KP 改为 srs 只能恢复既有 ReviewItem，无 ReviewItem 的 Occurrence 不批量补建；ReviewEvent 不能跨 KP/Occurrence 传播不合格 SRS 信号；聚合的两个计数独立且标明来源；重建不显示假零；Anki 缺媒体仍生成可用卡，导出快照固定 review_item_id、occurrence_id、字段映射、解析小节版本、媒体引用及导出/外部发送时间与结果；P5 相关不变量 3、4、18、23–25 点亮；实验 11b 报告明确参考硬件、预算、批大小、缓存有效期和剩余风险。
 
 **Public contract：** ReviewItem/State/Event、配额、eligibility、知识聚合、证据覆盖查询、复习 shell、Anki 导出格式和确认边界。
 
@@ -280,7 +280,8 @@ P2 结束时运行实验 11a；P5 结束时运行实验 11b。已知词表导入
 | 文档上下文 | 运行注入记录中当前文档块出现次数为 1；AnalysisMessage 的用户原始消息不含自动拼接文档正文 |
 | revision 冲突 | 过期 expected_revision 写入必定拒绝；并发编辑不能覆盖已提交 revision |
 | 固定提取 | ExtractionRun 的 analysis_revision_id 不随当前指针变化；retry_of 使用同一 revision；旧正文和旧 Span 引用不被覆盖 |
-| 确认边界 | SessionConfirmation 必须属于当前成功 run 的 Occurrence；default 不生成用户决定；用户写后读立即可见 |
+| 确认边界 | SessionConfirmation 必须属于当前成功 run 的 Occurrence；default/inherit 不生成用户决定；用户写后读立即可见；会话完成按当前 run 的所有不同 Occurrence 判断 |
+| 审计最小集 | 会话内加入动作仅由 SessionConfirmation 记录，不重复写通用操作日志；知识库直接修改 Occurrence retention 时才追加紧凑的 OccurrenceRetentionDecision；相同值的重复写入不产生事件；不保存逐次 UI 操作、完整页面状态或重复内容 |
 | 统计口径 | “被讲解次数”“材料出现次数”“证据覆盖”“SRS 估计”由独立字段返回，静态检查和测试确认不存在相加/互校验路径 |
 
 ## 5. 阶段间的验证与交接纪律
@@ -291,7 +292,7 @@ P2 结束时运行实验 11a；P5 结束时运行实验 11b。已知词表导入
 4. 文档 revision、ExtractionRun、Occurrence、SessionConfirmation、KnownEvidence、ReviewEvent 的历史引用不得被自动清理或覆盖；当前状态允许更新但不能破坏引用完整性。
 5. 前端组件必须 shell-independent；Study、Reader、Knowledge、Review 由 shell 装配同一批组件，不在路由中复制状态机。
 6. 条件式 GiNZA/依存分析若被纳入，必须作为独立切片重新评估，不得塞入 P2 或改变既有依赖图。
-7. 任何 spec/实现冲突先停受影响部分并报告；不得修改 docs 或 prompt 来迁就代码。本文是本轮唯一获授权更新的阶段计划，任务包同步另行进行。
+7. 任何 spec/实现冲突先停受影响部分并报告；不得修改 docs 或 prompt 来迁就代码。阶段计划中本文是获授权校准的阶段文档；任务包目录已按 ADR-041 同步（2026-09-10），实现任务仍不得修改 docs、prompt 或 DESIGN。
 
 ## 6. 任务包同步前的明确结论
 
@@ -306,4 +307,4 @@ docs/task-packets/ 当前仍是旧交接协议，不能直接派发：
 | P4 | 仍含旧 batch/background、section_hint、默认自动建卡和旧收件箱语义 | 拆为 P4a 提取骨架 + lexical/opaque + seed，实验 2 后再做 P4b pattern 严格校验与 SessionConfirmation |
 | P5 | 仍以 retired_at 表达 reference，并沿用旧批量排程口径 | 重写为 paused/retired 分离、ReviewEvent/资格摘要、证据与 SRS 分列、Anki 确认和 P5 规模实验 11 |
 
-在这些包完成同步、各包的读取范围链接到当前 ADR 单篇文件后，才可按本计划重新派工。本文不把任务包的旧验收文字当作阶段完成证明。
+在这些包完成同步、各包的读取范围链接到当前 ADR 单篇文件后，才可按本计划重新派工。P0-backend 已在本次同步前完成一轮实现且为旧语义，同步后以返工/校准包执行，不重复派发全新 P0-backend；P4b/P5 在同步完成前不得派发。本文不把任务包的旧验收文字当作阶段完成证明。
