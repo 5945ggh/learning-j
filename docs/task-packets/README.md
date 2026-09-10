@@ -9,10 +9,10 @@ The lead may dispatch an implementation agent with only: **“Read `docs/task-pa
 1. Check the packet's **Start gate** and its predecessor's handoff report at `reports/<predecessor>-handoff.md`. `STATUS: done` alone is not a gate, and a missing report is an unmet gate — not permission to guess.
 2. Give one agent one packet. Parallel agents share only declared public contracts and never edit the same owned files.
 3. The agent records its contract ledger, implements its bounded slice, and returns [the handoff report](protocols/handoff.md), also writing it to `reports/<ID>-handoff.md`.
-4. For CR, supply a new, read-only agent the exact packet path, predecessor report, implementation report, diff/commit, test output, and [the CR protocol](protocols/code-review.md); the reviewer writes its verdict to `reports/<ID>-cr.md`.
+4. For CR, supply a new, read-only agent the exact packet path, predecessor report, implementation report, diff/commit, test output, and [the CR protocol](protocols/code-review.md); the reviewer records its verdict in the `## Review` section of `reports/<ID>-handoff.md`.
 5. The lead resolves findings. An integration packet is the normal point where a phase's public contract is published.
 
-`partial` and `blocked` are useful outcomes: never dispatch past an unmet start gate. Implementers may not edit `docs/`, `prompts/`, or `DESIGN.md`, except their own file under [reports/](reports/README.md). Reports are committed gate evidence: the lead commits them, and they are deliberately not gitignored so the next agent and CR can read them from a fresh checkout.
+`partial` and `blocked` are useful outcomes: never dispatch past an unmet start gate. Implementers may not edit `docs/`, `prompts/`, or `DESIGN.md`, except their own report under [reports/](reports/README.md). A packet has one report file: the handoff body plus any reviewer-owned `## Review` section. Reports are committed gate evidence — the lead commits them, and they are deliberately not gitignored so the next agent and the reviewer can read them from a fresh checkout.
 
 ## Current dependency graph
 
