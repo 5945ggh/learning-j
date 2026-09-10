@@ -1,0 +1,26 @@
+AGENTS.md
+  h_c735ec7f46d14b 8-20
+DESIGN.md
+  h_c735ec7f46d14b 5,7,30,32-35,40-41,44,46,51-52,55-67,77,81,93,168,181
+docs/LearningJ-plan-v5.md
+  h_c735ec7f46d14b 37,41,43,110,163
+docs/data-model.md
+  h_c735ec7f46d14b 293,353,373,381-382,551,555,558-560,566,568
+docs/mvp-tech-and-phases.md
+  h_c735ec7f46d14b 40,184
+docs/prompt-contracts.md
+  h_c735ec7f46d14b 177
+docs/task-packets/CURRENT-PACKETS.md
+  h_c735ec7f46d14b 5-7,18,41
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "655a1c69b952d3498fd1c416e92882706300f12c",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
