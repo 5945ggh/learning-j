@@ -1,0 +1,16 @@
+docs/task-packets/reports/P0-backend-cr.md
+  h_c735ec7f46d14b 1-54
+docs/task-packets/reports/P0-backend-handoff.md
+  h_c735ec7f46d14b 1-113
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "f9c1a7ee78875e39dcfc2d1e712ad08bb17eab2d",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
