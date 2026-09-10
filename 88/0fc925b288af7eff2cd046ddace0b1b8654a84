@@ -1,0 +1,26 @@
+docs/task-packets/CURRENT-PACKETS.md
+  h_c735ec7f46d14b 9
+docs/task-packets/README.md
+  h_c735ec7f46d14b 12,15
+docs/task-packets/protocols/code-review.md
+  h_c735ec7f46d14b 5,27
+docs/task-packets/protocols/handoff.md
+  h_c735ec7f46d14b 5-7
+docs/task-packets/protocols/implementation.md
+  h_c735ec7f46d14b 3
+docs/task-packets/reports/P0-backend-handoff.md
+  h_c735ec7f46d14b 4-6,115-167
+docs/task-packets/reports/README.md
+  h_c735ec7f46d14b 1,3-7,14,17-21,25-41,45-49
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "880fc925b288af7eff2cd046ddace0b1b8654a84",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
