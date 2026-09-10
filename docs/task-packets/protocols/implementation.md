@@ -1,6 +1,6 @@
 # Implementation protocol
 
-Before coding, read the packet and every named source, then inspect existing code and the predecessor report. Start with a short **contract ledger**: confirmed facts with source sections, assumptions you refuse to make, owned files, and blockers. A packet, mock, legacy schema, or prior agent report cannot override a current contract.
+Before coding, read the packet and every named source, then inspect existing code and the predecessor report at `docs/task-packets/reports/<PACKET>-handoff.md` (and the prior round's `<PACKET>-cr.md` when reworking). Start with a short **contract ledger**: confirmed facts with source sections, assumptions you refuse to make, owned files, and blockers. A packet, mock, legacy schema, or prior agent report cannot override a current contract.
 
 Implement only the assigned slice and preserve unrelated working-tree changes. Add/adjust behavior tests before relaxing assertions. Persistent offsets are Unicode code-point half-open ranges; models supply semantics/original text only; provider I/O stays outside DB transactions; automatic work never overwrites user choices or historical references.
 

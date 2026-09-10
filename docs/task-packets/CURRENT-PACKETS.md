@@ -6,7 +6,7 @@ This is the sole current packet catalogue. A lead dispatches one row by saying: 
 
 ## Universal gates and report
 
-No packet may change `docs/`, `prompts/`, or `DESIGN.md`. Backend owns `backend/`, migrations and backend tests; frontend owns `frontend/`; integration owns cross-boundary tests/verification only. Preserve other dirty files. Report exactly with `protocols/handoff.md`; CR uses `protocols/code-review.md`. A failed gate or conflict is `blocked`, not permission to guess.
+No packet may change `docs/`, `prompts/`, or `DESIGN.md`; the sole exception is the agent's own report under `reports/` (see `reports/README.md`). Backend owns `backend/`, migrations and backend tests; frontend owns `frontend/`; integration owns cross-boundary tests/verification only. Preserve other dirty files. Report exactly with `protocols/handoff.md` to `reports/<ID>-handoff.md`; CR uses `protocols/code-review.md` and writes `reports/<ID>-cr.md`. Reports are tracked gate evidence, committed by the lead, so the next agent and CR can read them from a fresh checkout. A failed gate or conflict is `blocked`, not permission to guess.
 
 ## Packet catalogue
 

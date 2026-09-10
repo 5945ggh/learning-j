@@ -32,8 +32,9 @@ aligned. This status does not certify implementation or phase completion.
    shell-independent component ownership.
 7. `docs/spike-checklist.md` only when working on an experiment, or when an
    implementation depends on an open empirical decision.
-8. The matching `docs/task-packets/P*-*.md` file, if present, for the assigned
-   implementation slice.
+8. The assigned row in `docs/task-packets/CURRENT-PACKETS.md`, plus
+   `docs/task-packets/protocols/implementation.md` and the predecessor's report
+   under `docs/task-packets/reports/`, for the assigned implementation slice.
 
 ## Archived directories
 
@@ -87,7 +88,10 @@ specification to unblock implementation.
   turn the corresponding xfail into a passing test rather than bypassing it.
 - Prompt files are versioned artifacts: create a new version instead of editing
   a prompt in place.
-- Do not modify `docs/` or `prompts/` as part of an implementation task. Report
+- Do not modify `docs/` or `prompts/` as part of an implementation task. The one
+  exception is creating or overwriting your own report file under
+  `docs/task-packets/reports/` (see `docs/task-packets/protocols/handoff.md`).
+  Everything else in `docs/` and all of `prompts/` is read-only input; report
   proposed documentation changes to the lead agent.
 
 ## Phase-oriented reading shortcuts

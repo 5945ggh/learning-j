@@ -2,6 +2,8 @@
 
 Return this in the implementation agent's final message. It is evidence for the next agent and CR, not a replacement for source contracts.
 
+Also write the same report to `docs/task-packets/reports/<PACKET>-handoff.md` (e.g. `P0-backend-handoff.md`), using the packet ID exactly as it appears in `CURRENT-PACKETS.md`. Create the file, or overwrite the previous round's version on a rework; git history keeps the earlier rounds. Writing this one file is the only write an implementation agent may make under `docs/` — see `docs/task-packets/reports/README.md`. The lead commits it; being tracked is what lets the next agent and CR check the gate from a fresh checkout instead of a chat transcript.
+
 ```text
 STATUS: done | partial | blocked
 PACKET: <exact path>

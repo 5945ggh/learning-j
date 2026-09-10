@@ -2,7 +2,7 @@
 
 ## Input from the lead
 
-Exact packet path, predecessor report, implementation handoff, diff/commit, verification output, and current repository state.
+Exact packet path, predecessor report, implementation handoff, diff/commit, verification output, and current repository state. The reports live at `docs/task-packets/reports/<PACKET>-handoff.md` and (for a prior round) `<PACKET>-cr.md`; treat a missing predecessor report as an unmet gate, not as permission to assume it passed.
 
 ## Reviewer instruction
 
@@ -23,3 +23,5 @@ Residual risks:
 ```
 
 Use P0 for data loss/security/corruption, P1 for a required contract break, P2 for a material non-blocker. With no findings say `Findings: none`.
+
+Write the same output to `docs/task-packets/reports/<PACKET>-cr.md` (e.g. `P0-backend-cr.md`; overwrite on a re-run) as well as returning it in the final message. It is tracked gate evidence, not a contract source.
