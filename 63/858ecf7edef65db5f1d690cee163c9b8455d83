@@ -1,0 +1,14 @@
+docs/mvp-tech-and-phases.md
+  h_c735ec7f46d14b 5,46,90,116,122,259-261
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "63858ecf7edef65db5f1d690cee163c9b8455d83",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
