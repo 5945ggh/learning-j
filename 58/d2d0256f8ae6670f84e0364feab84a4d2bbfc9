@@ -1,0 +1,32 @@
+backend/alembic/versions/c66997d83060_p0_review_item_queued_status_and_.py
+  h_c735ec7f46d14b 21-28,31-36,40-44,198-215
+backend/alembic/versions/d8b3f6a1c204_p0_drop_retired_review_state_triggers.py
+  h_c735ec7f46d14b 1-65
+backend/src/learningj/db/maintenance.py
+  h_c735ec7f46d14b 421-423,636-640
+backend/src/learningj/db/models/invariant_triggers.py
+  h_c735ec7f46d14b 7-15,21-32,85-87,143-149,177-180
+backend/src/learningj/db/models/srs.py
+  h_c735ec7f46d14b 7-9,11,16-17,59-61,98-102,110-111
+backend/tests/invariants/test_invariants.py
+  h_c735ec7f46d14b 16-17,169-170,266-267
+backend/tests/test_constraints.py
+  h_c735ec7f46d14b 4-7,126,128-129,133,136-144,219-220,224,227,231-260,268-292,299-300,315-316,337-355,388,397,478-479,509-510
+backend/tests/test_migration.py
+  h_c735ec7f46d14b 7-8,11-12,40-41,242-246,301-302,329-333,343-471
+backend/tests/test_schema.py
+  h_c735ec7f46d14b 144-147,157-160
+docs/task-packets/reports/P0-backend-handoff.md
+  h_c735ec7f46d14b 3-6,10-11,14-149,151,153,155-157,160-182,185
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "58d2d0256f8ae6670f84e0364feab84a4d2bbfc9",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
