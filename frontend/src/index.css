@@ -1,0 +1,125 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * 设计令牌基线：中性白阅读面、白色工具面、charcoal 文本；
+ * 朱色=主动学习，青色=词汇支撑，琥珀=句法；圆角 ≤ 6px。
+ * 语义色为占位值，落地组件时按对比度校准（WCAG 2.2 AA）。
+ */
+:root {
+  color-scheme: light;
+  --radius: 0.375rem;
+
+  --background: oklch(1 0 0);               /* neutral white */
+  --foreground: oklch(0.2 0 0);             /* charcoal */
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.2 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.2 0 0);
+  --primary: oklch(0.2 0 0);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.965 0 0);
+  --secondary-foreground: oklch(0.2 0 0);
+  --muted: oklch(0.965 0 0);
+  --muted-foreground: oklch(0.46 0 0);
+  --accent: oklch(0.965 0 0);
+  --accent-foreground: oklch(0.2 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.88 0 0);
+  --input: oklch(0.88 0 0);
+  --ring: oklch(0.55 0 0);
+
+  /* 语义色（DESIGN.md Visual language） */
+  --study: oklch(0.51 0.15 32);             /* 朱：主动学习 */
+  --study-foreground: oklch(1 0 0);
+  --lexical: oklch(0.48 0.1 200);            /* 青：词汇支撑 */
+  --lexical-foreground: oklch(1 0 0);
+  --syntax: oklch(0.6 0.12 75);             /* 琥珀：句法 */
+  --syntax-foreground: oklch(0.245 0.008 60);
+}
+
+.dark {
+  color-scheme: dark;
+  --background: oklch(0.17 0 0);
+  --foreground: oklch(0.94 0 0);
+  --card: oklch(0.22 0 0);
+  --card-foreground: oklch(0.94 0 0);
+  --popover: oklch(0.22 0 0);
+  --popover-foreground: oklch(0.94 0 0);
+  --primary: oklch(0.94 0 0);
+  --primary-foreground: oklch(0.17 0 0);
+  --secondary: oklch(0.27 0 0);
+  --secondary-foreground: oklch(0.94 0 0);
+  --muted: oklch(0.27 0 0);
+  --muted-foreground: oklch(0.72 0 0);
+  --accent: oklch(0.27 0 0);
+  --accent-foreground: oklch(0.94 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 16%);
+  --input: oklch(1 0 0 / 18%);
+  --ring: oklch(0.7 0 0);
+
+  --study: oklch(0.68 0.14 35);
+  --study-foreground: oklch(0.2 0.006 60);
+  --lexical: oklch(0.72 0.1 200);
+  --lexical-foreground: oklch(0.17 0 0);
+  --syntax: oklch(0.75 0.12 80);
+  --syntax-foreground: oklch(0.17 0 0);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-study: var(--study);
+  --color-study-foreground: var(--study-foreground);
+  --color-lexical: var(--lexical);
+  --color-lexical-foreground: var(--lexical-foreground);
+  --color-syntax: var(--syntax);
+  --color-syntax-foreground: var(--syntax-foreground);
+
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+
+  /* 日文衬线：素材原文与引文（DESIGN.md Typography） */
+  --font-serif-jp: "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif CJK JP", serif;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* DESIGN.md Motion：尊重系统减弱动态偏好 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
