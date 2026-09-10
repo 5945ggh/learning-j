@@ -7,8 +7,14 @@
 - AnalysisSection 每个 revision 是一条**独立、不可变的物理行**，
   `(section_id, revision)` 唯一，Occurrence 经该唯一键形成可验证引用；
   旧版本与被合并小节永不删除（`superseded_by` 只追加）；
-- AnalysisMessage 只持久化用户可见的往返；`session_closed = true` 后
-  不再接受追问。
+- AnalysisMessage 只持久化用户可见的往返。
+
+P0 拆债（`docs/mvp-tech-and-phases.md` §3 P0 第 1 条）：旧 Analysis 上的
+`status / extraction_status / extraction_trigger / session_closed / turn_count`
+是旧原型留下的**第二状态机**，已由前滚迁移删除；会话阶段与运行状态由
+StudySession / AgentRun / ExtractionRun 承载（P3a/P3b 落地）。
+`model / prompt_version / context_kp_ids / context_note_ids` 保留为
+只读历史列，迁移说明见迁移文件。
 """
 
 from __future__ import annotations
@@ -32,12 +38,9 @@ from sqlalchemy.orm import Mapped, mapped_column
 from learningj.db.base import Base, Timestamped, UuidPk, utcnow
 from learningj.db.types import json_list, str_enum
 from learningj.domain.enums import (
-    AnalysisStatus,
     ExtractionFailureReason,
     ExtractionRunExecutionPath,
     ExtractionRunStatus,
-    ExtractionStatus,
-    ExtractionTrigger,
     MessageRole,
     SectionKind,
     SplitStrategy,
@@ -46,15 +49,13 @@ from learningj.domain.ids import new_uuid7
 
 
 class Analysis(UuidPk, Timestamped, Base):
+    """旧契约遗留的解析文档行。
+
+    P0 起只保留能映射到当前契约（`data-model.md` §4.3）或需保留历史的列；
+    会话生命周期归 StudySession（P3a），不再在此维护状态机。
+    """
+
     __tablename__ = "analyses"
-    __table_args__ = (
-        # `status = generating` 时 `extraction_status` 必须为 `pending`（§4.1）。
-        CheckConstraint(
-            "status != 'generating' OR extraction_status = 'pending'",
-            name="generating_implies_extraction_pending",
-        ),
-        CheckConstraint("turn_count >= 1", name="turn_count_positive"),
-    )
 
     sentence_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("sentences.id"), nullable=False, index=True
@@ -62,33 +63,19 @@ class Analysis(UuidPk, Timestamped, Base):
     material_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("materials.id"), nullable=False, index=True
     )
+    # 旧运行来源记录，只读历史；现行归属是 AgentRun（§4.5，P3a/P3b 落地）。
     model: Mapped[str] = mapped_column(String(255), nullable=False)
     prompt_version: Mapped[str] = mapped_column(String(255), nullable=False)
     # 本次勾选的解析模块（prompt-contracts §1 的九项）。
     style_modules: Mapped[list[str]] = mapped_column(json_list(), nullable=False, default=list)
     style_free_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     user_question: Mapped[str | None] = mapped_column(Text, nullable=True)
-    # 注入了哪些已有 KP / 记忆条目，用于复现与对照实验。
+    # 旧上下文注入记录，只读历史；现行归属是 AgentRun 注入记录（§4.5）。
     context_kp_ids: Mapped[list[str]] = mapped_column(json_list(), nullable=False, default=list)
     context_note_ids: Mapped[list[str]] = mapped_column(json_list(), nullable=False, default=list)
     # MVP 内恒为 false；留位保证将来对照实验的历史数据可比。
     retrieval_enabled: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False
-    )
-    turn_count: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
-    # 用户触发抽取后单向关闭；关闭后不得新增 AnalysisMessage。
-    session_closed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    status: Mapped[AnalysisStatus] = mapped_column(
-        str_enum(AnalysisStatus, name="analysis_status"), nullable=False
-    )
-    extraction_status: Mapped[ExtractionStatus] = mapped_column(
-        str_enum(ExtractionStatus, name="analysis_extraction_status"),
-        nullable=False,
-        default=ExtractionStatus.PENDING,
-    )
-    extraction_trigger: Mapped[ExtractionTrigger] = mapped_column(
-        str_enum(ExtractionTrigger, name="analysis_extraction_trigger"),
-        nullable=False,
     )
 
 
@@ -105,6 +92,11 @@ class ExtractionRun(UuidPk, Timestamped, Base):
     analysis_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("analyses.id"), nullable=False, index=True
     )
+    # P0 兼容迁移列（`docs/mvp-tech-and-phases.md` §3 P0 第 2 条）：现行契约
+    # 要求提取固定输入文档版本（§4.6 [不可推迟]）；AnalysisRevision 表随
+    # P3a/P4a 落地时补 NOT NULL 与外键，P0 不建空 manifest 表。
+    # 旧行没有可指涉的文档版本，保持 NULL，不做无损性猜测。
+    analysis_revision_id: Mapped[uuid.UUID | None] = mapped_column(Uuid(), nullable=True)
     execution_path: Mapped[ExtractionRunExecutionPath] = mapped_column(
         str_enum(ExtractionRunExecutionPath, name="extraction_run_execution_path"),
         nullable=False,

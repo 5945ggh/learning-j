@@ -4,3 +4,5 @@ __pycache__/
 *.db
 *.db-wal
 *.db-shm
+# P0 迁移工具链产物:迁移前自动备份及其版本标记
+learningj-backup-*

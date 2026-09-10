@@ -126,29 +126,19 @@ class OccurrenceContentSource(_StrEnum):
     USER_GLOSS = "user_gloss"  # 预留
 
 
-class AnalysisStatus(_StrEnum):
-    """AI 解析文档的生成状态（`data-model.md` §4.1 状态转换）。"""
+class ReviewItemStatus(_StrEnum):
+    """ReviewItem 排程控制状态（`data-model.md` §7.1，ADR-041）。
 
-    GENERATING = "generating"
-    READY = "ready"
-    FAILED = "failed"
+    加入决定一旦记录就立即创建 ReviewItem；当日新卡配额不足时为
+    `queued`，配额足够、写入 `admitted_at` 并初始化 ReviewState 后才转为
+    `active`。reference 是 KP／Occurrence 意愿，表达为对应卡片 `paused`
+    （准入前暂停同样使用 paused，但其 `admitted_at` 仍为空）；退役是单向
+    终点，与 `retired_at` 非空等价。"""
 
-
-class ExtractionStatus(_StrEnum):
-    """解析文档上的抽取状态（`data-model.md` §4.1 状态转换）。"""
-
-    PENDING = "pending"
-    RUNNING = "running"
-    DONE = "done"
-    FAILED = "failed"
-
-
-class ExtractionTrigger(_StrEnum):
-    """抽取触发路径，决定 triage 走向（`data-model.md` §4.1）。"""
-
-    USER = "user"
-    BATCH = "batch"
-    BACKGROUND = "background"
+    QUEUED = "queued"
+    ACTIVE = "active"
+    PAUSED = "paused"
+    RETIRED = "retired"
 
 
 class ExtractionRunExecutionPath(_StrEnum):

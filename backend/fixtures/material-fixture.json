@@ -1,0 +1,404 @@
+{
+  "materials/srt": {
+    "content_hash": "d4e8866e776f2c1011d7df72b7710f378af6b7f8cbcd5739f329bac56a819abb",
+    "copy_stored": false,
+    "id": "fixture-id-005",
+    "kind": "subtitle_video",
+    "locator": "fixture-sample.srt",
+    "sentence_count": 2,
+    "title": "fixture-sample"
+  },
+  "materials/txt": {
+    "content_hash": "9a107a153000cfc6e454f6430708b9b4b7db8f3f76e81dde420ec1c3a3b44a40",
+    "copy_stored": false,
+    "id": "fixture-id-001",
+    "kind": "text",
+    "locator": "fixture-sample.txt",
+    "sentence_count": 3,
+    "title": "fixture-sample"
+  },
+  "sentences/srt": [
+    {
+      "anchor_payload": {
+        "cue_index": 0
+      },
+      "anchor_type": "subtitle",
+      "id": "fixture-id-006",
+      "index": 0,
+      "material_id": "fixture-id-005",
+      "text": "また寄ってしまった。",
+      "time_end": 4200,
+      "time_start": 1000,
+      "translation": null
+    },
+    {
+      "anchor_payload": {
+        "cue_index": 1
+      },
+      "anchor_type": "subtitle",
+      "id": "fixture-id-007",
+      "index": 1,
+      "material_id": "fixture-id-005",
+      "text": "今日も頑張ろう。",
+      "time_end": 8000,
+      "time_start": 4400,
+      "translation": null
+    }
+  ],
+  "sentences/txt": [
+    {
+      "anchor_payload": {
+        "char_end": 5,
+        "char_start": 0
+      },
+      "anchor_type": "plain_text",
+      "id": "fixture-id-002",
+      "index": 0,
+      "material_id": "fixture-id-001",
+      "text": "𠮟られた。",
+      "time_end": null,
+      "time_start": null,
+      "translation": null
+    },
+    {
+      "anchor_payload": {
+        "char_end": 13,
+        "char_start": 5
+      },
+      "anchor_type": "plain_text",
+      "id": "fixture-id-003",
+      "index": 1,
+      "material_id": "fixture-id-001",
+      "text": "次は君の番です！",
+      "time_end": null,
+      "time_start": null,
+      "translation": null
+    },
+    {
+      "anchor_payload": {
+        "char_end": 22,
+        "char_start": 15
+      },
+      "anchor_type": "plain_text",
+      "id": "fixture-id-004",
+      "index": 2,
+      "material_id": "fixture-id-001",
+      "text": "向上心が熱い。",
+      "time_end": null,
+      "time_start": null,
+      "translation": null
+    }
+  ],
+  "sidecar/srt": {
+    "analyzer_dict_version": "20260723",
+    "content_hash": "d4e8866e776f2c1011d7df72b7710f378af6b7f8cbcd5739f329bac56a819abb",
+    "material_id": "fixture-id-005",
+    "payload": {
+      "sentences": [
+        {
+          "ruby_hints": [],
+          "sentence_index": 0,
+          "tokens": [
+            {
+              "char_end": 2,
+              "char_start": 0,
+              "lexeme_id": "lx_daf6c367c1bea91f9e4fbc38d1de093ae0a5b24e64576ae256ae71f03590b4a9",
+              "normalized_form": "又",
+              "pos": "接続詞,*,*,*,*,*",
+              "reading_form": "マタ",
+              "reading_source": "sudachi",
+              "surface": "また"
+            },
+            {
+              "char_end": 4,
+              "char_start": 2,
+              "lexeme_id": "lx_a3c51c40815583e5077e5305bbc5d96cec57f67871acff63bd6575f8ca31ccda",
+              "normalized_form": "寄る",
+              "pos": "動詞,一般,*,*,五段-ラ行,連用形-促音便",
+              "reading_form": "ヨッ",
+              "reading_source": "sudachi",
+              "surface": "寄っ"
+            },
+            {
+              "char_end": 5,
+              "char_start": 4,
+              "lexeme_id": "lx_e8b3f906c9981bbfd22163cd4777dc5daff759f0b696551005320c3528edbe1d",
+              "normalized_form": "て",
+              "pos": "助詞,接続助詞,*,*,*,*",
+              "reading_form": "テ",
+              "reading_source": "sudachi",
+              "surface": "て"
+            },
+            {
+              "char_end": 8,
+              "char_start": 5,
+              "lexeme_id": "lx_0c649983d58b41e9d3513bbd9a28b0b586b2d0d735dbc5d045604acfd510ea45",
+              "normalized_form": "仕舞う",
+              "pos": "動詞,非自立可能,*,*,五段-ワア行,連用形-促音便",
+              "reading_form": "シマッ",
+              "reading_source": "sudachi",
+              "surface": "しまっ"
+            },
+            {
+              "char_end": 9,
+              "char_start": 8,
+              "lexeme_id": "lx_621560ee20f258b69e3d35cda37560af3002dded248372c5ec3ec2c9cdaa6624",
+              "normalized_form": "た",
+              "pos": "助動詞,*,*,*,助動詞-タ,終止形-一般",
+              "reading_form": "タ",
+              "reading_source": "sudachi",
+              "surface": "た"
+            },
+            {
+              "char_end": 10,
+              "char_start": 9,
+              "lexeme_id": "lx_9ca0779be06cdd19bcb8577014b30bdcf35ed0aae61773d3f3e62641deaf0bac",
+              "normalized_form": "。",
+              "pos": "補助記号,句点,*,*,*,*",
+              "reading_form": "。",
+              "reading_source": "sudachi",
+              "surface": "。"
+            }
+          ]
+        },
+        {
+          "ruby_hints": [],
+          "sentence_index": 1,
+          "tokens": [
+            {
+              "char_end": 2,
+              "char_start": 0,
+              "lexeme_id": "lx_d8a0709b67ae126543ba660b55a07ad00f276eb14ce2fd734b22fdfdad54e7b3",
+              "normalized_form": "今日",
+              "pos": "名詞,普通名詞,副詞可能,*,*,*",
+              "reading_form": "キョウ",
+              "reading_source": "sudachi",
+              "surface": "今日"
+            },
+            {
+              "char_end": 3,
+              "char_start": 2,
+              "lexeme_id": "lx_59ab5c1afa4f5bb5c276e650cefda104847b05bf5ef23bb353689b8866e6f7b0",
+              "normalized_form": "も",
+              "pos": "助詞,係助詞,*,*,*,*",
+              "reading_form": "モ",
+              "reading_source": "sudachi",
+              "surface": "も"
+            },
+            {
+              "char_end": 7,
+              "char_start": 3,
+              "lexeme_id": "lx_687037f08b690ee2604ecfd28d74cd4032b3a3dc89882a2b954caaa4f413310b",
+              "normalized_form": "頑張る",
+              "pos": "動詞,一般,*,*,五段-ラ行,意志推量形",
+              "reading_form": "ガンバロウ",
+              "reading_source": "sudachi",
+              "surface": "頑張ろう"
+            },
+            {
+              "char_end": 8,
+              "char_start": 7,
+              "lexeme_id": "lx_9ca0779be06cdd19bcb8577014b30bdcf35ed0aae61773d3f3e62641deaf0bac",
+              "normalized_form": "。",
+              "pos": "補助記号,句点,*,*,*,*",
+              "reading_form": "。",
+              "reading_source": "sudachi",
+              "surface": "。"
+            }
+          ]
+        }
+      ]
+    },
+    "segmenter_version": "learningj-segmenter-v1",
+    "tokenizer_version": "0.6.11"
+  },
+  "sidecar/txt": {
+    "analyzer_dict_version": "20260723",
+    "content_hash": "9a107a153000cfc6e454f6430708b9b4b7db8f3f76e81dde420ec1c3a3b44a40",
+    "material_id": "fixture-id-001",
+    "payload": {
+      "sentences": [
+        {
+          "ruby_hints": [],
+          "sentence_index": 0,
+          "tokens": [
+            {
+              "char_end": 1,
+              "char_start": 0,
+              "lexeme_id": "lx_6570645c6f8cef3036f34b53e7d98faf121c3b1103f0c82c177ae9dbc7c335ce",
+              "normalized_form": "𠮟",
+              "pos": "補助記号,一般,*,*,*,*",
+              "reading_form": "𠮟",
+              "reading_source": "sudachi",
+              "surface": "𠮟"
+            },
+            {
+              "char_end": 3,
+              "char_start": 1,
+              "lexeme_id": "lx_9fa24af7c9cfe605e4c3677cbc67153e39746c35ff7dd83e0a513abc8e44caa5",
+              "normalized_form": "られる",
+              "pos": "助動詞,*,*,*,助動詞-レル,連用形-一般",
+              "reading_form": "ラレ",
+              "reading_source": "sudachi",
+              "surface": "られ"
+            },
+            {
+              "char_end": 4,
+              "char_start": 3,
+              "lexeme_id": "lx_621560ee20f258b69e3d35cda37560af3002dded248372c5ec3ec2c9cdaa6624",
+              "normalized_form": "た",
+              "pos": "助動詞,*,*,*,助動詞-タ,終止形-一般",
+              "reading_form": "タ",
+              "reading_source": "sudachi",
+              "surface": "た"
+            },
+            {
+              "char_end": 5,
+              "char_start": 4,
+              "lexeme_id": "lx_9ca0779be06cdd19bcb8577014b30bdcf35ed0aae61773d3f3e62641deaf0bac",
+              "normalized_form": "。",
+              "pos": "補助記号,句点,*,*,*,*",
+              "reading_form": "。",
+              "reading_source": "sudachi",
+              "surface": "。"
+            }
+          ]
+        },
+        {
+          "ruby_hints": [],
+          "sentence_index": 1,
+          "tokens": [
+            {
+              "char_end": 1,
+              "char_start": 0,
+              "lexeme_id": "lx_f7b9336979d127199e41f12a8b8d1470a9b412c158b5c8813589cb20033ac080",
+              "normalized_form": "次",
+              "pos": "名詞,普通名詞,一般,*,*,*",
+              "reading_form": "ツギ",
+              "reading_source": "sudachi",
+              "surface": "次"
+            },
+            {
+              "char_end": 2,
+              "char_start": 1,
+              "lexeme_id": "lx_f85e7a1387f9abb0a6b0a25211cf920f6470a6177eaba9f5e96b37d64de57c09",
+              "normalized_form": "は",
+              "pos": "助詞,係助詞,*,*,*,*",
+              "reading_form": "ハ",
+              "reading_source": "sudachi",
+              "surface": "は"
+            },
+            {
+              "char_end": 3,
+              "char_start": 2,
+              "lexeme_id": "lx_da636c71bab3557686de138257d58e6dec4abbbfc2eaabfac6c70ca7eb5d5150",
+              "normalized_form": "君",
+              "pos": "代名詞,*,*,*,*,*",
+              "reading_form": "キミ",
+              "reading_source": "sudachi",
+              "surface": "君"
+            },
+            {
+              "char_end": 4,
+              "char_start": 3,
+              "lexeme_id": "lx_46795d7cb728bc3bb90eadd1224a109e9a016e6d4ff53d5311702f797c300596",
+              "normalized_form": "の",
+              "pos": "助詞,格助詞,*,*,*,*",
+              "reading_form": "ノ",
+              "reading_source": "sudachi",
+              "surface": "の"
+            },
+            {
+              "char_end": 5,
+              "char_start": 4,
+              "lexeme_id": "lx_8570418e7ff221f3975335d3adde76c305a10ea7ce3bb142b6c02f6137e372ae",
+              "normalized_form": "番",
+              "pos": "名詞,普通名詞,助数詞可能,*,*,*",
+              "reading_form": "バン",
+              "reading_source": "sudachi",
+              "surface": "番"
+            },
+            {
+              "char_end": 7,
+              "char_start": 5,
+              "lexeme_id": "lx_27bd2ce237c1cf6b65cddf139f26254b7a76a3ba9f7e7b7d6465bd90dd696333",
+              "normalized_form": "です",
+              "pos": "助動詞,*,*,*,助動詞-デス,終止形-一般",
+              "reading_form": "デス",
+              "reading_source": "sudachi",
+              "surface": "です"
+            },
+            {
+              "char_end": 8,
+              "char_start": 7,
+              "lexeme_id": "lx_7b1497a24f7f43c2e9c4cd2b0f1c9c222253a979f337fc19242b07560f80fccc",
+              "normalized_form": "!",
+              "pos": "補助記号,句点,*,*,*,*",
+              "reading_form": "!",
+              "reading_source": "sudachi",
+              "surface": "！"
+            }
+          ]
+        },
+        {
+          "ruby_hints": [],
+          "sentence_index": 2,
+          "tokens": [
+            {
+              "char_end": 2,
+              "char_start": 0,
+              "lexeme_id": "lx_1a62aff490e05c2929730add79879139fa7d2d7a2893af3354c407901f049f78",
+              "normalized_form": "向上",
+              "pos": "名詞,普通名詞,サ変可能,*,*,*",
+              "reading_form": "コウジョウ",
+              "reading_source": "sudachi",
+              "surface": "向上"
+            },
+            {
+              "char_end": 3,
+              "char_start": 2,
+              "lexeme_id": "lx_8d1b5e0eb5c96148b739b7cd2b5e270b47946375acfece9aeb3e43a0acbd0f7b",
+              "normalized_form": "心",
+              "pos": "接尾辞,名詞的,一般,*,*,*",
+              "reading_form": "シン",
+              "reading_source": "sudachi",
+              "surface": "心"
+            },
+            {
+              "char_end": 4,
+              "char_start": 3,
+              "lexeme_id": "lx_29dfe58849d53f568a5891e23db8b3f365f61f7636e959b622cfc586569fa6d9",
+              "normalized_form": "が",
+              "pos": "助詞,格助詞,*,*,*,*",
+              "reading_form": "ガ",
+              "reading_source": "sudachi",
+              "surface": "が"
+            },
+            {
+              "char_end": 6,
+              "char_start": 4,
+              "lexeme_id": "lx_9385ad1428a73f6aed1f0dec4414ec1172592e3b46f39c8bb7f825123fc67c66",
+              "normalized_form": "熱い",
+              "pos": "形容詞,一般,*,*,形容詞,終止形-一般",
+              "reading_form": "アツイ",
+              "reading_source": "sudachi",
+              "surface": "熱い"
+            },
+            {
+              "char_end": 7,
+              "char_start": 6,
+              "lexeme_id": "lx_9ca0779be06cdd19bcb8577014b30bdcf35ed0aae61773d3f3e62641deaf0bac",
+              "normalized_form": "。",
+              "pos": "補助記号,句点,*,*,*,*",
+              "reading_form": "。",
+              "reading_source": "sudachi",
+              "surface": "。"
+            }
+          ]
+        }
+      ]
+    },
+    "segmenter_version": "learningj-segmenter-v1",
+    "tokenizer_version": "0.6.11"
+  }
+}

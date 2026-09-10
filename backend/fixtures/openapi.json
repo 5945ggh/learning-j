@@ -1,0 +1,433 @@
+{
+  "components": {
+    "schemas": {
+      "Body_create_material_materials_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          },
+          "locator": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locator"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_create_material_materials_post",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "MaterialOut": {
+        "description": "`GET /materials` / `POST /materials` 的响应（data-model §8.1 +\n素材无关抽象 §8.2；`sentence_count` 是列表视图的读投影）。",
+        "properties": {
+          "content_hash": {
+            "title": "Content Hash",
+            "type": "string"
+          },
+          "copy_stored": {
+            "title": "Copy Stored",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "subtitle_video",
+              "subtitle_audio",
+              "text",
+              "epub"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "locator": {
+            "title": "Locator",
+            "type": "string"
+          },
+          "sentence_count": {
+            "title": "Sentence Count",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "content_hash",
+          "locator",
+          "kind",
+          "copy_stored",
+          "sentence_count"
+        ],
+        "title": "MaterialOut",
+        "type": "object"
+      },
+      "SentenceOut": {
+        "description": "`GET /materials/{material_id}/sentences` 的响应；`text` 与\n`anchor_payload` 的偏移均为 Unicode code point（data-model §0/§8.2）。",
+        "properties": {
+          "anchor_payload": {
+            "additionalProperties": true,
+            "title": "Anchor Payload",
+            "type": "object"
+          },
+          "anchor_type": {
+            "enum": [
+              "subtitle",
+              "plain_text",
+              "epub"
+            ],
+            "title": "Anchor Type",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "index": {
+            "title": "Index",
+            "type": "integer"
+          },
+          "material_id": {
+            "title": "Material Id",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "time_end": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time End"
+          },
+          "time_start": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Start"
+          },
+          "translation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Translation"
+          }
+        },
+        "required": [
+          "id",
+          "material_id",
+          "index",
+          "text",
+          "anchor_type"
+        ],
+        "title": "SentenceOut",
+        "type": "object"
+      },
+      "SidecarOut": {
+        "description": "`GET /materials/{material_id}/sidecar` 的响应；payload 为\nmsgpack 解包后的分句/分词结果（data-model §8.3）。",
+        "properties": {
+          "analyzer_dict_version": {
+            "title": "Analyzer Dict Version",
+            "type": "string"
+          },
+          "content_hash": {
+            "title": "Content Hash",
+            "type": "string"
+          },
+          "material_id": {
+            "title": "Material Id",
+            "type": "string"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "title": "Payload",
+            "type": "object"
+          },
+          "segmenter_version": {
+            "title": "Segmenter Version",
+            "type": "string"
+          },
+          "tokenizer_version": {
+            "title": "Tokenizer Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "material_id",
+          "content_hash",
+          "segmenter_version",
+          "tokenizer_version",
+          "analyzer_dict_version",
+          "payload"
+        ],
+        "title": "SidecarOut",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "description": "Local backend for LearningJ (ADR-020).",
+    "title": "LearningJ API",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/healthz": {
+      "get": {
+        "operationId": "healthz_healthz_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Healthz Healthz Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Healthz"
+      }
+    },
+    "/materials": {
+      "get": {
+        "operationId": "list_materials_materials_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MaterialOut"
+                  },
+                  "title": "Response List Materials Materials Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Materials"
+      },
+      "post": {
+        "description": "Import txt, srt, vtt, or epub content and return its stable id.",
+        "operationId": "create_material_materials_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_create_material_materials_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaterialOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Material"
+      }
+    },
+    "/materials/{material_id}/sentences": {
+      "get": {
+        "operationId": "list_sentences_materials__material_id__sentences_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "material_id",
+            "required": true,
+            "schema": {
+              "title": "Material Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SentenceOut"
+                  },
+                  "title": "Response List Sentences Materials  Material Id  Sentences Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Sentences"
+      }
+    },
+    "/materials/{material_id}/sidecar": {
+      "get": {
+        "operationId": "get_sidecar_materials__material_id__sidecar_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "material_id",
+            "required": true,
+            "schema": {
+              "title": "Material Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SidecarOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Sidecar"
+      }
+    }
+  }
+}

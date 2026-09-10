@@ -1,12 +1,14 @@
 """P0 验收：对 schema 做空库检查，确认全部表和关键唯一约束存在。
 
-空库 = `alembic upgrade head` 之后的数据库。migration 文件位置由
-`ALEMBIC_INI` 环境变量或仓库默认路径决定。
+空库 = `alembic upgrade head` 之后的数据库。迁移通过当前解释器的
+`python -m alembic` 执行（不依赖 `uv` 缓存/环境可写），migration 文件位置由
+`alembic.ini` 的 `script_location` 决定。
 """
 
 from __future__ import annotations
 
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -51,8 +53,8 @@ def upgraded_db(tmp_path_factory) -> Path:
     db_path = tmp_path_factory.mktemp("schema") / "upgraded.db"
     subprocess.run(
         [
-            "uv",
-            "run",
+            sys.executable,
+            "-m",
             "alembic",
             "-x",
             f"db_url=sqlite:///{db_path}",
@@ -139,7 +141,7 @@ def test_key_unique_constraints(upgraded_engine: Engine) -> None:
 
 
 def test_invariant_triggers_installed(upgraded_engine: Engine) -> None:
-    from sqlalchemy import text
+    from learningj.db.models.invariant_triggers import TRIGGER_NAMES
 
     with upgraded_engine.connect() as conn:
         triggers = {
@@ -148,8 +150,7 @@ def test_invariant_triggers_installed(upgraded_engine: Engine) -> None:
                 "SELECT name FROM sqlite_master WHERE type='trigger'"
             ).fetchall()
         }
-    assert "trg_review_items_valid_requires_srs" in triggers
-    assert "trg_review_items_retired_at_monotonic" in triggers
+    assert set(TRIGGER_NAMES) <= triggers, sorted(set(TRIGGER_NAMES) - triggers)
 
 
 def test_spans_is_standalone_table(upgraded_engine: Engine) -> None:
