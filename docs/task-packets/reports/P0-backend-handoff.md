@@ -120,12 +120,13 @@ Open issues：
 > 2026-09-10 并入（lead 从 CR 会话转录）。按 `reports/README.md` 的“一包一份”约定，复审不再单独成文件；原 `P0-backend-cr.md` 的内容移至此处，其历史保留在 git。
 
 ```text
-VERDICT: approve-with-risks
+VERDICT: approve
+Findings: none
 ```
 
-Findings:
+已关闭 Findings（保留记录；当前无 open finding）：
 
-- **[P1]** `docs/task-packets/CURRENT-PACKETS.md`（P0-backend 行 Start gate “P0-contract clear”）——前置闸门从未产出可复核的报告：实现方明确“按派发指令视为 P0-contract 闸门已通过”，`git show HEAD:docs/task-packets/P0-contract.md` 显示该包文件已被删除，仓库内不存在任何 P0-contract handoff 产物。P0-contract 的**实质交付物**（旧库回归样本与旧触发器、旧状态机移除清单、25 条不变量 owner 台账、P0 gate 与来源链）已在仓库中逐项验证存在，因此不判 `blocked`；但“clear”这一裁决本身不可独立复核。**后续状态：`5484224` 已落盘 `P0-contract-handoff.md` 并判 clear，本项在实质上已具备关闭条件（待 lead 确认是否接受该审计）。**
+- **[P1][closed]** `docs/task-packets/CURRENT-PACKETS.md`（P0-backend 行 Start gate “P0-contract clear”）——前置闸门当初没有可复核的报告：实现方明确“按派发指令视为 P0-contract 闸门已通过”，`git show HEAD:docs/task-packets/P0-contract.md` 显示该包文件已被删除，仓库内不存在任何 P0-contract handoff 产物。P0-contract 的**实质交付物**（旧库回归样本与旧触发器、旧状态机移除清单、25 条不变量 owner 台账、P0 gate 与来源链）已在仓库中逐项验证存在，因此当时不判 `blocked`，仅要求补齐闸门证据。**关闭证据：`5484224` 落盘 `docs/task-packets/reports/P0-contract-handoff.md` 并判 clear，lead 于 2026-09-10 接受该审计。**
 
 本轮返工前提出的 P2 已全部关闭，记录见文末“轮次记录”。
 
@@ -142,11 +143,12 @@ Evidence checked:
 Gate assessment:
 
 - P0-backend 自身验收达成（迁移、备份、四态语义、无 ReviewItem 创建/排程、OpenAPI/fixture 可复现、旧第二状态机不再权威），代码已可作为 P0-integration 的输入。
-- 但 **start gate 未被真实满足**（P1）：没有 P0-contract 审计报告，“clear”只是假设。因此本包不能作为“P0-contract 已通过”的证据，P0 阶段收尾与 P4b/P5 派发前必须补做 P0-contract 并落盘；本 CR 已把该证据路径制度化（`reports/`）。
+- **start gate 现已满足**：`5484224` 落盘 `reports/P0-contract-handoff.md` 并判 clear，lead 于 2026-09-10 接受；原先的 P1 关闭。
+- 边界：P0-integration 仍需 P0-frontend 报告；本 Review 只覆盖 `backend/`，对前端不作任何断言。
 
 Residual risks:
 
-- 旧 `active` 无 ReviewState → `queued` 是解释性映射（`c66997d83060` docstring 已记录），需在 P0-contract unmappable 清单中确认，未被 lead 接受前仍是判断。
+- 旧 `active` 无 ReviewState → `queued` 是解释性映射；P0-contract 的实体对账表已把它登记为 “deliberate compatibility interpretation, not proof of historical quota admission”，lead 接受该审计。它不是历史事实的还原；若要改变该口径需另立决定。
 - `occurrence_id` 粒度的非 retired 部分唯一索引属 P5 前滚迁移项；当前 `UniqueConstraint("kp_id","occurrence_id")` 更严且不等价于 Occurrence 唯一。
 - 包外既有债（未在本包处理）：`KnownEvidenceSource` 仍含 ADR-040/data-model §2.2 已移除取值（P2）；`ReviewState.state` 注解 str 而列为 Integer（P5）；`backend/` 两份旧 manifest 缺 `foreign_key_check`，当前 `verify-backup` 会拒绝。
 - 旧库若存在 a51 未纠正的 `reference + active` 存量行，迁移会以断言失败中止（保留备份），而非静默带入；行为已按此设计，未在真实历史库上穷举。
