@@ -1,0 +1,26 @@
+AGENTS.md
+  h_c735ec7f46d14b 35-37,91-94
+docs/task-packets/CURRENT-PACKETS.md
+  h_c735ec7f46d14b 9
+docs/task-packets/README.md
+  h_c735ec7f46d14b 9,11-12,15
+docs/task-packets/protocols/code-review.md
+  h_c735ec7f46d14b 5,26-27
+docs/task-packets/protocols/handoff.md
+  h_c735ec7f46d14b 5-6
+docs/task-packets/protocols/implementation.md
+  h_c735ec7f46d14b 3
+docs/task-packets/reports/README.md
+  h_c735ec7f46d14b 1-39
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "9f2f24265d03d0f4eb0766f9971de39fdfffe0ee",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
