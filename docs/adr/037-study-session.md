@@ -17,4 +17,4 @@ decided_at: 2026-09-08
 
 ## 当前落点
 
-[数据模型 §4](../data-model.md#4-学习会话工作文档与提取)、[产品规划 §3](../LearningJ-plan-v5.md#3-阅读学习会话知识库与复习)、[DESIGN](../../DESIGN.md#learning-queue-and-records)
+[数据模型 §4](../data-model.md#4-学习会话工作文档与提取)、[产品规划 §3](../LearningJ-plan-v5.md#3-阅读学习会话知识库与复习)、[DESIGN](../../DESIGN.md#解析队列与学习记录)

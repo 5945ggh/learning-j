@@ -1,181 +1,182 @@
-# Design
+# LearningJ 界面与交互契约
 
-## Source of truth
-- Status: Active (MVP interaction contract)
-- Last refreshed: 2026-09-10
-- Design direction update: the application shell and material-library baseline now follow a modern, restrained Apple Books-like reading aesthetic. This is a product direction, not a pixel-level imitation of Apple UI.
-- Contract migration: study-session, Agent, history, evidence, query-projection, and occurrence-review-target ([ADR-041](docs/adr/041-occurrence-review-targets.md)) changes are reflected in this document. The task-packet catalogue (`docs/task-packets/CURRENT-PACKETS.md`) was re-synced to ADR-041 on 2026-09-10. The top-level navigation is decided here (“主页”, “素材库”, “知识库”, “解析队列”, “学习中心”); `docs/LearningJ-plan-v5.md` §3 and §15 still record the previous entry names and need a lead-owned sync.
-- Primary product surfaces: desktop application shell, material library, material reader/player, sentence analysis and dictionary lookup, AI study workspace, extracted knowledge review
-- Evidence reviewed: `docs/mvp-tech-and-phases.md`, `docs/LearningJ-plan-v5.md`, `docs/adr.md`, `docs/data-model.md`, `docs/prompt-contracts.md`
-- Accepted visual and interaction reference: Apple Books and related Apple native applications as a reference for calm hierarchy, sidebar navigation, restrained controls, and content-first surfaces. `experiments/frontend_samples_v2/reader.html` and `study.html` remain useful interaction mockups; `player.html` supplies a media-surface reference. These are mockups, not executable business contracts. Samples do not override the current document/editor conversation layout or session lifecycle.
+## 权威来源
+- 状态：生效中（MVP 交互契约）
+- 最近刷新：2026-09-10
+- 文档语言：2026-09-10 起与其余契约文档统一为中文；引号内为面向用户的界面标签原文。
+- 设计方向更新：应用外壳与素材库基线采用现代、克制的 Apple Books 式阅读观感。这是产品方向，不是对 Apple UI 的像素级模仿。
+- 契约同步：学习会话、Agent、历史、证据、查询投影与 Occurrence 级复习对象（[ADR-041](docs/adr/041-occurrence-review-targets.md)）的变更已反映到本文档。任务包目录（`docs/task-packets/CURRENT-PACKETS.md`）已于 2026-09-10 重新同步到 ADR-041。顶级导航在本文档确定（“主页”“素材库”“知识库”“解析队列”“学习中心”）；`docs/LearningJ-plan-v5.md` §3 与 §15 仍记录旧入口名，需由 lead 同步。
+- 主要产品界面：桌面应用外壳、素材库、素材阅读器／播放器、句子解析与查词、AI 学习工作区、已提取知识回看
+- 已核对的证据：`docs/mvp-tech-and-phases.md`、`docs/LearningJ-plan-v5.md`、`docs/adr.md`、`docs/data-model.md`、`docs/prompt-contracts.md`
+- 已接受的视觉与交互参考：以 Apple Books 及相关 Apple 原生应用作为冷静层次、侧边导航、克制控件与内容优先界面的参考。`experiments/frontend_samples_v2/reader.html` 与 `study.html` 仍是有用的交互 mockup；`player.html` 提供媒体界面参考。它们是 mockup，不是可执行的业务契约。样例不覆盖当前的文档／编辑器对话布局或会话生命周期。
 
-## Brand
-- Personality: focused, literate, technically capable, respectful of learner agency
-- Baseline mood: modern, quiet, tactile, and book-like; the interface should feel suitable for long reading sessions rather than a dashboard or chat tool
-- Trust signals: source context is visible; dictionary, parser, and AI output are clearly distinguished; provenance and persistence are previewed
-- Inspiration: Apple Books, Finder, Photos, and other Apple native applications may inform spatial hierarchy, material surfaces, typography, and interaction restraint. Reuse the principles, not proprietary assets or an exact visual clone.
-- Avoid: gamified streak pressure, classroom decoration, generic chat UI, marketing hero layouts, decorative gradients, and indiscriminate translucency
+## 品牌
+- 气质：专注、有文气、技术可靠、尊重学习者的自主权
+- 基线氛围：现代、安静、有触感、像书；界面应当适合长时间阅读，而不是仪表盘或聊天工具
+- 信任信号：来源语境可见；词典、解析器与 AI 输出被清楚区分；来源与持久化会被预先说明
+- 借鉴：Apple Books、Finder、Photos 及其他 Apple 原生应用可以影响空间层次、材质表面、字体排印与交互克制。借鉴原则，不抄专有资产，也不做精确的视觉克隆。
+- 避免：游戏化连续打卡压力、课堂装饰、通用聊天 UI、营销式 hero 布局、装饰性渐变，以及不加区分的半透明
 
-## Product goals
-- Goals: keep authentic Japanese material primary; make lookup and syntax inspection immediate; turn deliberate AI study into reusable knowledge; preserve control over what is learned or reviewed
-- Non-goals: replace Yomitan, automatically teach every sentence, prescribe a complete curriculum, or run whole-book AI analysis by default
-- Success signals: a learner can inspect a word without losing sentence context, then deliberately escalate to AI study or knowledge capture
+## 产品目标
+- 目标：让真实日语素材保持主体地位；让查词与句法查看即时可达；把有意的 AI 学习变成可复用知识；保留对“学什么、复习什么”的控制
+- 非目标：取代 Yomitan；自动讲解每一句；规定完整课程；默认对整本书做 AI 分析
+- 成功信号：学习者能在不丢失句子语境的前提下查看一个词，然后有意地升级为 AI 学习或知识沉淀
 
-## Personas and jobs
-- Primary personas: technically confident Japanese immersion learners using authentic novels, anime, audio, and existing dictionary/SRS tools
-- User jobs: consume a work; resolve a word or structure with minimal interruption; deeply study a chosen sentence; accumulate reusable learning evidence
-- Key contexts of use: long desktop reading or viewing sessions with keyboard, mouse, headphones, and optional external Yomitan/Anki data
+## 用户与任务
+- 主要用户：技术自信的日语沉浸学习者，使用真实小说、动画、音频与既有词典／SRS 工具
+- 用户任务：消费一部作品；以最小打断解决一个词或结构；深入学习选定的一句；积累可复用的学习证据
+- 主要使用情境：带键盘、鼠标、耳机的长时间桌面阅读或观看，并可选接入外部 Yomitan／Anki 数据
 
-## Information architecture
-- Application shell navigation, in order: “主页”, “素材库”, “知识库”, “解析队列”, “学习中心”. A settings entry remains anchored at the bottom of the navigation rail.
-- “主页” is reserved for a later product decision and is intentionally not specified in this revision.
-- The four defined entries form one pipeline over the same records, separated by the user's scheduling decision: “素材库” holds the input material; “解析队列” holds unfinished learning sessions before that decision; “学习中心” holds what the user has chosen to learn together with review and session history; “知识库” holds the persistent knowledge assets. No entry introduces an entity, a second authority for StudySession, AnalysisRevision or extraction state, or a duplicated pending state.
-- “解析队列” is the global, filterable view over unfinished learning sessions (`status = active`) and reuses the same component and query authority as the material-scoped queue ([data-model §4.1](docs/data-model.md#41-studysession学习会话)). Its navigation label names the dominant activity, not the entire content: an item may already be at 可讨论, 提取中 or 待确认. Stage is a filter inside this one queue and never a second queue. The entity keeps its own name (“学习会话”); “解析队列” is a view label, not a second entity and not a rename. Retire the older “学习队列” wording, which backed no user-facing label and collided with both “学习中心” and the internal job queue.
-- Term layers, so the several “队列” usages stay apart: entity = “学习会话”; view = “解析队列” globally and the material-scoped session list; plan and scheduling = “学习中心”, whose due set is “今日到期”; history = “学习记录”; internal runtime = “执行任务队列”, never a user-facing label. A future recommendation feature proposes candidate sentences to analyze — not knowledge points to learn — and would feed “解析队列”.
-- “学习中心” is the aggregation shell for the learning plan and review work: new-card introduction, due review, learning records, and material-scoped entries into the same views. It derives everything from existing scheduling records and adds no entity, no separate pending state and no second todo list.
-- Material workspace: source text or player is primary, with a collapsible algorithm/dictionary area and a compact current-material learning queue. Three columns are not mandatory.
-- Material library: provide a mode switch between “书目” and “视听”. Book materials use vertical cards with the cover as the visual anchor, concise metadata along the lower edge, and a three-dot overflow action for editing metadata and other material actions. Audio/video materials may use a different aspect ratio and playback affordances while reusing the same material-card ownership and spacing system.
-- Material cards: provide a learning-queue entry with an accurately labeled active-session total; users can select a session without reopening the reader first. The overflow menu must not turn a lightweight material action into a hidden learning or deletion action.
-- Study: desktop main area is the current analysis document; the right sidebar is the Agent conversation, with input and visible tool/edit feedback. A compact session navigator may collapse or open as a sheet; it must not displace the conversation or squeeze the document.
-- Knowledge: global and material-scoped lists/details show KP, occurrences, source, verified relationship types, per-Occurrence retention together with the KP default policy it inherits or overrides, and actual review state. AggregateCard is reusable here and in candidate confirmation. A full interactive graph is deferred; do not invent edges or promise automatic grammar matches.
-- Review: due cards with their recorded source content and optional audio, presented inside “学习中心” rather than as a separate navigation entry.
-- Return-to-source restores the material, exact Sentence and reading/playback position.
+## 信息架构
+- 应用外壳导航，顺序为：“主页”“素材库”“知识库”“解析队列”“学习中心”。设置入口固定在导航栏底部。
+- “主页”为后续产品决策保留，本版有意不作规定。
+- 四个已定义入口是同一条流水线上按用户排程决定切分的同一批记录：“素材库”保存输入材料；“解析队列”保存该决定之前尚未完成的学习会话；“学习中心”保存用户已选择要学的内容以及复习与会话历史；“知识库”保存持久知识资产。任何入口都不得引入实体、不得成为 StudySession／AnalysisRevision／提取状态的第二权威，也不得产生重复的待办状态。
+- “解析队列”是未完成学习会话（`status = active`）的全局可筛选视图，与素材范围队列使用同一组件与同一查询权威（[数据模型 §4.1](docs/data-model.md#41-studysession学习会话)）。它的导航标签命名的是主要活动，而不是全部内容：一项可能已经处于可讨论、提取中或待确认。阶段是这个队列内部的筛选，永远不是第二个队列。实体保留自己的名称（“学习会话”）；“解析队列”是视图标签，不是第二个实体，也不是改名。退役较早的“学习队列”措辞——它不支撑任何面向用户的标签，并与“学习中心”和内部执行任务队列相混。
+- 术语分层，使多个“队列”用法彼此分开：实体＝“学习会话”；视图＝全局“解析队列”与素材范围会话列表；计划与排程＝“学习中心”，其到期集合称为“今日到期”；历史＝“学习记录”；内部运行＝“执行任务队列”，永不作为面向用户的标签。未来的推荐能力提出的是待解析的候选句子——不是要学的知识点——其产物汇入“解析队列”。
+- “学习中心”是学习计划与复习工作的聚合外壳：新卡引入、到期复习、学习记录，以及进入同一批视图的素材范围入口。它从既有排程记录派生全部内容，不新增实体、不新增独立待办状态，也不新增第二份待办清单。
+- 素材工作区：以原文或播放器为主，配一个可折叠的算法／词典区与一个紧凑的当前材料学习队列。三栏不是必须的。
+- 素材库：提供“书目”与“视听”模式切换。书籍材料使用纵向卡片，以封面为视觉锚点，下沿承载简洁元数据，并以三点溢出操作进行元数据编辑及其他材料操作。音视频材料可以使用不同宽高比与播放控件，同时复用同一套素材卡片归属与间距系统。
+- 素材卡片：提供学习队列入口，并如实标注活动会话总数；用户可以不先打开阅读器就选中一个会话。溢出菜单不得把轻量的材料操作变成隐藏的学习或删除操作。
+- Study：桌面主区是当前解析文档；右侧栏是 Agent 对话，含输入框与可见的工具／编辑反馈。紧凑的会话导航器可以折叠或作为面板打开；它不得挤走对话或压缩文档。
+- 知识库：全局与素材范围的列表／详情展示 KP、Occurrence、来源、已验证的关系类型、逐 Occurrence 意愿及其继承或覆盖的 KP 默认复习策略，以及实际复习状态。AggregateCard 在此处与候选确认中可复用。完整的交互式图谱后置；不得臆造边，也不得承诺自动语法匹配。
+- 复习：到期卡片及其记录的来源内容与可选音频，呈现在“学习中心”内部，而不是作为独立导航入口。
+- 返回来源会恢复材料、确切 Sentence 与阅读／播放位置。
 
-### 解析队列 (learning queue) and records
+### 解析队列与学习记录
 
-Use “学习会话” for one learning activity; its global unfinished view is labelled “解析队列” in the shell, and the entity keeps its own name. Do not call that queue “学习队列”: the older wording backed no user-facing label and collided with “学习中心” and with the internal job queue. The queue is a view over StudySession, not an Inbox entity or the internal generation-job queue. Reader/player and material-card entries filter by material; the global entry uses the same records across materials. Lifecycle and query authority: [data-model §4](docs/data-model.md#4-学习会话工作文档与提取).
+用“学习会话”表示一次学习活动；它的全局未完成视图在外壳中标注为“解析队列”，实体保留自身名称。不要把该队列称为“学习队列”：较早的措辞不支撑任何面向用户的标签，并与“学习中心”和内部任务队列相混。队列是 StudySession 的视图，不是 Inbox 实体，也不是内部生成任务队列。阅读器／播放器与素材卡片入口按材料筛选；全局入口跨材料使用同一批记录。生命周期与查询权威：[数据模型 §4](docs/data-model.md#4-学习会话工作文档与提取)。
 
-- Preparation: a row exists immediately and can open Study before generation finishes. Show source context, actual queued/running status and available draft. The user can draft a question; sending discussion waits for the initial document to be committed.
-- Discussion: label “可讨论”, including sessions never opened by the user. The complete initial document is available; discussion can change quantity, wording and structure or simply answer a question.
-- Extraction: label “提取中” and identify the fixed document version. Disable discussion writes. Failure offers extraction-only retry and keeps the selected source and document.
-- Confirmation: label “待确认”; the candidate list is folded by KP for reading, but the confirmation unit is the Occurrence. For every distinct Occurrence of the current successful run, offer both “安排复习” and “仅作参考” and record a per-Occurrence decision. The KP fold is a display convenience and never changes what is confirmed—including when a KP appears as a single row, each of its Occurrences carries its own choice. A KP default is not an inherited user decision: it may be shown as the current default and may be pre-selected or greyed, but every Occurrence still requires its own explicit choice. When a KP already carries a user decision, display that value as the default and provide an explicit per-Occurrence accept; a bulk “一并沿用并完成” affordance must enumerate the affected Occurrences and the value it will record. Allow partial confirmation and later continuation. Choosing “安排复习” creates or reuses that Occurrence's ReviewItem in the same commit as the decision.
-- Completion: the session leaves the active queue only once every distinct Occurrence of the current run has a confirmation for this run, and is retained in “学习记录”. A later retention change in Knowledge does not reopen the session. Zero-candidate results explain the outcome and provide “完成学习”.
-- Parking: “暂时搁置” removes an unwanted unfinished session from the default queue without deleting it. Records provide resume; settle or cancel in-flight writes before parking.
+- 准备：一行立即存在，并可在生成完成前打开 Study。展示来源语境、真实排队／运行状态与可用草稿。用户可以起草问题；发送讨论需等待首稿提交。
+- 讨论：标签“可讨论”，包括用户从未打开过的会话。完整首稿可用；讨论可以改变数量、措辞与结构，也可以只是回答一个问题。
+- 提取：标签“提取中”，并标明固定的文档版本。禁用讨论写入。失败只提供该版本的提取重试，并保留所选来源与文档。
+- 确认：标签“待确认”；候选列表按 KP 折叠以便阅读，但确认单位是 Occurrence。对当前成功 run 的每一个不同 Occurrence，都提供“安排复习”与“仅作参考”两者，并记录逐 Occurrence 的决定。KP 折叠是展示便利，永不改变被确认的内容——即使某个 KP 只显示为一行，它的每个 Occurrence 也各自承载自己的选择。KP 默认值不是继承来的用户决定：它可以显示为当前默认值，也可以预选或灰显，但每个 Occurrence 仍然需要它自己的明确选择。当某个 KP 已带有用户决定时，把该值显示为默认值，并提供逐 Occurrence 的明确沿用；批量“一并沿用并完成”必须列出受影响的 Occurrence 以及它将记录的值。允许部分确认与稍后继续。选择“安排复习”会在与该决定同一提交中创建或复用该 Occurrence 的 ReviewItem。
+- 完成：只有当当前 run 的每一个不同 Occurrence 都获得了本次确认，会话才离开活动队列，并保留在“学习记录”。知识库中之后的意愿变更不会让会话重新排队。零候选结果会解释原因并提供“完成学习”。
+- 搁置：“暂时搁置”把不想继续的未完成会话移出默认队列而不删除。学习记录提供恢复；搁置前必须结束或取消在途写入。
 
-Show actual stage totals, operation progress and local failures. No unread dots, inferred mastery, overdue debt or pressure to clear the queue — these are not surfaced even when the data exists. Entering a page is not confirmation. A queue item is a session even if its KP are already known globally.
+展示真实的阶段总数、操作进度与局部失败。不显示未读红点、推断的掌握度、逾期债务或清空队列的压力——即使数据存在也不展示。进入页面不是确认。即使某个会话的 KP 在全局已认识，队列项仍是一个会话。
 
-### Learning center
+### 学习中心
 
-“学习中心” is the shell for the user's learning plan and review work. It presents the unified new-and-due queue, learning records, and material-scoped entries into the same views.
+“学习中心”是用户学习计划与复习工作的外壳。它呈现统一的新卡与到期队列、学习记录，以及进入同一批视图的素材范围入口。
 
-- One queue, two legitimate segments. Introducing a new card and reviewing a due card use the same FSRS memory model; the only algorithm split is the one-time initialization of a card's memory state before it has any review history. Present “新卡” and “到期复习” as labeled segments of one session driven by daily budgets and user filtering, not as two applications.
-- Segment derivation. Derive the segments from existing scheduling records rather than adding a card-type field: “等待新卡配额” is an item not yet admitted to scheduling, “新卡” is an admitted item that has not been graded yet and therefore has no memory state, and “复习” is a graded item with a memory state that is due (plan §8, [data-model §7](docs/data-model.md#7-srs)).
-- Budget and selection. The daily new-card quota and the due set determine what today contains; the user may narrow, filter or reorder within that set. Ordering the user's already-added but not-yet-scheduled items is part of that quota mechanism, not a recommendation. The deferred recommendation feature (ADR-022) works one level upstream and its reason is structural: because the product does not run whole-material AI preprocessing, no knowledge points exist ahead of a study session, so the only thing that can be proposed is sentences that have not been analyzed yet, ranked by estimated information value, difficulty and density — and its output would feed “解析队列”. It never proposes knowledge points to learn, and it is not part of this shell.
-- Review threshold. A user-configured due or recall threshold is a scheduling parameter over FSRS retrievability evaluated at an explicit time. It must not be presented as, or conflated with, a mastery or combined-estimate threshold, which remains uncalibrated (plan §15.16, [data-model §10](docs/data-model.md#10-统计口径与跨层依赖)).
-- No pressure. Show what today contains and how far along it is, but never overdue debt, streak pressure, inferred mastery or unread dots — not even when the underlying data exists and could be computed. An empty day is a legitimate state, not a failure.
-- Records. Completed and parked sessions live here as “学习记录”, retaining the document, conversation, extraction source and per-Occurrence outcome they recorded. A later retention change in Knowledge does not reopen them.
-- The AI study workspace is not a navigation destination. Study opens as a full-screen surface pushed from “解析队列”, “素材库” or “学习中心”, keeping the same session, position and drafts; on narrow screens it switches between document and conversation.
+- 一个队列，两个合法段落。引入新卡与复习到期卡使用同一套 FSRS 记忆模型；唯一的算法分叉是一张卡在拥有任何复习历史之前对其记忆状态的一次性初始化。把“新卡”与“到期复习”呈现为同一次学习中由每日预算与用户筛选驱动的两个带标签段落，而不是两个应用。
+- 段落派生。段落从既有排程记录派生，不新增 card-type 字段：“等待新卡配额”是尚未准入排程的项，“新卡”是已准入但尚未评分、因而没有记忆状态的项，“复习”是已评分且记忆状态到期的项（产品规划 §8，[数据模型 §7](docs/data-model.md#7-srs)）。
+- 预算与选择。每日新卡配额与到期集合决定今天有什么；用户可以在这个集合内收窄、筛选或重排。对用户已加入但尚未排程的项进行排序属于该配额机制的一部分，不是推荐。后置的推荐能力（ADR-022）位于上游一层，其原因也是结构性的：产品不对整部材料做 AI 预处理，因此学习会话之前不存在知识点，能提出的只有**尚未解析的句子**，并按预估的信息量、难度与密度排序——其产物汇入“解析队列”。它从不推荐要学的知识点，也不属于这个外壳。
+- 复习阈值。用户配置的到期或回忆阈值，是一个在明确时间点上对 FSRS 可提取性求值的排程参数。它不得被呈现为、也不得与掌握度或综合估计的阈值相混——后者仍未校准（产品规划 §15.16，[数据模型 §10](docs/data-model.md#10-统计口径与跨层依赖)）。
+- 无压力。展示今天有什么以及推进到哪里，但永不显示逾期债务、连续打卡压力、推断的掌握度或未读红点——即使底层数据存在且可计算也不显示。空的一天是合法状态，不是失败。
+- 学习记录。已完成与已搁置的会话在此以“学习记录”存在，保留它们记录的文档、对话、提取来源与逐 Occurrence 结果。知识库中之后的意愿变更不会让它们重新打开。
+- AI 学习工作区不是导航目的地。Study 作为从“解析队列”“素材库”或“学习中心”推入的全屏界面打开，保持同一会话、位置与草稿；窄屏下它在文档与对话之间切换。
 
-### Document and Agent interaction
+### 文档与 Agent 交互
 
-1. “加入 AI 学习” creates an interactive session with source, module choices and optional question, without forced navigation. Ordinary multi-select creates multiple such sessions, each still discussable.
-2. “自动生成并提取” is a separate explicit mode. It skips discussion, uses one sentence per session in the first version, and still requires user review choices before new-card scheduling.
-3. Study opens immediately. Generation output may stream as a draft; it is labeled unfinished and cannot be extracted. Once committed, the main pane shows the full document and the sidebar remains available for conversation.
-4. The Agent can edit sections, reorganize text and update scoped notes/profile through tools. Show working, committed, conflict and failure states; distinguish “AI said it would edit” from a successfully committed change. Keep the reading anchor stable across edits where possible, and expose recent edit/undo information within the configured draft-history window.
-5. “结束讨论并提取” waits for or explicitly cancels in-flight editing, then freezes a complete committed document version for extraction. Navigation and app/browser closure do not invoke this action. Hitting an execution budget pauses with a continuation path; it does not implicitly accept the document.
-6. Existing backend mappings can navigate source spans to the correct section version. Before extraction, do not fabricate kind or Span links; after editing, do not reuse stale mappings from older document versions.
-7. Confirmation records a review choice per Occurrence, separately from “等待新卡配额” and “已加入复习”. Choosing “安排复习” creates or reuses the ReviewItem for that Occurrence atomically, in the same commit as the decision; an item that has not yet received new-card quota is shown as waiting for quota, not as joined. Completing the session does not depend on quota allocation.
+1. “加入 AI 学习”创建一个带来源、模块选择与可选问题的交互式会话，不强制跳转。普通多选会创建多个此类会话，每个仍可讨论。
+2. “自动生成并提取”是独立的显式模式。它跳过讨论，首版每会话一句，并且在新卡排程前仍要求用户做出回看选择。
+3. Study 立即打开。生成输出可以流式呈现为草稿；它被标注为未完成且不可提取。提交后主区显示完整文档，侧栏继续可用于对话。
+4. Agent 可以通过工具编辑小节、重组文本并更新有作用域的笔记／画像。展示进行中、已提交、冲突与失败状态；区分“AI 说它会编辑”与成功提交的变更。尽可能在编辑过程中保持阅读锚点稳定，并在配置的草稿历史窗口内暴露最近的编辑／撤销信息。
+5. “结束讨论并提取”等待或显式取消在途编辑，然后冻结一个完整已提交的文档版本用于提取。导航与关闭应用／浏览器都不会触发该操作。达到执行预算时会暂停并给出继续路径；它不会隐式接受该文档。
+6. 既有后端映射可以把来源 Span 导航到正确的小节版本。提取之前不得臆造 kind 或 Span 关联；编辑之后不得复用旧文档版本的过时映射。
+7. 确认按 Occurrence 记录复习选择，与“等待新卡配额”和“已加入复习”相区分。选择“安排复习”会在与该决定同一提交中原子地创建或复用该 Occurrence 的 ReviewItem；尚未获得新卡配额的项显示为等待配额，而不是已加入。完成会话不依赖配额分配。
 
-### Knowledge and review control
+### 知识与复习控制
 
-Knowledge retains both srs and reference items. Retention is decided per Occurrence, with the KP value acting as a default policy that an Occurrence may inherit or override; the local value and whether the user has actually confirmed it are separate facts. “仅作参考” pauses existing review for the affected Occurrences; switching back restores progress, with no new-card quota charge for an existing card. An Occurrence confirmed to srs without available quota waits as queued; a KP default policy alone never authorizes a card. Do not label reference as deleted, rejected knowledge or failed learning.
+知识库同时保留 srs 与 reference 项。意愿按 Occurrence 决定，KP 的值充当默认复习策略，Occurrence 可以继承或覆盖它；局部值与用户是否真的确认过它是两件不同的事实。“仅作参考”暂停受影响 Occurrence 的既有复习；改回会恢复进度，且既有卡片不消耗新卡配额。确认 srs 但没有可用配额的 Occurrence 以 queued 等待；仅凭 KP 默认复习策略永不授权建卡。不要把 reference 标为已删除、被否决的知识或学习失败。
 
-Counts and relationships identify their evidence: recorded explanations, algorithmic material occurrences, source links, and explicit merges are different facts. Full learning records remain accessible from each source occurrence. User intent, scheduled-card state and mastery estimates are distinct displays.
+计数与关系要标明各自的证据：已记录的讲解、算法材料出现次数、来源链接与显式合并是不同的事实。完整学习记录仍可从每个来源 Occurrence 访问。用户意愿、排程状态与掌握估计是不同的展示。
 
-### Evidence, coverage and query feedback
+### 证据、覆盖与查询反馈
 
-- Show material occurrences, recorded evidence coverage, and eligible vocabulary-card review estimates separately. First-release evidence coverage uses the token denominator defined in data-model §10; label a distinct-Lexeme alternative explicitly. No evidence means an estimate has not been established, not zero mastery.
-- Evidence details identify the actual source and observation time. Allow withdrawal of an erroneous assertion or imported source. “目前不认识” overrides import and SRS in its scope; “清除我的判断” removes that scope’s override without reviving older assertions. A form-specific clear can still inherit a Lexeme-level decision; show the remaining scope rather than silently changing its meaning.
-- Do not equate a review choice, pause, retirement or successful generation with knowing a word. Import review previews selected known-list scope and unresolved/ambiguous/multi-token counts. An ordinary deck is not automatically a known list. Duplicate upload does not silently restore a withdrawn source.
-- Show a committed user judgment immediately. A background summary update cannot temporarily reverse it. Import and rebuild surfaces show actual progress, retry/cancel state and atomic publication; do not expose partial counts as a complete result.
-- Dynamic SRS estimates carry an evaluation time. Expired results and rebuilding summaries show updating/unavailable or an explicitly dated prior result; never show a fabricated zero during rebuild. Refresh visible data in bounded batches, not one request per token.
-- LexemeActivity and reading exposure are deferred. “材料中出现” is supported by the content index; “你读过／见过” requires a future reading/activity producer. Return position does not supply that evidence.
-- Orthography/kanji learning and candidate exclusion/extraction recovery remain decisions in plan §15. The current confirmation flow still confirms every distinct Occurrence of the current run or parks the session; a KP-level fold is a display convenience, not a completion unit, and reference is not rejection of an extraction candidate.
+- 分别展示材料出现次数、已记录的证据覆盖与合格词汇卡的复习估计。首版证据覆盖使用数据模型 §10 定义的 token 分母；若要展示按不同 Lexeme 的替代口径必须显式标注。没有证据意味着估计尚未建立，而不是掌握度为零。
+- 证据详情标明真实来源与观测时间。允许撤回错误断言或导入来源。“目前不认识”在其作用域内优先于导入与 SRS；“清除我的判断”移除该作用域的覆盖，但不复活更早的断言。按词形的清除仍可继承 Lexeme 级决定；应展示剩余作用域，而不是静默改变其含义。
+- 不要把复习选择、暂停、退役或成功生成等同于“认识”这个词。导入回看会预览所选已知词表范围以及未消解／歧义／多 token 计数。普通牌组不会自动成为已知词表。重复上传不会静默恢复已撤回的来源。
+- 立即展示已提交的用户判断。后台摘要更新不得临时反转它。导入与重建界面展示真实进度、重试／取消状态与原子发布；不得把部分计数当作完整结果暴露。
+- 动态 SRS 估计带有求值时间。过期结果与重建中的摘要显示为更新中／不可用，或一个显式标注日期的先前结果；重建期间永不显示伪造的零。以有界批次刷新可见数据，而不是每个 token 一次请求。
+- LexemeActivity 与阅读曝光后置。“材料中出现”由内容索引支撑；“你读过／见过”需要未来的阅读／活动生产者。返回位置不提供该证据。
+- 汉字与表记学习、候选排除与提取恢复仍是产品规划 §15 的待决事项。当前确认流程仍然是确认当前 run 的每一个不同 Occurrence，或搁置会话；KP 级折叠是展示便利，不是完成单位，reference 也不是否决某个提取候选。
 
-## Design principles
-- Lookup keeps the source sentence visible in the material workspace. Study repeats that same Sentence text, retains material context and offers a precise return; it does not require the entire reader to remain alongside the AI document.
-- Interaction cost is a value signal. Lightweight lookup is ephemeral; explicitly starting AI study marks intentional learning.
-- Do not compete with the browser Yomitan gesture. LearningJ uses an explicit click/tap gesture and does not claim the Option/Alt modifier plus hover path.
-- Bookmarking and learning are separate verbs. A lookup is not a KnowledgePoint and does not schedule review.
-- State transitions are legible: reading, lookup, focused study, and knowledge capture use distinct labels and surfaces.
+## 设计原则
+- 查词让来源句子在素材工作区保持可见。Study 复现同一段 Sentence 文本、保留材料语境并提供精确返回；它不要求整个阅读器同时留在 AI 文档旁边。
+- 交互成本是价值信号。轻量查词是短暂的；显式开始 AI 学习标记的是有意的学习。
+- 不与浏览器 Yomitan 手势竞争。LearningJ 使用显式点击／触摸手势，不宣称占用 Option/Alt 加悬停路径。
+- 收藏与学习是两个不同的动词。查词不是 KnowledgePoint，也不排程复习。
+- 状态转换要可读：阅读、查词、专注学习与知识沉淀使用不同的标签与界面。
 
-## Visual language
-- Color: ivory and deep gray form the default theme. The application shell uses a restrained glass-like background board; content surfaces remain opaque or nearly opaque where reading, definitions, and controls need reliable contrast. Algorithm/dictionary and AI accents remain semantic and subdued rather than defining the whole palette. Amber and green express labeled status, not a separate learning-content taxonomy.
-- Baseline token references: canvas `#EEEAE2`, glass surface `rgba(255, 255, 255, 0.62)`, page `#FFFCF5`, group `#F3F0E9`, secondary group `#E8E3DA`, text `#292929`, secondary text `#6F6B64`, divider `rgba(41, 41, 41, 0.12)`. These are initial references, not a substitute for contrast testing.
-- Semantic accent references: algorithm/dictionary uses a restrained blue and AI uses a restrained violet; status colors remain labeled and low-area. Accent values must be defined as semantic variables so a future theme pack can replace them without changing component logic.
-- Dark and alternate themes: do not hard-code light-theme values into components. Define semantic tokens for canvas, glass, opaque surface, page, grouped surface, text, border, shadow, algorithm, AI, warning, and success. Future color/style packs may change these variables while preserving interaction states and readable contrast.
-- Typography: Japanese serif for source text and quotations; compact sans serif for controls and metadata
-- Spacing/layout rhythm: 4/8px base rhythm; dense toolbars and lists; generous line height in the reading column
-- Shape/radius/elevation: small controls about 7px, actions 10px, grouped cards 14px, and the reading page may use a restrained larger radius. Use fine separators and layered, soft shadows to establish the glass board/page relationship. Avoid making every paragraph a floating card or adding blur behind dense text.
-- Motion: 180-260ms opacity/transform/layout transitions; honor reduced motion
-- Imagery/iconography: familiar monochrome symbols; material art may identify the work
+## 视觉语言
+- 颜色：象牙色与深灰构成默认主题。应用外壳使用克制的玻璃感底板；在阅读、释义与控件需要可靠对比的地方，内容表面保持不透明或近乎不透明。算法／词典与 AI 强调色保持语义化与低饱和，而不是定义整个调色板。琥珀与绿色表达带标签的状态，不是另一套学习内容分类。
+- 基线 token 参考值：canvas `#EEEAE2`、glass surface `rgba(255, 255, 255, 0.62)`、page `#FFFCF5`、group `#F3F0E9`、secondary group `#E8E3DA`、text `#292929`、secondary text `#6F6B64`、divider `rgba(41, 41, 41, 0.12)`。这些是初始参考，不能代替对比度测试。
+- 语义强调色参考值：算法／词典使用克制的蓝，AI 使用克制的紫；状态色保持带标签且低面积。强调色值必须定义为语义变量，使未来的主题包能够替换它们而不改变组件逻辑。
+- 深色与替代主题：不要把浅色主题的值硬编码进组件。为 canvas、glass、opaque surface、page、grouped surface、text、border、shadow、algorithm、AI、warning 与 success 定义语义 token。未来的配色／样式包可以改变这些变量，同时保持交互状态与可读对比。
+- 字体排印：原文与引文使用日文衬线体；控件与元数据使用紧凑无衬线体
+- 间距／布局节奏：4/8px 基础节奏；工具栏与列表紧凑；阅读栏使用宽松行高
+- 形状／圆角／高度：小控件约 7px，操作 10px，分组卡片 14px，阅读纸面可以使用克制的更大圆角。使用细分隔线与分层柔和阴影来建立玻璃底板／纸面的关系。避免把每一段都做成浮动卡片，也不要在密集文本背后加模糊。
+- 动效：180–260ms 的不透明度／变换／布局过渡；尊重减少动态效果
+- 图像／图标：熟悉的单色符号；素材美术可以标识作品
 
-### Application shell and material surfaces
+### 应用外壳与素材界面
 
-- The desktop shell is a glass-like background board with a left navigation rail and a spacious content region. Glass is a spatial material, not a content color: opaque or near-opaque pages, cards, dialogs, and text-heavy panels sit above it.
-- The navigation rail presents the five primary entries in the defined order and keeps settings visually separate at the bottom. Selected state uses a quiet surface change, clear label, and accessible state—not color alone.
-- The material library is the first detailed surface to design. Its two modes, “书目” and “视听”, share a view-switching pattern, page margins, search/import affordances, empty states, and material-card contracts.
-- Book cards are vertically oriented. The cover occupies most of the card, while the lower edge carries the name and only the most useful metadata. A three-dot action opens material management without competing with the cover or primary open action.
-- Entering a book opens a white or warm-white reading page over the glass board. The page is the reader’s stable content frame; background blur, decorative art, and shell motion must never reduce text legibility or shift the reading anchor.
-- Material-specific treatment may vary by mode or future style pack, but navigation, card actions, source context, and return-to-source behavior remain consistent.
+- 桌面外壳是带左侧导航栏与宽敞内容区的玻璃感底板。玻璃是空间材质，不是内容色：不透明或近乎不透明的纸面、卡片、对话框与重文本面板位于其上。
+- 导航栏按规定顺序呈现五个主要入口，并让设置入口在视觉上独立位于底部。选中态使用安静的表面变化、清晰标签与无障碍状态——不是仅靠颜色。
+- 素材库是第一个要详细设计的界面。它的“书目”与“视听”两种模式共用视图切换模式、页边距、搜索／导入入口、空状态与素材卡片契约。
+- 书籍卡片为纵向。封面占据卡片大部分，下沿承载名称与最有用的元数据。三点操作打开材料管理，不与封面或主要打开动作竞争。
+- 进入一本书会打开一个位于玻璃底板之上的白色或暖白阅读纸面。纸面是阅读器稳定的内容框；背景模糊、装饰美术与外壳动效永不降低文字清晰度，也不得移动阅读锚点。
+- 材料特定处理可以随模式或未来样式包变化，但导航、卡片操作、来源语境与返回来源行为保持一致。
 
-## Components
-- Component responsibilities: application shell/navigation rail, material mode switch, material card, material overflow menu, dictionary lookup, token action, session list, analysis document/editor, Agent conversation, confirmation, aggregate and review card. Existing component names may be retained where ownership still fits; do not couple them to shells.
-- Lookup states: closed; selected token; loading; one or more dictionary sources; no result; import required; error
-- Ownership: components remain shell-independent; a shell chooses whether lookup renders as a popover or drawer
-- Session lists, the document editor, conversation pane and confirmation components receive scope, records and callbacks through props. Shells assemble them without importing one another or hiding business lifecycle in route state.
+## 组件
+- 组件职责：应用外壳／导航栏、素材模式切换、素材卡片、素材溢出菜单、词典查词、token 操作、会话列表、解析文档／编辑器、Agent 对话、确认、聚合与复习卡片。既有组件名在归属仍然成立时可以保留；不要把组件耦合到 shell。
+- 查词状态：关闭；已选 token；加载中；一个或多个词典来源；无结果；需要导入；错误
+- 归属：组件保持独立于 shell；由 shell 决定查词渲染为 popover 还是抽屉
+- 会话列表、文档编辑器、对话面板与确认组件通过 props 接收作用域、记录与回调。shell 装配它们，互不 import，也不把业务生命周期藏在路由状态里。
 
-## Accessibility
-- Target standard: WCAG 2.2 AA where practical
-- Keyboard/focus behavior: selected text and token controls are keyboard reachable; Escape closes a popover/drawer; focus returns to the invoking token; no modifier-only gesture is required
-- Contrast/readability: color annotations also carry text labels, icons, or underlines
-- Screen-reader semantics: lookup surface uses dialog semantics for a popover and complementary/region semantics for a drawer; source, reading, and definition have explicit labels
-- Reduced motion: disable nonessential transitions under `prefers-reduced-motion`
+## 无障碍
+- 目标标准：在可行范围内达到 WCAG 2.2 AA
+- 键盘／焦点行为：选中文本与 token 控件键盘可达；Escape 关闭 popover／抽屉；焦点返回到触发它的 token；不要求仅靠修饰键的手势
+- 对比／可读性：颜色标注同时带文字标签、图标或下划线
+- 屏幕阅读器语义：查词界面作为 popover 时使用 dialog 语义，作为抽屉时使用 complementary/region 语义；来源、阅读与释义都有显式标签
+- 减少动态效果：在 `prefers-reduced-motion` 下禁用非必要过渡
 
-## Responsive behavior
-- Desktop-first at 1180px and above; compact layout down to 760px; stacked fallback below 760px
-- On wide screens, dictionary lookup opens as a right-side drawer when the reader shell has room; otherwise it opens as an anchored popover
-- On narrow screens, lookup becomes a bottom sheet or full-width dialog; never cover the selected sentence without a visible close/back action
-- Touch/hover differences: lookup works by click/tap, never hover alone; controls are at least 40px in compact layouts
-- Collapse the material queue and Study navigation first. On narrow screens, switch between document and conversation panes with clear tabs/back actions; preserve drafts, scroll and the same session. Do not require the right sidebar to remain visible at mobile widths or copy sample fixed widths.
+## 响应式行为
+- 桌面优先，1180px 及以上；紧凑布局低至 760px；760px 以下为堆叠回退
+- 宽屏下，当阅读器外壳有空间时，查词以右侧抽屉打开；否则以锚定 popover 打开
+- 窄屏下，查词变为底部面板或全宽对话框；未提供可见关闭／返回操作时永不遮盖所选句子
+- 触摸／悬停差异：查词通过点击／触摸工作，永不只靠悬停；紧凑布局中控件至少 40px
+- 优先折叠材料队列与 Study 导航。窄屏下用清晰的标签页／返回操作在文档与对话面板间切换；保留草稿、滚动位置与同一会话。不要求右侧栏在移动宽度下保持可见，也不照抄样例的固定宽度。
 
-### Toolbar and lookup boundaries
+### 工具栏与查词边界
 
-- Toolbar shape and exact grouping are not frozen by the samples. Keep material navigation, presentation controls and tool visibility compact and separate from the deliberate AI action. Icon controls need accessible names and adequate hit targets; sample icon dimensions do not set the hit area.
-- Word lookup must allow changing the selected token without repeatedly backing out through a sidebar navigation stack. If a word detail replaces the algorithm panel, preserve an accessible token/context strip and restore focus on close.
-- Horizontal/vertical reading controls and player sentence controls are compatible with this design. They do not create learning records by themselves.
+- 工具栏形态与确切分组不被样例冻结。让材料导航、呈现控件与工具可见性保持紧凑，并与有意的 AI 操作分开。图标控件需要无障碍名称与足够点击区域；样例图标尺寸不决定点击区域。
+- 查词必须允许更换所选 token，而不必反复从侧栏导航栈退出。如果词条详情替换了算法面板，需保留可访问的 token／语境条，并在关闭时恢复焦点。
+- 横排／竖排阅读控件与播放器句子控件与本设计兼容。它们本身不创建学习记录。
 
-## Interaction states
-- Loading: show source name and a compact loading state without shifting the sentence
-- Empty: explain that no imported dictionary matched and offer “Import dictionary” or “Search again”
-- Error: keep the selected surface and show a local retry; do not discard reader position
-- Success: show expression, reading, source label, definitions, tags, and optional metadata; preserve a link back to the sentence
-- Disabled: explain unavailable AI or dictionary actions; algorithmic reading remains usable without BYOK
-- Offline/slow network: local reader, tokenizer, and imported dictionaries remain available; only network-dependent AI actions show connectivity state
+## 交互状态
+- 加载中：展示来源名称与紧凑加载状态，不使句子位移
+- 空：说明没有导入的词典匹配，并提供“导入词典”或“重新搜索”
+- 错误：保留所选界面并给出局部重试；不丢弃阅读器位置
+- 成功：展示词形、读音、来源标签、释义、标签与可选元数据；保留回到句子的链接
+- 禁用：解释不可用的 AI 或词典操作；没有 BYOK 时算法阅读仍然可用
+- 离线／慢网络：本地阅读器、分词器与已导入词典保持可用；只有依赖网络的 AI 操作显示连接状态
 
-### Dictionary lookup flow (MVP)
+### 查词流程
 
-1. The algorithm view renders selectable token buttons; a single click/tap (or Enter/Space when focused) selects one token and opens lookup.
-2. On wide layouts, lookup opens in a right-side drawer so the sentence and nearby context remain visible. On compact layouts, it opens as an anchored popover; below the mobile breakpoint it becomes a bottom sheet/dialog.
-3. Selecting another token updates the same lookup surface in place. A second click does not silently create a bookmark or KnowledgePoint; pinning a result, if needed, is an explicit later action.
-4. Escape closes the surface and returns focus to the invoking token. Clicking outside closes only the popover; the drawer has an explicit close button.
-5. The surface shows expression, reading, each dictionary source label/version, definitions, tags, and a clear “Start AI study” action that is separate from lookup.
+1. 算法视图渲染可选 token 按钮；单次点击／触摸（聚焦时 Enter/Space）选中一个 token 并打开查词。
+2. 宽布局下，查词以右侧抽屉打开，使句子与邻近语境保持可见。紧凑布局下以锚定 popover 打开；在移动断点以下变为底部面板／对话框。
+3. 选择另一个 token 会在原地更新同一个查词界面。第二次点击不会静默创建收藏或 KnowledgePoint；如需固定结果，是一个显式的后续操作。
+4. Escape 关闭界面并把焦点还给触发它的 token。点击外部只关闭 popover；抽屉有显式关闭按钮。
+5. 该界面展示词形、读音、每个词典来源标签／版本、释义、标签，以及一个与查词分开的明确“开始 AI 学习”操作。
 
-Starting AI study from lookup creates the same asynchronous learning session as the reader and preserves the current reading context. “这个我认识”, “目前不认识”, and “清除我的判断” are explicit user actions in the Lexeme domain; show whether the action targets the Lexeme or only this encountered form. Annotation remains separate. None of these actions creates a KP or ReviewItem. Provenance must name actual dictionary/analyzer resources; an AI claim about syntax or word sense must not be labeled algorithmically verified without supporting backend evidence.
+从查词开始 AI 学习会创建与阅读器相同的异步学习会话，并保留当前阅读语境。“这个我认识”“目前不认识”与“清除我的判断”是 Lexeme 域中的显式用户操作；要展示该操作是针对 Lexeme 还是仅针对本次遇到的词形。Annotation 保持独立。这些操作都不会创建 KP 或 ReviewItem。来源必须指明真实的词典／分析器资源；关于句法或词义的 AI 断言，在没有后端证据支持时不得标注为算法已验证。
 
-## Content voice
-- Tone: calm, precise, concise, learner-respecting
-- Terminology: “查词” for dictionary lookup, “算法解析” for deterministic inspection, “加入 AI 学习” for creating a session, “学习会话” for one learning activity, “解析队列” for the global view of unfinished sessions, “学习记录” for session history, “学习中心” for the new-and-due learning shell, “知识库” for persistent KP, and “AI 学习” for the document/Agent workspace. “安排复习” states an intent to add an Occurrence to the learning plan; it is not a claim that the item has been learned. Distinguish a per-Occurrence review choice from an actually scheduled item, and a KP default policy from a decision the user has confirmed; “已加入复习” is reserved for an item that has actually been admitted to scheduling, not for a choice that is still waiting for quota.
-- Microcopy: commands use verbs; provenance and state are explicit; do not call a lookup “收藏” or “学习”
+## 文案与语气
+- 语气：冷静、精确、简洁、尊重学习者
+- 术语：“查词”用于词典查询，“算法解析”用于确定性查看，“加入 AI 学习”用于创建会话，“学习会话”用于一次学习活动，“解析队列”用于未完成会话的全局视图，“学习记录”用于会话历史，“学习中心”用于新卡与到期的学习外壳，“知识库”用于持久 KP，“AI 学习”用于文档／Agent 工作区。“安排复习”表达把某个 Occurrence 加入学习计划的意图；它不是“该项已学会”的声明。区分逐 Occurrence 的复习选择与真正已排程的项，也区分 KP 默认复习策略与用户已确认的决定；“已加入复习”只保留给真正已获准入排程的项，而不是仍在等待配额的选择。
+- 微文案：命令使用动词；来源与状态显式；不要把查词称为“收藏”或“学习”
 
-## Implementation constraints
-- Framework/styling: Vite + React + TypeScript; Tailwind + shadcn/ui; shell-independent components
-- Dictionary contract: Yomitan ZIP is an import format, not a UI or domain model; the API returns source/version provenance and text/structured definitions
-- Compatibility: do not intercept Option/Alt + hover, browser extension messaging, or Yomitan's modifier gesture
-- Performance: opening a lookup surface should be local and immediate after token selection; dictionary search is local once imported
-- Sample capability boundary: GiNZA/dependency visualization remains conditional; automatic grammar-pattern re-encounter remains outside MVP. Existing lexical matches and recorded Occurrences may be displayed with explicit provenance, without promising new grammar matches before AI extraction.
-- Test expectations: verify click/tap lookup, keyboard invocation, Escape/focus return, popover-to-drawer responsive switch, no-result/error states, and coexistence with a browser Yomitan extension
-- Study interaction checks: open preparing sessions from all entry points; submit ordinary multi-select without skipping discussion; commit Agent edits with visible outcomes; preserve context on navigation; extract a fixed version; accept existing choices for this session; keep completed records out of the queue after later Knowledge changes; resume paused review without losing history. These are current design checks, not a claim that the deferred phase acceptance documents have been updated.
+## 实现约束
+- 框架／样式：Vite + React + TypeScript；Tailwind + shadcn/ui；组件独立于 shell
+- 词典契约：Yomitan ZIP 是导入格式，不是 UI 或领域模型；API 返回来源／版本信息与文本／结构化释义
+- 兼容性：不拦截 Option/Alt + 悬停、浏览器扩展消息或 Yomitan 的修饰键手势
+- 性能：token 选中后，打开查词界面应是本地且即时的；词典搜索在导入后是本地操作
+- 样例能力边界：GiNZA／依存可视化仍为条件式；语法模式自动再遇仍在 MVP 之外。既有词汇匹配与已记录的 Occurrence 可以在标明来源的前提下展示，但不承诺在 AI 提取之前产生新的语法匹配。
+- 测试预期：验证点击／触摸查词、键盘调用、Escape／焦点返回、popover 到抽屉的响应式切换、无结果／错误状态，以及与浏览器 Yomitan 扩展共存
+- Study 交互检查：从所有入口打开准备中的会话；提交普通多选且不跳过讨论；在有可见结果的前提下提交 Agent 编辑；导航时保留语境；提取固定版本；为本次会话沿用既有选择；在后续知识库变更后让已完成记录留在队列之外；恢复已暂停的复习且不丢失历史。这些是当前的设计检查，不代表后置阶段的验收文档已更新。
 
-## Open questions
-- The sole open-decision index is `docs/LearningJ-plan-v5.md` §15. It tracks remaining toolbar/lookup details, onboarding and Agent operating defaults. The navigation labels decided in this document (“解析队列”, “学习中心”) and the absence of navigation-triggered extraction are settled; do not reopen them as unspecified behavior, and do not treat the older entry names still present in plan §3/§15 as the current ones.
+## 开放问题
+- 唯一的未决事项索引是 `docs/LearningJ-plan-v5.md` §15。它跟踪剩余的工具栏／查词细节、onboarding 与 Agent 运行默认值。本文档确定的导航标签（“解析队列”“学习中心”）与“导航不触发提取”已定；不要把它们当作未规定行为重新打开，也不要把 plan §3/§15 中仍存在的旧入口名当作现行名称。

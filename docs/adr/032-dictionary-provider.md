@@ -16,4 +16,4 @@ ZIP 导入需阻止路径穿越，限制文件数与压缩/解压大小；损坏
 
 ## 当前落点
 
-[数据模型 §2](../data-model.md#2-dictionary-与-lexeme-层)、[DESIGN](../../DESIGN.md#dictionary-lookup-flow-mvp)
+[数据模型 §2](../data-model.md#2-dictionary-与-lexeme-层)、[DESIGN](../../DESIGN.md#查词流程)

@@ -14,4 +14,4 @@ status: accepted
 
 ## 当前落点
 
-[DESIGN](../../DESIGN.md#components)
+[DESIGN](../../DESIGN.md#组件)

@@ -38,4 +38,4 @@ SQLite WAL 不消除单写入者约束。短事务、持久化重试进度、代
 
 ## 当前落点
 
-[数据模型 §§2、10–11](../data-model.md#22-knownevidence-与用户裁定)、[产品规划 §15](../LearningJ-plan-v5.md#15-未决事项)、[实验 11](../spike-checklist.md#11-证据查询与投影性能)、[界面契约](../../DESIGN.md#evidence-coverage-and-query-feedback)
+[数据模型 §§2、10–11](../data-model.md#22-knownevidence-与用户裁定)、[产品规划 §15](../LearningJ-plan-v5.md#15-未决事项)、[实验 11](../spike-checklist.md#11-证据查询与投影性能)、[界面契约](../../DESIGN.md#证据覆盖与查询反馈)
