@@ -1,0 +1,48 @@
+frontend/src/components/SentenceList.tsx
+  s_6bc984150d66ca::t_c9d2d8c9df83b5 1-5,8-18,20-27,29-34,36-41
+  s_616eb62679f9e8::t_127c6aa7471a18 6-7,19,28,35
+frontend/src/lib/materials.ts
+  s_6bc984150d66ca::t_c9d2d8c9df83b5 1-36
+frontend/src/shells/MaterialWorkspace.tsx
+  s_616eb62679f9e8::t_236bdd6b7d58ae 14,51-54,64,68-69
+  s_6bc984150d66ca::t_c9d2d8c9df83b5 1-13,15-50,55-63,65-67
+  s_616eb62679f9e8::t_8091ba841ce56f 70-72
+frontend/src/components/MaterialList.tsx
+  s_6bc984150d66ca::t_c9d2d8c9df83b5 1-31
+frontend/vite.config.ts
+  s_6bc984150d66ca::t_969d66259392af 12-19
+  s_6bc984150d66ca::t_5da8872de922a5 9-11
+  s_6bc984150d66ca::t_a29b70451e6571 20
+frontend/src/App.tsx
+  s_6bc984150d66ca::t_c9d2d8c9df83b5 1-16
+  s_6bc984150d66ca::t_2ebd60b2c4a0e1 17-19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "3539c1af5580f177b967e469aa33a1276997e2fe",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_616eb62679f9e8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a07c72-de45-71f0-993d-cbb0321a97ef",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_6bc984150d66ca": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a07636-a595-7341-a313-a22264e84e0c",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
