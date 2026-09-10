@@ -2,7 +2,7 @@
 
 > **计划基线（2026-09-10）：** 本文按最新核心契约校准，含 [ADR-041](adr/041-occurrence-review-targets.md) 对 P0/P4b/P5 的边界调整（Occurrence 级确认、P4b 创建 queued ReviewItem、P5 负责首次准入排程）；任务包目录 [CURRENT-PACKETS.md](task-packets/CURRENT-PACKETS.md) 已同步。现行行为以 [产品规划](LearningJ-plan-v5.md)、[数据模型](data-model.md)、[模型与 Agent 契约](prompt-contracts.md)、[ADR 索引](adr.md) 和 [DESIGN](../DESIGN.md) 为准；本文负责排列实施顺序，不复制第二份字段或状态机定义。
 >
-> 当前仓库处于“旧 P0/P1 实现切片已存在、当前契约迁移尚未完成”的状态。P0-backend 已完成 ADR-041 返工（三态前滚为 queued/active/paused/retired 并新增 admitted_at）并获 verdict approve；2026-09-10 的 §7.1/§7.2 语义变更（ReviewState 改为首次评分时建立）触发第二次有界返工，验收通过前 P0-backend 仍视为未完成。旧阶段验收通过不等于当前 P0/P1 完成；本文的阶段状态以 §2 为准。
+> 当前仓库处于“旧 P0/P1 实现切片已存在、当前契约迁移尚未完成”的状态。P0-backend 已完成 ADR-041 返工（三态前滚为 queued/active/paused/retired 并新增 admitted_at）并获 verdict approve；2026-09-10 的 §7.1/§7.2 语义变更（ReviewState 改为首次评分时建立）触发的**第二次有界返工已完成**——退役 active⇒ReviewState 触发器、准入只写 admitted_at、`trg_review_states_requires_admission` 保持有效、legacy 回填口径重记为契约 owner 解释，前滚迁移 `d8b3f6a1c204` 已就位，并经独立 CR `approve`（[`reports/P0-backend-handoff.md`](task-packets/reports/P0-backend-handoff.md)）。旧阶段验收通过不等于当前 P0/P1 完成；本文的阶段状态以 §2 为准。
 
 ## 1. 技术选型与贯穿约束
 
@@ -87,7 +87,7 @@ StudySession 的 preparation、普通多选分别排队和崩溃恢复需要持�
 | 范围 | 当前事实 | 按本计划的判断 |
 |---|---|---|
 | 后端素材链 | txt/srt/vtt/epub ingest、NFC/LF、code point 分句、Sudachi A mode、sidecar、Lexeme 幂等，以及 materials/sentences/sidecar API 已存在 | 旧 P0/P1 的实现切片可复用；当前 P1 的内容索引、版本发布、备份导出和 OpenAPI fixture 仍欠交付 |
-| 后端 schema | P0-backend 的 ADR-041 返工已落地并获 verdict approve：前滚迁移清理旧表与旧状态字段、迁移前备份/恢复、四态 ReviewItem 与 admitted_at 约束、OpenAPI/fixture 生成与不变量测试入口已存在；2026-09-10 起 §7.1/§7.2 把 ReviewState 改为首次评分时建立，故仍有 active⇒ReviewState 触发器与 P5 写序待校准；缺当前会话、文档 manifest、AgentRun、ExtractionSection 和 ReviewEvent 等阶段实体 | P0-backend 需完成第二次有界返工（退役 active⇒ReviewState 触发器、改写 P5 写序、重记 legacy 回填口径）并重跑验收后方视为完成；新实体 DDL 仍随实际使用它的阶段落地 |
+| 后端 schema | P0-backend 的 ADR-041 返工已落地并获 verdict approve：前滚迁移清理旧表与旧状态字段、迁移前备份/恢复、四态 ReviewItem 与 admitted_at 约束、OpenAPI/fixture 生成与不变量测试入口已存在。2026-09-10 起 §7.1/§7.2 把 ReviewState 改为首次评分时建立；**第二次有界返工已完成**——前滚迁移 `d8b3f6a1c204` 退役 active⇒ReviewState 与 no-direct-active-insert 两个触发器、准入只写 admitted_at、`trg_review_states_requires_admission` 保持有效、legacy“无状态 active→queued”重记为契约 owner 解释，并由独立 CR 判 `approve`（[`reports/P0-backend-handoff.md`](task-packets/reports/P0-backend-handoff.md)）；仍缺当前会话、文档 manifest、AgentRun、ExtractionSection 和 ReviewEvent 等阶段实体 | P0-backend 的第二次有界返工已通过验收；新实体 DDL 仍随实际使用它的阶段落地 |
 | 前端 | Vite/React/TS/Tailwind、素材和句子浏览及 code point 规则存在；MaterialWorkspace 还内嵌旧 AnalysisPanel，analysis.ts 调用后端不存在的分析／追问／抽取／retention 端点 | 前端基础可保留；旧 AI 原型不得作为新 Study 资产或完成证据，应删除／隔离 |
 | P2 | 没有算法解析、Yomitan importer、Annotation 或词汇判断入口 | 未开始 |
 | P3 | 没有 provider、版本化 analysis prompt、StudySession、持久生成队列或 Agent 执行器 | 未开始 |
