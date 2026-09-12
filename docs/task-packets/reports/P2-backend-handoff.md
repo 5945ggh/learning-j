@@ -92,35 +92,24 @@ Open issues:
 
 ## Review
 
-### 2026-09-12 独立评审（CR，reviewer）
+### 2026-09-12 独立复审（CR，reviewer）
 
 ```text
 VERDICT: changes-requested
 Findings:
-- [P1] backend/src/learningj/evidence/service.py:187 — known 决定的同 operation_key 重放读取不存在的 LexemeKnowledgeDecision.input_surface/input_reading；独立实测首请求 201、原样重放 500，而非 §2.2 要求的 200。来源：data-model §2.2 operation_key；最小修复：从被引用 KnownEvidence 读取并比较 surface/reading/material，缺失引用明确冲突，并补 known 重放与异输入回归。
-- [P1] backend/src/learningj/evidence/service.py:225 — 撤回同键重放只比较 evidence_id、忽略 reason；同键改 reason 实测 201 后仍 200。来源：data-model §2.2 operation_key；最小修复：把 reason 纳入同键输入比较并补 409 回归。
-- [P1] backend/src/learningj/evidence/service.py:256 — 内生的 `{operation_key}#clear` 未保留命名空间；该键若先被用户决定占用，当前 known 的 KE 撤回实测 500，不能可靠原子完成。来源：data-model §2.2 撤回/clear 原子语义、§11.2；最小修复：使用不会与外部 operation_key 碰撞的关联机制或保留内部键命名空间，并把冲突转换为确定性领域响应。
-- [P1] backend/src/learningj/db/models/lexeme.py:162 — KnownEvidenceRetraction 只有 XOR CHECK 与 operation_key UNIQUE，缺 evidence_id、import_run_id 分别唯一的数据库约束；探针 DDL/PRAGMA 已确认。服务层先查不能代替并发约束。来源：data-model §2.2；最小修复：为两个目标分别增加 NULL-safe UNIQUE 约束/部分唯一索引，并补并发或直写约束测试。
-- [P1] backend/src/learningj/api/schemas.py:230 — DecisionCreateIn 未携带 expected revision/sequence，service.py:153 以 max+1 写入；过期并发写会落为完整性错误而非冲突。来源：data-model §0 修改提交边界、§2.2 decision_seq 预期版本检查；最小修复：公开预期序号/版本、用条件写入保障并返回 409，补双写竞争测试。
-- [P1] backend/src/learningj/dictionary/importer.py:240 — 成员去重使用原始 ZIP 名而丢弃 _safe_member_name() 的规范路径；`img/a.txt` 与 `img//a.txt` 被解析器同时接受，落盘会指向同一 OS 路径并造成资源覆盖/元数据不一致。来源：ADR-032 重复资源拒绝；最小修复：以规范路径为唯一键和存储路径（或拒绝非 canonical 名），补碰撞回归。
-- [P1] backend/src/learningj/dictionary/service.py:45 — _write_assets 中途失败时尚未返回 assets_dir，调用方的 except 无法清理已创建目录/文件；实测 API 422、DB 零行但 assets_root 残留 source 目录。来源：P2 ZIP 事务外落盘失败清理、data-model §11.3；最小修复：在写入函数内 finally 清理或写入临时目录后原子 rename，并补中途 I/O 失败回归。
-- [P1] backend/src/learningj/dictionary/service.py:74 — 两个 DONE DictionaryImportRun 都未赋 finished_at，独立查询得到 `('done', NULL)`。来源：data-model §2.0 canonical ImportRun 开始/结束时间；最小修复：成功和幂等重放均写入完成时间，并为 done => finished_at 非空建立断言/约束。
-- [P2] backend/src/learningj/dictionary/service.py:312 — FTS MATCH 任意异常被吞掉并伪装为精确查询结果，损坏索引会静默漏掉前缀命中。来源：P2 FTS5 查找契约、ADR-032 定位拒绝原则；最小修复：只处理已定义可恢复条件，其余错误显式失败或触发可见重建，并补故障索引测试。
-- [P2] docs/task-packets/reports/P2-backend-handoff.md:Verified — 正文记为 `129 passed, 21 xfailed`，本次实际复跑为 `130 passed, 21 xfailed`；不影响上述代码判定。来源：code-review.md 要求真实输出；最小修复：后续修复交接如实引用本评审的实测计数，实施者正文保持不改。
+- [P1] backend/src/learningj/api/schemas.py:237 — expected_decision_seq 仍可省略，evidence/service.py 仅在非 None 时验证；独立探针依次以 canonical 令牌、完全省略令牌、别名令牌写入同一作用域均得到 201（序号 1/2/3），只有 stale alias 返回 409。来源：data-model §0 修改提交边界、§2.2「每个作用域具有…预期版本检查」；最小修复：保留多个输入别名但将令牌设为必填，移除 None 绕过并更新调用者/测试。
+- [P1] backend/src/learningj/dictionary/service.py:323 — 已有词典条目时 dictionary_search_fts 被删除，search_index_exists 返回 false 并静默降级；独立探针导入后 DROP TABLE、前缀查词返回 `200 {entries: []}`，遗漏真实命中。来源：P2 FTS5 验收与 ADR-032 可见失败边界；最小修复：区分「无词典的正常空结果」与「已有条目但 FTS 表缺失」，后者转 DictionarySearchError/503，并补真实 DROP TABLE 回归。
 Evidence checked:
-- 前置门：P1-integration-handoff.md 为 STATUS: done 且尚无 Review，按其正文作为协议规定的门输入；P1-backend/P1-frontend 的 approve Review 仅作上下文，未作为契约来源。
-- 契约与范围：按序阅读 code-review.md、implementation.md、CURRENT-PACKETS 顶部数据库政策/Universal gates/P2-backend 行、P2/P1 报告、mvp-tech-and-phases.md P2/§1.5/§3.1、data-model.md §0/§1/§2.0–2.5/§5/§8–11、ADR-009/018/030/032/040 与 DESIGN.md 查词 API 边界；审查 diff 76d27cb..3c4e915（实现为 270ea62）。
-- `cd backend && uv run pytest -q`：`130 passed, 21 xfailed in 13.85s`；无 skip。#8/#21 为真实断言，#5 KE 生产者补测存在；#6 仍在 P4a 首次验证台账位置，符合 §3.1。
-- 独立探针：rebuild-development-db 到 `/tmp/learningj-p2-cr-01a094ea.db` 输出 schema/contract `learningj-development-schema-2026-09-12-p2` / `learningj-contract-2026-09-12-p2`；表恰为登记表+5 P1+13 P2（19 张）、触发器恰为 trg_sidecars_immutable_update/delete、materials/sentences/sidecars/lexemes/counts 为 2/5/2/22/24、integrity_check ok、foreign_key_check 空。export-snapshot + verify-snapshot 成功，manifest 同为 -p2 身份。occurrence_spans/analysis_section_spans 未入基线、FTS5 为导入后派生投影，这两个边界正确。
-- 重新生成 OpenAPI、material-fixture、reader-fixture 到独立临时目录并 diff：18-path OpenAPI 及三件 tracked artifact 均逐字节一致；前端 `pnpm test && pnpm lint && pnpm build`：12 files / 88 tests passed、lint 通过、25 modules，index-BJa1EWRe.js 158.67 kB。
-- 边界扫描：frontend 旧 AI 标记与裸 slice（text.ts/测试除外）均零命中；四个新服务包无 KnowledgePoint/Occurrence/ReviewItem import、无 session.commit；旧标记仅 db/models/analysis.py 既有 docstring。diff 76d27cb..270ea62 无 frontend 改动；git diff --check 通过，工作树仅保留未跟踪 demo/、experiments/。
-- 行为核验：token 缺 lexeme_id 的发布闸门和读取层 500、Annotation 多命中逐处 ambiguous 且 token 区间为空均由实现和目标测试确认；known view 的 form 非 clear > lexeme 非 clear > import 组合和直写撤回防御分支符合 ADR-040。unknown/clear 不持久化 input_surface 的同键比较边界有代码注释且为当前契约形状可接受的边界。
-- 定向复现：known 重放 201→500；撤回改 reason 201→200；预占 `op#clear` 后撤回 500；规范路径变体 ZIP 被接受。词典/Annotation/token/schema 目标回归另跑为 31 passed。
+- 本轮只审查用户提供的修复工作树；此前 8 个实现缺陷均复核为已闭合：known 重放从引用 KE 比较输入、retraction reason 冲突、随机内部 clear 键、撤回目标分别 UNIQUE、canonical ZIP 路径去重、staging 落盘清理、DONE 的 finished_at/约束、非法/过期 FTS 引用和 MATCH 异常的 503。
+- `cd backend && uv run pytest -q`：`134 passed, 21 xfailed in 15.32s`，无 skip；台账 xfail 无倒退。定向 evidence 12 passed、dictionary 14 passed。
+- rebuild-development-db 到 `/tmp/learningj-p2-rerun-01a094ea.db`：schema/contract 均为 -p2、19 表、触发器恰为 trg_sidecars_immutable_update/delete、行数 2/5/2/22/24、integrity ok、FK 空；export-snapshot + verify-snapshot 的 manifest 身份为 -p2。
+- OpenAPI/material-fixture/reader-fixture 全部重新生成并逐字节一致；frontend test/lint/build 通过（12 files、88 tests、25 modules、index-BJa1EWRe.js 158.67 kB）；边界 rg 与 git diff --check 通过，demo/、experiments/ 未触碰。
+- Token 双重拒绝、Annotation 多命中语义、known-view 优先级和 unknown/clear 的已注明幂等边界仍符合契约。
 Gate assessment:
-- P2-frontend：暂不安全派遣；其消费的 decision 契约需要 expected-version 修复，当前同键重放也会直接破坏 UI 重试。
-- P2-integration：暂不安全派遣；撤回原子失效、幂等、ZIP 安全/失败清理与导入运行完成事实尚未满足，集成测试不能把实现缺陷当作验收输入。
-- P2-known-import：暂不安全派遣；它直接依赖撤回目标的分别唯一约束及 ImportRun 结束时间语义，须先修复本包基础。
+- P2-frontend：暂不安全派遣；裁定 API 仍允许无版本令牌写入，无法为 UI 建立 required optimistic-concurrency 合约。
+- P2-integration：暂不安全派遣；已有词典后的 FTS 投影丢失仍会被误报为无结果。
+- P2-known-import：暂不安全派遣；虽撤回唯一性和 ImportRun 完成时间已闭合，但基础裁定写路径仍缺必需版本检查。
 Residual risks:
-- 除 Findings 外，按代次读取 API、Anki/jpdb 已知词表导入、实验 11a、性能结论、KP/Occurrence/StudySession/提取/复习均未实现，符合 P2-backend 的明确不做项，不作为本轮发现。
-- 本评审未把实现修复为通过状态；修复后须重跑完整后端/前端闸门、重建/快照、三件生成产物比对及上述负向回归。
+- 当前修复实现尚在工作树、未作为独立实现提交入册；两项 P1 修复后仍须重跑完整闸门与真实缺表/缺版本令牌回归。
+- 其余明确不做项（按代次读取 API、已知词表导入、实验 11a、性能、KP/Occurrence/StudySession/提取/复习）保持在包范围外。
 ```
