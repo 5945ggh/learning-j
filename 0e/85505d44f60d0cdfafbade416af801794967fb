@@ -1,0 +1,149 @@
+docs/adr.md
+  s_cbe4f9e1db459d::t_0710c74788fa9f 7,52
+docs/adr/042-development-schema-baseline.md
+  s_cbe4f9e1db459d::t_0710c74788fa9f 1-10,16-29
+  s_916e434a4ebed2::t_a3e806d77d62c4 11-15
+docs/adr/040-evidence-and-query-projections.md
+  s_cbe4f9e1db459d::t_ff081b43539f24 11,13,17,19,27
+docs/task-packets/reports/P0-frontend-handoff.md
+  s_916e434a4ebed2::t_444de2a3867404 68-78
+  s_916e434a4ebed2::t_21d7f208a1e651 65-67,79-93
+  s_916e434a4ebed2::t_5e6b072bd5dbbe 26-34,37-41,44-49,53-54,57-58,61,64
+  s_916e434a4ebed2::t_63ddaa9f785639 2-3,6-23,52
+docs/task-packets/reports/P0-backend-handoff.md
+  s_810cdea649bc1e::t_0bdeb2c48972cc 223-239
+  s_810cdea649bc1e::t_6d80db912fafc3 167-171
+  s_916e434a4ebed2::t_ecc6048f913d82 11,27-29,79-81,83,85-86,94-96,103-108,127,144
+  s_810cdea649bc1e::t_e0a317ef63777c 180-185,199-202
+  s_916e434a4ebed2::t_3fc49374a0e0bb 148-166,172-179,186-198,203-205,209-212,215-217
+  s_810cdea649bc1e::t_23b9eafe81aba6 206-208,213-214
+  s_916e434a4ebed2::t_c1593092936590 145-147
+docs/task-packets/CURRENT-PACKETS.md
+  s_916e434a4ebed2::t_fc11c558f9d6f4 21-22,24
+  s_916e434a4ebed2::t_a3e806d77d62c4 1,3-5
+  s_916e434a4ebed2::t_579046e64e786f 6-7
+docs/adr/019-review-gates.md
+  s_cbe4f9e1db459d::t_dd7a5cc66dc5b4 10
+docs/audit-execution-reference-2026-09-11.md
+  s_cbe4f9e1db459d::t_b9394388faada8 1-79
+docs/LearningJ-plan-v5.md
+  s_cbe4f9e1db459d::t_9a63050374b6a2 75,98,140,171,175
+  s_916e434a4ebed2::t_22d9172857fd16 34-43,159
+  s_916e434a4ebed2::t_e33e904dbb0eef 4
+  s_cbe4f9e1db459d::t_86f287114a79b3 176
+docs/adr/041-occurrence-review-targets.md
+  s_cbe4f9e1db459d::t_24bc5f7bfe2ba5 15,19,21,27-29,35
+  s_cbe4f9e1db459d::t_6f312bf51b877c 23
+  s_cbe4f9e1db459d::t_48d7c1b0c368f5 17,24-25
+  s_cbe4f9e1db459d::t_c9432f21c04be8 26
+docs/adr/039-history-protection.md
+  s_cbe4f9e1db459d::t_507c989068a0fd 10,16,20
+docs/mvp-tech-and-phases.md
+  s_cbe4f9e1db459d::t_dbfeed5c930090 103,107
+  s_916e434a4ebed2::t_d1861dae6a0732 114,116
+  s_cbe4f9e1db459d::t_bfe11005c0899d 262-295
+  s_916e434a4ebed2::t_e33e904dbb0eef 3
+  s_cbe4f9e1db459d::t_d20a8e21215102 16,78,81
+  s_916e434a4ebed2::t_22d9172857fd16 5,309
+  s_cbe4f9e1db459d::t_a1fdd8ece936c7 44,108
+  s_cbe4f9e1db459d::t_6d58bdcf7baf82 238-239
+  s_916e434a4ebed2::t_a3e806d77d62c4 77,109,168
+  s_cbe4f9e1db459d::t_5d597e85fca679 259-261
+  s_916e434a4ebed2::t_a53cc787100e43 310
+docs/spike-checklist.md
+  s_916e434a4ebed2::t_22d9172857fd16 109-112,116-127,130-131
+DESIGN.md
+  s_cbe4f9e1db459d::t_46fedd016309a9 5,8,32-33
+  s_cbe4f9e1db459d::t_30af29cb2cff78 41,47,51-52
+  s_cbe4f9e1db459d::t_ede4026a036e16 79,83,180,183
+  s_cbe4f9e1db459d::t_ca4b780e3faeaa 34
+docs/adr/014-suspicious-highlights.md
+  s_cbe4f9e1db459d::t_00d7e49214afba 17
+docs/adr/021-tags.md
+  s_cbe4f9e1db459d::t_dd7a5cc66dc5b4 9
+docs/data-model.md
+  s_cbe4f9e1db459d::t_9c8df29fb6ed73 22-23,37
+  s_cbe4f9e1db459d::t_2199be30aeadcc 152,156-157
+  s_cbe4f9e1db459d::t_58fe8dc4bc89be 36,141
+  s_cbe4f9e1db459d::t_ca68afbde1bb0c 349,420-421,424,427,429,431
+  s_cbe4f9e1db459d::t_d524beea32b59f 584,598,616
+  s_cbe4f9e1db459d::t_06a296b4a418cb 227,286,288,292,294,296,306-307,310-325
+  s_cbe4f9e1db459d::t_53e110051573a2 433
+  s_cbe4f9e1db459d::t_fa301a10b7df40 290
+  s_cbe4f9e1db459d::t_8b1f2dca1f12b1 614
+  s_cbe4f9e1db459d::t_ab3801f6bfd0d3 4,7
+  s_cbe4f9e1db459d::t_e7f739afd2012a 437-450,586-587,593,595,620
+  s_cbe4f9e1db459d::t_77548c8fed9521 702,712,718
+  s_cbe4f9e1db459d::t_e443ef6b8a16cd 366,717
+  s_cbe4f9e1db459d::t_6515ba8953ced6 753
+  s_cbe4f9e1db459d::t_15578613022588 525-526
+  s_cbe4f9e1db459d::t_d1611791de1808 326
+  s_cbe4f9e1db459d::t_7e031d47b534e0 347-348
+  s_cbe4f9e1db459d::t_ad9438e0eee62f 367
+  s_cbe4f9e1db459d::t_cab14cd85c969d 419
+  s_cbe4f9e1db459d::t_a965c0d933949c 582-583
+  s_cbe4f9e1db459d::t_4deee767a1489c 585
+  s_cbe4f9e1db459d::t_1f216843ee2458 588-592
+  s_cbe4f9e1db459d::t_f4a7397a8b91e1 594
+  s_cbe4f9e1db459d::t_cccba0fcb6fead 596-597
+  s_cbe4f9e1db459d::t_98604a5d4a0319 599
+  s_cbe4f9e1db459d::t_565e92b234ca3e 621-622
+docs/prompt-contracts.md
+  s_cbe4f9e1db459d::t_4d83d852dc6fe7 196
+  s_cbe4f9e1db459d::t_837f11d2aeb7e5 143,159-160,162,169,177,185,187-188,194
+  s_cbe4f9e1db459d::t_59e1793bcac847 69,97,103
+AGENTS.md
+  s_916e434a4ebed2::t_a3e806d77d62c4 20-23
+  s_cbe4f9e1db459d::t_d57127d4277de9 8-19,98-104
+docs/task-packets/reports/P0-integration-handoff.md
+  s_810cdea649bc1e::t_a0cb6e332f7552 1,30-31,35-36,41-42,58-60,68,72-73
+  s_916e434a4ebed2::t_4acafb4dca3e54 11,16,34
+  s_916e434a4ebed2::t_fb909d20e49baf 43-44,48-50,52-53,56-57,62-64,67,69,81
+  s_916e434a4ebed2::t_ed20a1b4988b5b 54-55
+  s_916e434a4ebed2::t_b10291d7203c1c 82-83,101,113-129
+  s_916e434a4ebed2::t_370e69f244dcfe 6,9-10,22,51
+  s_916e434a4ebed2::t_29e4ff52d15921 47,80
+  s_916e434a4ebed2::t_0ae7aa29c3587b 2-5,7-8,13,17-21,24-29,32-33,39-40,45-46,65-66,70-71,74-78
+  s_916e434a4ebed2::t_8825d19cc6c293 12,15,23
+  s_810cdea649bc1e::t_d8821af4a7a57f 79,84-100
+  s_916e434a4ebed2::t_7cca557b072e18 102-112
+  s_810cdea649bc1e::t_5809ad3b035771 37,61
+  s_810cdea649bc1e::t_64c65dc18a7146 14,38
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "0e85505d44f60d0cdfafbade416af801794967fb",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_810cdea649bc1e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a090de-cd78-76e3-8511-394c663155a0",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_916e434a4ebed2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a08dd4-089d-7213-918f-88c03bd18e01",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_cbe4f9e1db459d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a08be4-8fa9-76e0-9b07-3800cb778e67",
+        "model": "gpt-5.6-luna"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
