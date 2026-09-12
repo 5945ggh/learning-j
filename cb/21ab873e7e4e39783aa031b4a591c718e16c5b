@@ -1,0 +1,24 @@
+docs/task-packets/reports/P2-backend-handoff.md
+  s_c40c391e059f2b::t_5a01a93220b331 95,100-101,103-107,109-111,113-114
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "cb21ab873e7e4e39783aa031b4a591c718e16c5b",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_c40c391e059f2b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a094ea-6e96-71a3-9d3b-98ec96a0c1d2",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
