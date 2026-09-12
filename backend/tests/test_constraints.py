@@ -32,8 +32,8 @@ def _seed_minimal_world(engine: Engine) -> dict[str, str]:
     with engine.begin() as conn:
         conn.exec_driver_sql(
             "INSERT INTO materials (id, title, content_hash, locator, kind, copy_stored,"
-            " created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)",
-            (ids["material"], "t", "hash", "locator", "text", 0, TS, TS),
+            " storage_mode, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)",
+            (ids["material"], "t", "hash", "locator", "text", 0, "external_reference", TS, TS),
         )
         conn.exec_driver_sql(
             'INSERT INTO sentences (id, material_id, "index", text, anchor_type,'
@@ -71,13 +71,13 @@ def _seed_minimal_world(engine: Engine) -> dict[str, str]:
     return ids
 
 
-def _insert_kp(engine: Engine, kp_id: str, anchor: str, retention: str) -> None:
+def _insert_kp(engine: Engine, kp_id: str, anchor: str, default_retention: str) -> None:
     with engine.begin() as conn:
         conn.exec_driver_sql(
             "INSERT INTO knowledge_points (kp_id, anchor, anchor_shape, anchor_payload,"
-            " display_form, tags, retention, retention_set_by, origin, created_at, updated_at)"
-            " VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-            (kp_id, anchor, "lexical", '{"lexeme_id": "dummy"}', anchor, "[]", retention, "default", "extraction", TS, TS),
+            " display_form, tags, default_retention, origin, created_at, updated_at)"
+            " VALUES (?,?,?,?,?,?,?,?,?,?)",
+            (kp_id, anchor, "lexical", '{"lexeme_id": "dummy"}', anchor, "[]", default_retention, "extraction", TS, TS),
         )
 
 
@@ -490,6 +490,48 @@ def test_status_retired_at_equivalence_is_enforced(migrated_engine: Engine) -> N
             )
 
 
+def test_occurrence_uniqueness_is_non_retired_scoped(migrated_engine: Engine) -> None:
+    """§7.1 / §9 不变量 4 的数据层部分：同一 Occurrence 至多一条非 retired
+    ReviewItem（部分唯一索引）；retired 旧卡保留且不占用约束，
+    explicit_readd（§7.0）可为同一 Occurrence 新建卡。"""
+    ids = _seed_minimal_world(migrated_engine)
+    _insert_kp(migrated_engine, ids["kp"], "〜てしまう", "srs")
+    _insert_occurrence(migrated_engine, ids, ids["occurrence"], ids["kp"])
+    first = str(uuid.uuid4())
+    _insert_review_item(migrated_engine, first, ids["kp"], ids["occurrence"], "queued")
+    # 同一 Occurrence 的第二条非 retired 卡：拒绝。
+    with pytest.raises(
+        Exception, match="UNIQUE constraint failed: review_items.occurrence_id"
+    ):
+        _insert_review_item(
+            migrated_engine, str(uuid.uuid4()), ids["kp"], ids["occurrence"], "queued",
+        )
+    # 同一 KP 下不同 Occurrence 各自建卡：允许。
+    _insert_review_item(
+        migrated_engine, str(uuid.uuid4()), ids["kp"],
+        _fresh_occurrence(migrated_engine, ids), "queued",
+    )
+    # 退役后 explicit_readd：旧卡保持 retired，新建卡合法。
+    with migrated_engine.begin() as conn:
+        conn.exec_driver_sql(
+            "UPDATE review_items SET status = 'retired', retired_at = ? WHERE id = ?",
+            (TS, first),
+        )
+    readded = str(uuid.uuid4())
+    _insert_review_item(
+        migrated_engine, readded, ids["kp"], ids["occurrence"], "queued",
+    )
+    # 再次退役后，多条 retired 历史卡与新建卡并存仍然合法。
+    with migrated_engine.begin() as conn:
+        conn.exec_driver_sql(
+            "UPDATE review_items SET status = 'retired', retired_at = ? WHERE id = ?",
+            (TS, readded),
+        )
+    _insert_review_item(
+        migrated_engine, str(uuid.uuid4()), ids["kp"], ids["occurrence"], "queued",
+    )
+
+
 # ---------------------------------------------------------------------------
 # §9 不变量 3：reference 不得有 active 卡，paused 合法
 # ---------------------------------------------------------------------------
@@ -554,16 +596,16 @@ def test_invariant3_rejects_retention_update_with_active_card(migrated_engine: E
     with engine_raises_match(migrated_engine, "invariant 3"):
         with migrated_engine.begin() as conn:
             conn.exec_driver_sql(
-                "UPDATE knowledge_points SET retention = 'reference' WHERE kp_id = ?",
+                "UPDATE knowledge_points SET default_retention = 'reference' WHERE kp_id = ?",
                 (ids["kp"],),
             )
-    # The legal order is to pause the card first, then switch retention.
+    # The legal order is to pause the card first, then switch default_retention.
     with migrated_engine.begin() as conn:
         conn.exec_driver_sql(
             "UPDATE review_items SET status = 'paused' WHERE id = ?", (item_id,)
         )
         conn.exec_driver_sql(
-            "UPDATE knowledge_points SET retention = 'reference' WHERE kp_id = ?",
+            "UPDATE knowledge_points SET default_retention = 'reference' WHERE kp_id = ?",
             (ids["kp"],),
         )
 

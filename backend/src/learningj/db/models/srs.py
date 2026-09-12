@@ -15,13 +15,12 @@
   （§7.1“一经分配保留”；触发器强制）。
 - ReviewState 不是准入产物：首次评分时建立；初始 S/D 由首次评分决定，
   P0 只保留列形状，不实现该算法（P5）。
-- 同一 Occurrence 默认至多一条非退役 ReviewItem；同一 KP 下不同 Occurrence
-  可各自建卡（§7.1 / ADR-041）。产品规划 §8 允许用户显式增加卡片。
-  当前表仍保留 ADR-041 之前的 `UniqueConstraint("kp_id", "occurrence_id")`：
-  它比 §7.1 更严（挡住 retired 后为同一 Occurrence 另建卡），也不等价于
-  “按 Occurrence 唯一”（同一句若挂不同 `kp_id` 仍可两条）。把唯一键改为
-  occurrence 粒度的非 retired 部分唯一索引属于 **P5 的前滚迁移项**，已登记在
-  不变量 4 的测试 reason；P0 不改产品唯一性口径。
+- 同一 Occurrence 默认至多一条非退役 ReviewItem（§7.1 / §9 不变量 4）：
+  部分唯一索引 `ux_review_items_occurrence_active` 只约束 `retired_at IS NULL`
+  的行；retired 旧卡保留在表中、不占用该约束，`explicit_readd`（§7.0）因此
+  可为同一 Occurrence 新建卡。唯一键是 `occurrence_id`，`kp_id` 不决定唯一性
+  （§7.1）；同一 KP 下不同 Occurrence 可各自建卡（ADR-041）。产品规划 §8
+  允许用户显式增加卡片。
 """
 
 from __future__ import annotations
@@ -35,8 +34,10 @@ from sqlalchemy import (
     DateTime,
     Float,
     ForeignKey,
+    Index,
     Integer,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -65,10 +66,14 @@ class ReviewItem(UuidPk, Timestamped, Base):
             " OR status IN ('paused', 'retired')",
             name="admitted_at_semantics",
         ),
-        # 遗留自 ADR-041 之前的口径；比 §7.1 更严且不是 Occurrence 唯一。
-        # P5 前滚迁移：改为 occurrence 粒度、限定 status != 'retired' 的部分
-        # 唯一索引（见模块 docstring 与不变量 4 的测试 reason）。
-        UniqueConstraint("kp_id", "occurrence_id"),
+        # §7.1 / §9 不变量 4：同一 Occurrence 至多一条非 retired ReviewItem。
+        # 只约束未退役行；retired 旧卡保留历史，explicit_readd 可新建卡。
+        Index(
+            "ux_review_items_occurrence_active",
+            "occurrence_id",
+            unique=True,
+            sqlite_where=text("retired_at IS NULL"),
+        ),
     )
 
     kp_id: Mapped[uuid.UUID] = mapped_column(

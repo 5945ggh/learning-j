@@ -13,8 +13,10 @@ from typing import Any
 
 from sqlalchemy import (
     Boolean,
+    CheckConstraint,
     ForeignKey,
     Integer,
+    Index,
     LargeBinary,
     String,
     Text,
@@ -24,7 +26,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from learningj.db.base import Base, Timestamped, UuidPk
 from learningj.db.types import json_dict, str_enum
-from learningj.domain.enums import MaterialKind, SentenceAnchorType
+from learningj.domain.enums import MaterialKind, MaterialStorageMode, SentenceAnchorType
 
 
 class Material(UuidPk, Timestamped, Base):
@@ -39,6 +41,18 @@ class Material(UuidPk, Timestamped, Base):
         str_enum(MaterialKind, name="material_kind"), nullable=False
     )
     copy_stored: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    storage_mode: Mapped[MaterialStorageMode] = mapped_column(
+        str_enum(MaterialStorageMode, name="material_storage_mode"),
+        nullable=False,
+        default=MaterialStorageMode.EXTERNAL_REFERENCE,
+    )
+    # Raw input identity is deliberately distinct from the normalized-text hash.
+    source_sha256: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    # Only a fully-built sidecar generation is published here.  The FK is
+    # deliberately nullable while an import is being prepared.
+    current_sidecar_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("sidecars.id"), nullable=True, index=True
+    )
 
 
 class Sentence(UuidPk, Timestamped, Base):
@@ -80,3 +94,28 @@ class Sidecar(UuidPk, Timestamped, Base):
     analyzer_dict_version: Mapped[str] = mapped_column(String(255), nullable=False)
     # 分句／分词结果，messagepack 序列化。
     payload: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
+
+
+class MaterialLexemeCount(Base):
+    """Current-sidecar token counts, indexed in both material and lexeme order.
+
+    Rows are generation scoped; readers select them through
+    ``Material.current_sidecar_id`` so one response never mixes generations.
+    """
+
+    __tablename__ = "material_lexeme_counts"
+    __table_args__ = (
+        CheckConstraint("token_count > 0", name="token_count_positive"),
+        Index("ix_material_lexeme_counts_lexeme_material_sidecar", "lexeme_id", "material_id", "sidecar_id"),
+    )
+
+    material_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("materials.id"), primary_key=True
+    )
+    sidecar_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("sidecars.id"), primary_key=True
+    )
+    lexeme_id: Mapped[str] = mapped_column(
+        ForeignKey("lexemes.lexeme_id"), primary_key=True
+    )
+    token_count: Mapped[int] = mapped_column(Integer, nullable=False)

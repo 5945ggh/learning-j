@@ -1,20 +1,134 @@
 {
+  "lexeme-counts/srt": {
+    "counts": [
+      {
+        "lexeme_id": "lx_0c649983d58b41e9d3513bbd9a28b0b586b2d0d735dbc5d045604acfd510ea45",
+        "token_count": 1
+      },
+      {
+        "lexeme_id": "lx_59ab5c1afa4f5bb5c276e650cefda104847b05bf5ef23bb353689b8866e6f7b0",
+        "token_count": 1
+      },
+      {
+        "lexeme_id": "lx_621560ee20f258b69e3d35cda37560af3002dded248372c5ec3ec2c9cdaa6624",
+        "token_count": 1
+      },
+      {
+        "lexeme_id": "lx_687037f08b690ee2604ecfd28d74cd4032b3a3dc89882a2b954caaa4f413310b",
+        "token_count": 1
+      },
+      {
+        "lexeme_id": "lx_9ca0779be06cdd19bcb8577014b30bdcf35ed0aae61773d3f3e62641deaf0bac",
+        "token_count": 2
+      },
+      {
+        "lexeme_id": "lx_a3c51c40815583e5077e5305bbc5d96cec57f67871acff63bd6575f8ca31ccda",
+        "token_count": 1
+      },
+      {
+        "lexeme_id": "lx_d8a0709b67ae126543ba660b55a07ad00f276eb14ce2fd734b22fdfdad54e7b3",
+        "token_count": 1
+      },
+      {
+        "lexeme_id": "lx_daf6c367c1bea91f9e4fbc38d1de093ae0a5b24e64576ae256ae71f03590b4a9",
+        "token_count": 1
+      },
+      {
+        "lexeme_id": "lx_e8b3f906c9981bbfd22163cd4777dc5daff759f0b696551005320c3528edbe1d",
+        "token_count": 1
+      }
+    ],
+    "material_id": "fixture-id-006",
+    "sidecar_generation_id": "fixture-id-007"
+  },
+  "lexeme-counts/txt": {
+    "counts": [
+      {
+        "lexeme_id": "lx_1a62aff490e05c2929730add79879139fa7d2d7a2893af3354c407901f049f78",
+        "token_count": 1
+      },
+      {
+        "lexeme_id": "lx_27bd2ce237c1cf6b65cddf139f26254b7a76a3ba9f7e7b7d6465bd90dd696333",
+        "token_count": 1
+      },
+      {
+        "lexeme_id": "lx_29dfe58849d53f568a5891e23db8b3f365f61f7636e959b622cfc586569fa6d9",
+        "token_count": 1
+      },
+      {
+        "lexeme_id": "lx_46795d7cb728bc3bb90eadd1224a109e9a016e6d4ff53d5311702f797c300596",
+        "token_count": 1
+      },
+      {
+        "lexeme_id": "lx_621560ee20f258b69e3d35cda37560af3002dded248372c5ec3ec2c9cdaa6624",
+        "token_count": 1
+      },
+      {
+        "lexeme_id": "lx_6570645c6f8cef3036f34b53e7d98faf121c3b1103f0c82c177ae9dbc7c335ce",
+        "token_count": 1
+      },
+      {
+        "lexeme_id": "lx_7b1497a24f7f43c2e9c4cd2b0f1c9c222253a979f337fc19242b07560f80fccc",
+        "token_count": 1
+      },
+      {
+        "lexeme_id": "lx_8570418e7ff221f3975335d3adde76c305a10ea7ce3bb142b6c02f6137e372ae",
+        "token_count": 1
+      },
+      {
+        "lexeme_id": "lx_8d1b5e0eb5c96148b739b7cd2b5e270b47946375acfece9aeb3e43a0acbd0f7b",
+        "token_count": 1
+      },
+      {
+        "lexeme_id": "lx_9385ad1428a73f6aed1f0dec4414ec1172592e3b46f39c8bb7f825123fc67c66",
+        "token_count": 1
+      },
+      {
+        "lexeme_id": "lx_9ca0779be06cdd19bcb8577014b30bdcf35ed0aae61773d3f3e62641deaf0bac",
+        "token_count": 2
+      },
+      {
+        "lexeme_id": "lx_9fa24af7c9cfe605e4c3677cbc67153e39746c35ff7dd83e0a513abc8e44caa5",
+        "token_count": 1
+      },
+      {
+        "lexeme_id": "lx_da636c71bab3557686de138257d58e6dec4abbbfc2eaabfac6c70ca7eb5d5150",
+        "token_count": 1
+      },
+      {
+        "lexeme_id": "lx_f7b9336979d127199e41f12a8b8d1470a9b412c158b5c8813589cb20033ac080",
+        "token_count": 1
+      },
+      {
+        "lexeme_id": "lx_f85e7a1387f9abb0a6b0a25211cf920f6470a6177eaba9f5e96b37d64de57c09",
+        "token_count": 1
+      }
+    ],
+    "material_id": "fixture-id-001",
+    "sidecar_generation_id": "fixture-id-002"
+  },
   "materials/srt": {
     "content_hash": "d4e8866e776f2c1011d7df72b7710f378af6b7f8cbcd5739f329bac56a819abb",
     "copy_stored": false,
-    "id": "fixture-id-005",
+    "current_sidecar_id": "fixture-id-007",
+    "id": "fixture-id-006",
     "kind": "subtitle_video",
     "locator": "fixture-sample.srt",
     "sentence_count": 2,
+    "source_sha256": "452cac88a6da644d66a7a245ca6b83b2603b803165fe609f7d423551077ade53",
+    "storage_mode": "external_reference",
     "title": "fixture-sample"
   },
   "materials/txt": {
     "content_hash": "9a107a153000cfc6e454f6430708b9b4b7db8f3f76e81dde420ec1c3a3b44a40",
     "copy_stored": false,
+    "current_sidecar_id": "fixture-id-002",
     "id": "fixture-id-001",
     "kind": "text",
     "locator": "fixture-sample.txt",
     "sentence_count": 3,
+    "source_sha256": "9a107a153000cfc6e454f6430708b9b4b7db8f3f76e81dde420ec1c3a3b44a40",
+    "storage_mode": "external_reference",
     "title": "fixture-sample"
   },
   "sentences/srt": [
@@ -23,9 +137,9 @@
         "cue_index": 0
       },
       "anchor_type": "subtitle",
-      "id": "fixture-id-006",
+      "id": "fixture-id-008",
       "index": 0,
-      "material_id": "fixture-id-005",
+      "material_id": "fixture-id-006",
       "text": "また寄ってしまった。",
       "time_end": 4200,
       "time_start": 1000,
@@ -36,9 +150,9 @@
         "cue_index": 1
       },
       "anchor_type": "subtitle",
-      "id": "fixture-id-007",
+      "id": "fixture-id-009",
       "index": 1,
-      "material_id": "fixture-id-005",
+      "material_id": "fixture-id-006",
       "text": "今日も頑張ろう。",
       "time_end": 8000,
       "time_start": 4400,
@@ -52,7 +166,7 @@
         "char_start": 0
       },
       "anchor_type": "plain_text",
-      "id": "fixture-id-002",
+      "id": "fixture-id-003",
       "index": 0,
       "material_id": "fixture-id-001",
       "text": "𠮟られた。",
@@ -66,7 +180,7 @@
         "char_start": 5
       },
       "anchor_type": "plain_text",
-      "id": "fixture-id-003",
+      "id": "fixture-id-004",
       "index": 1,
       "material_id": "fixture-id-001",
       "text": "次は君の番です！",
@@ -80,7 +194,7 @@
         "char_start": 15
       },
       "anchor_type": "plain_text",
-      "id": "fixture-id-004",
+      "id": "fixture-id-005",
       "index": 2,
       "material_id": "fixture-id-001",
       "text": "向上心が熱い。",
@@ -92,7 +206,7 @@
   "sidecar/srt": {
     "analyzer_dict_version": "20260723",
     "content_hash": "d4e8866e776f2c1011d7df72b7710f378af6b7f8cbcd5739f329bac56a819abb",
-    "material_id": "fixture-id-005",
+    "material_id": "fixture-id-006",
     "payload": {
       "sentences": [
         {
@@ -210,6 +324,7 @@
       ]
     },
     "segmenter_version": "learningj-segmenter-v1",
+    "sidecar_generation_id": "fixture-id-007",
     "tokenizer_version": "0.6.11"
   },
   "sidecar/txt": {
@@ -399,6 +514,7 @@
       ]
     },
     "segmenter_version": "learningj-segmenter-v1",
+    "sidecar_generation_id": "fixture-id-002",
     "tokenizer_version": "0.6.11"
   }
 }

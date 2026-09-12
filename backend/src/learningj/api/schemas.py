@@ -10,9 +10,10 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 MaterialKindLiteral = Literal["subtitle_video", "subtitle_audio", "text", "epub"]
+MaterialStorageModeLiteral = Literal["external_reference", "managed_copy"]
 SentenceAnchorTypeLiteral = Literal["subtitle", "plain_text", "epub"]
 
 
@@ -26,6 +27,9 @@ class MaterialOut(BaseModel):
     locator: str
     kind: MaterialKindLiteral
     copy_stored: bool
+    storage_mode: MaterialStorageModeLiteral
+    source_sha256: str | None = None
+    current_sidecar_id: str | None = None
     sentence_count: int
 
 
@@ -41,7 +45,7 @@ class SentenceOut(BaseModel):
     time_end: int | None = None
     translation: str | None = None
     anchor_type: SentenceAnchorTypeLiteral
-    anchor_payload: dict[str, Any] = Field(default_factory=dict)
+    anchor_payload: dict[str, Any]
 
 
 class SidecarOut(BaseModel):
@@ -49,8 +53,22 @@ class SidecarOut(BaseModel):
     msgpack 解包后的分句/分词结果（data-model §8.3）。"""
 
     material_id: str
+    sidecar_generation_id: str
     content_hash: str
     segmenter_version: str
     tokenizer_version: str
     analyzer_dict_version: str
     payload: dict[str, Any]
+
+
+class MaterialLexemeCountOut(BaseModel):
+    lexeme_id: str
+    token_count: int
+
+
+class MaterialLexemeCountsOut(BaseModel):
+    """One immutable sidecar generation's sparse material token counts."""
+
+    material_id: str
+    sidecar_generation_id: str
+    counts: list[MaterialLexemeCountOut]

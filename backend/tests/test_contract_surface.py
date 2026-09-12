@@ -1,7 +1,8 @@
-"""P0 契约面测试：OpenAPI 生成与素材 fixture（plan §3 P0 第 4 条）。
+"""P1 契约面测试：OpenAPI 生成与素材 fixture（plan §3 P0 第 4 条 / P1）。
 
-- OpenAPI 路径集合精确等于现有素材端点；不含任何旧 AI 端点
-  （analysis/questions/extract/retention），不暴露旧第二状态机字段；
+- OpenAPI 路径集合包含素材链端点（P1 新增词频索引与代次重建）；
+  不含任何旧 AI 端点（analysis/questions/extract/retention），
+  不暴露旧第二状态机字段；
 - OpenAPI 与素材 fixture 的生成均可复现（两次运行字节相同）。
 """
 
@@ -17,6 +18,8 @@ EXPECTED_PATHS = {
     "/materials",
     "/materials/{material_id}/sentences",
     "/materials/{material_id}/sidecar",
+    "/materials/{material_id}/lexeme-counts",
+    "/materials/{material_id}/sidecar/rebuild",
 }
 
 # 旧第二状态机与旧端点的字段/路径，不得重新出现在契约面。
@@ -35,9 +38,11 @@ FORBIDDEN_MARKERS = (
 )
 
 
-def test_openapi_paths_are_exactly_the_material_surface() -> None:
+def test_openapi_paths_include_material_surface() -> None:
     spec = build_openapi()
-    assert set(spec["paths"]) == EXPECTED_PATHS
+    # P2+ may add legal routes; the P1 material surface must remain present
+    # without freezing the entire document to today's paths.
+    assert EXPECTED_PATHS <= set(spec["paths"])
 
 
 def test_openapi_has_no_legacy_state_machine_or_ghost_endpoints() -> None:
@@ -77,6 +82,11 @@ def test_material_fixture_content_covers_txt_and_srt() -> None:
     assert sidecar["analyzer_dict_version"]
     assert sidecar["segmenter_version"].startswith("learningj-segmenter")
     assert sidecar["payload"]["sentences"][0]["tokens"][0]["surface"] == "𠮟"
+    # 词频索引与 sidecar 代次一致，token 计数为正。
+    counts = fixture["lexeme-counts/txt"]
+    assert counts["sidecar_generation_id"] == sidecar["sidecar_generation_id"]
+    assert counts["counts"]
+    assert all(item["token_count"] > 0 for item in counts["counts"])
     # 素材 fixture 不含真实 UUID（已归一为确定性占位 id）。
     raw = json.dumps(fixture)
     assert "fixture-id-" in raw

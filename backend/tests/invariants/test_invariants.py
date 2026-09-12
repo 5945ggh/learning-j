@@ -5,11 +5,18 @@
 reason=...)` 并注明点亮阶段；点亮 = 移除 xfail、替换为真实断言。
 strict=True 保证意外点亮或误标 pass 时 pytest 立即报错。
 
-P0 已点亮（schema 层语义）：
+P0 已点亮（schema／开发基线层语义）：
 - 不变量 5 —— 带三元组的记录必有非空分析器词典版本（DDL NOT NULL +
-  行级断言；生产者级完整语义随 P1/P2 的写入路径扩面）；
+  行级断言）；
 - 不变量 14 —— pattern 必有模式版本、opaque 必有 opaque_reason
   （数据层 CHECK 全覆盖）。
+- 不变量 20 的首次验证 —— 显式开发库重建在 fixture 失败时保留既有目标、
+  引用性数据与完整性；P3a–P5 继续补测版本化运行时更新。
+
+P1 已点亮（生产者层语义）：
+- 不变量 5 的生产者扩面 —— 素材链写入路径（导入／重分词代次）产出的
+  Lexeme.first_seen_analyzer_dict_version 与 sidecar 三个版本戳全部非空，
+  且 Lexeme 首见版本来自某个真实代次；KE 侧生产者扩面仍归 P2。
 
 P0 已覆盖数据层、但仍按 P5 排程服务语义保留 xfail：不变量 3（reference
 不激活 queued/active）、不变量 4（retired ⇔ retired_at、active 须有
@@ -21,11 +28,11 @@ admitted_at；ReviewState 在首次评分时建立，准入但未首评的 activ
 
 | 阶段 | 不变量 |
 |---|---|
-| P1 | 5（生产者扩面） |
+| P0 | 20（开发重建失败恢复的首次验证） |
 | P2 | 21 |
 | P2-known-import | 22 |
 | P3b | 7 |
-| P4b | 1、2、6、8–13、15–17、19、20 |
+| P4b | 1、2、6、8–13、15–17、19、20（版本化运行时补测） |
 | P5 | 3、4、18、23、24、25 |
 
 旧的点亮计划（不变量 1–11 → P4、3/4 → P5、7 → P3）作废；旧壳挂在
@@ -76,6 +83,33 @@ def test_invariant_5_trigram_records_require_analyzer_dict_version(migrated_engi
         assert all(row.analyzer_dict_version for row in evidence)
 
 
+def test_invariant_5_ingest_producers_stamp_analyzer_dict_versions(tmp_path) -> None:
+    """§9 不变量 5（P1 生产者扩面）：素材链写入路径产出的每条 Lexeme 与
+    sidecar 都携带非空分析器词典版本，且 Lexeme 首见版本来自某个真实代次；
+    segmenter/tokenizer 版本戳同规则。KE 侧生产者扩面仍归 P2。"""
+    import sqlite3
+
+    from learningj.db.maintenance import rebuild_development_database
+
+    db_path = tmp_path / "development.db"
+    rebuild_development_database(db_path)
+    with sqlite3.connect(db_path) as conn:
+        sidecars = conn.execute(
+            "SELECT analyzer_dict_version, segmenter_version, tokenizer_version"
+            " FROM sidecars"
+        ).fetchall()
+        assert sidecars
+        for analyzer, segmenter, tokenizer in sidecars:
+            assert analyzer and segmenter and tokenizer
+        analyzer_versions = {row[0] for row in sidecars}
+        lexeme_versions = conn.execute(
+            "SELECT DISTINCT first_seen_analyzer_dict_version FROM lexemes"
+        ).fetchall()
+        assert lexeme_versions
+        for (version,) in lexeme_versions:
+            assert version and version in analyzer_versions
+
+
 def test_invariant_14_pattern_has_grammar_version_and_opaque_has_reason(migrated_engine) -> None:
     """§9 不变量 14：pattern KP 有模式版本；opaque KP 有 opaque_reason。
 
@@ -95,8 +129,7 @@ def test_invariant_14_pattern_has_grammar_version_and_opaque_has_reason(migrated
             "anchor_shape": "lexical",
             "anchor_payload": {"surface": "語"},
             "tags": "[]",
-            "retention": "srs",
-            "retention_set_by": "default",
+            "default_retention": "srs",
             "origin": "extraction",
         }
         row.update(overrides)
@@ -153,26 +186,24 @@ def test_invariant_2_occurrence_section_reference_resolves() -> None:
 
 @pytest.mark.xfail(strict=True, reason="点亮阶段 P5：reference 排程服务语义与复习历史保留；P0 已覆盖相关数据库写路径")
 def test_invariant_3_reference_kp_has_no_active_review_item() -> None:
-    """`retention = reference` 的 KP 没有 active ReviewItem；paused 卡片及
+    """`default_retention = reference` 的 KP 没有 active ReviewItem；paused 卡片及
     复习历史保留（§9.3 / §7.1 / ADR-041）。P0 数据层守卫：reference 的
     active INSERT／UPDATE 与 KP 意愿切换三条写路径全部由触发器拒绝，paused
     合法，且 reference 不得激活 queued 项；完整排程服务语义待 P5。"""
     raise NotImplementedError
 
 
-@pytest.mark.xfail(strict=True, reason="点亮阶段 P5：Occurrence 唯一性口径 + 排程服务落地；P5 前滚迁移须把 (kp_id, occurrence_id) 唯一键改为 occurrence 粒度、限定 status != 'retired' 的部分唯一索引")
+@pytest.mark.xfail(strict=True, reason="点亮阶段 P4b：确认与建卡生产者落地后验证 Occurrence 唯一性口径与额外卡片授权；数据层部分唯一索引已就位（ux_review_items_occurrence_active，见 test_constraints）")
 def test_invariant_4_at_most_one_default_review_item_per_kp() -> None:
     """同一 Occurrence 默认至多一条非 retired ReviewItem，同一 KP 下不同
     Occurrence 可各自建卡，额外卡片必须有用户显式操作记录；status=retired 与
     retired_at 非空等价，暂停恢复不改变退役标记（§9.4 / §7.1 / ADR-041）。
     P0 数据层守卫：retired 等价 CHECK + retired_at/admitted_at 单向触发器 +
     active 须有 admitted_at；ReviewState 在首次评分时建立，P0 不实现排程
-    （见 test_constraints）。已知缺口：当前
-    `UniqueConstraint("kp_id", "occurrence_id")` 是 ADR-041 之前的形状——它比
-    §7.1 更严（挡住 retired 后为同一 Occurrence 另建卡），又不等于 Occurrence
-    唯一（同句挂不同 kp_id 仍可两条）。**P5 前滚迁移**须把它换成
-    `occurrence_id` 粒度、`WHERE status != 'retired'` 的部分唯一索引；P0 不
-    改产品唯一性口径。额外卡片授权由 P5 排程服务强制。"""
+    （见 test_constraints）。同一 Occurrence 的非 retired 唯一性由部分唯一
+    索引 `ux_review_items_occurrence_active`（occurrence_id WHERE
+    retired_at IS NULL）承载：retired 旧卡不占用约束，explicit_readd 可新建
+    卡。剩余部分（生产者语义、额外卡片授权）由 P4b/P5 各自补测。"""
     raise NotImplementedError
 
 
@@ -252,7 +283,7 @@ def test_invariant_16_slot_bindings_reference_occurrence_spans() -> None:
 @pytest.mark.xfail(strict=True, reason="点亮阶段 P4b：SessionConfirmation 与会话完成逻辑落地")
 def test_invariant_17_completion_from_current_run_confirmation_only() -> None:
     """会话完成只依据当前成功 run 的本次确认（零候选须明确完成），不依据
-    KP 当前全局 retention；后续意愿修改不复活旧会话（§9.17 / §4.2 /
+    KP 当前 default_retention；后续意愿修改不复活旧会话（§9.17 / §4.2 /
     ADR-037）。"""
     raise NotImplementedError
 
@@ -275,10 +306,70 @@ def test_invariant_19_atomic_idempotent_write_paths() -> None:
     raise NotImplementedError
 
 
-@pytest.mark.xfail(strict=True, reason="点亮阶段 P4b：版本化更新与历史引用保护落地（ADR-039）")
-def test_invariant_20_updates_preserve_history_references() -> None:
-    """当前状态可更新；历史引用、用户决定保护和关联完整性不因更新而
-    失效（§9.20 / §0.1）。"""
+def test_invariant_20_updates_preserve_history_references(
+    tmp_path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """P0 首次验证：重建失败不得破坏既有引用／用户事实。
+
+    ADR-042 允许显式替换指定开发库，但 staging、fixture 或完整性检查
+    失败时必须保留原目标。字节级保留同时证明历史引用代表性数据未被
+    清空或部分替换；P3a–P5 再补测版本化运行时更新语义。
+    """
+    import sqlite3
+
+    from learningj.db.maintenance import rebuild_development_database
+
+    db_path = tmp_path / "development.db"
+    with sqlite3.connect(db_path) as conn:
+        conn.execute("PRAGMA foreign_keys = ON")
+        conn.execute("CREATE TABLE history_source (id INTEGER PRIMARY KEY)")
+        conn.execute(
+            "CREATE TABLE history_reference ("
+            "source_id INTEGER NOT NULL REFERENCES history_source(id), "
+            "content TEXT NOT NULL)"
+        )
+        conn.execute(
+            "CREATE TABLE user_decision ("
+            "source_id INTEGER NOT NULL REFERENCES history_source(id), "
+            "decision TEXT NOT NULL)"
+        )
+        conn.execute("INSERT INTO history_source VALUES (1)")
+        conn.execute(
+            "INSERT INTO history_reference VALUES (1, 'immutable explanation')"
+        )
+        conn.execute("INSERT INTO user_decision VALUES (1, 'known')")
+    before = db_path.read_bytes()
+
+    def fail_fixture(_: object) -> dict[str, object]:
+        raise RuntimeError("fixture failure")
+
+    monkeypatch.setattr(
+        "learningj.fixtures.material_fixture.populate_fixture_database", fail_fixture
+    )
+    with pytest.raises(RuntimeError, match="fixture failure"):
+        rebuild_development_database(db_path)
+
+    assert db_path.read_bytes() == before
+    diagnostic = db_path.with_name(db_path.name + ".rebuild-failure.log")
+    assert "target preserved" in diagnostic.read_text(encoding="utf-8")
+    with sqlite3.connect(db_path) as conn:
+        conn.execute("PRAGMA foreign_keys = ON")
+        assert conn.execute(
+            "SELECT content FROM history_reference WHERE source_id = 1"
+        ).fetchone() == ("immutable explanation",)
+        assert conn.execute(
+            "SELECT decision FROM user_decision WHERE source_id = 1"
+        ).fetchone() == ("known",)
+        assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+        assert conn.execute("PRAGMA foreign_key_check").fetchall() == []
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason="点亮阶段 P4b：版本化运行时更新与历史引用保护（ADR-039）",
+)
+def test_invariant_20_versioned_runtime_updates_preserve_history_references() -> None:
+    """P3a–P5 各生产者补测：当前状态更新不得改写已引用内容或用户事实。"""
     raise NotImplementedError
 
 

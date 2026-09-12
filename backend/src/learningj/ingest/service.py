@@ -7,11 +7,12 @@ and anchor payloads, which keeps the rest of the application source agnostic.
 
 from __future__ import annotations
 
-import hashlib
 import importlib.metadata
 import io
+import hashlib
 import posixpath
 import re
+import uuid
 import zipfile
 from dataclasses import dataclass
 from html.parser import HTMLParser
@@ -20,10 +21,11 @@ from typing import Any
 from xml.etree import ElementTree
 
 import msgpack
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from learningj.db.models.material import Material, Sentence, Sidecar
+from learningj.db.models.material import Material, MaterialLexemeCount, Sentence, Sidecar
+from learningj.domain.enums import MaterialStorageMode
 from learningj.db.models.lexeme import Lexeme
 from learningj.domain.enums import MaterialKind, SentenceAnchorType
 from learningj.domain.lexeme import derive_lexeme_id
@@ -391,7 +393,7 @@ def _tokenize(sentences: list[Sentence], analyzer_dict_version: str | None = Non
     return payload, tokenizer_version, dict_version
 
 
-def import_material(session: Session, *, filename: str, blob: bytes, locator: str | None = None, title: str | None = None, kind: MaterialKind | None = None) -> Material:
+def import_material(session: Session, *, filename: str, blob: bytes, locator: str | None = None, title: str | None = None, kind: MaterialKind | None = None, storage_mode: MaterialStorageMode = MaterialStorageMode.EXTERNAL_REFERENCE) -> Material:
     """Normalize, segment, tokenize, and persist one material idempotently."""
 
     detected_kind, parsed, full_text = parse_source(filename, blob)
@@ -406,7 +408,9 @@ def import_material(session: Session, *, filename: str, blob: bytes, locator: st
         content_hash=content_hash,
         locator=locator or filename,
         kind=material_kind,
-        copy_stored=False,
+        copy_stored=storage_mode is MaterialStorageMode.MANAGED_COPY,
+        storage_mode=storage_mode,
+        source_sha256=hashlib.sha256(blob).hexdigest(),
     )
     session.add(material)
     session.flush()
@@ -428,6 +432,43 @@ def import_material(session: Session, *, filename: str, blob: bytes, locator: st
     token_payload, tokenizer_version, dict_version = _tokenize(sentence_rows)
     for token_group, parsed_sentence in zip(token_payload, parsed, strict=True):
         token_group["ruby_hints"] = list(parsed_sentence.ruby_hints)
+    sidecar = Sidecar(
+        material_id=material.id,
+        content_hash=content_hash,
+        segmenter_version=SEGMENTER_VERSION,
+        tokenizer_version=tokenizer_version,
+        analyzer_dict_version=dict_version,
+        payload=msgpack.packb({"sentences": token_payload}, use_bin_type=True),
+    )
+    session.add(sidecar)
+    session.flush()
+    _publish_generation(
+        session,
+        material=material,
+        sidecar=sidecar,
+        token_payload=token_payload,
+        analyzer_dict_version=dict_version,
+    )
+    session.commit()
+    session.refresh(material)
+    return material
+
+
+def _generation_counts(token_payload: list[dict[str, Any]]) -> tuple[dict[str, int], int]:
+    """Aggregate the sparse per-lexeme token counts of one token payload."""
+    counts: dict[str, int] = {}
+    total = 0
+    for token_group in token_payload:
+        for token in token_group["tokens"]:
+            lexeme_id = token.get("lexeme_id")
+            if not lexeme_id:
+                raise ValueError("token payload is missing a derived lexeme id")
+            counts[lexeme_id] = counts.get(lexeme_id, 0) + 1
+            total += 1
+    return counts, total
+
+
+def _persist_lexemes(session: Session, token_payload: list[dict[str, Any]], analyzer_dict_version: str) -> None:
     for token_group in token_payload:
         for token in token_group["tokens"]:
             lexeme = session.get(Lexeme, token["lexeme_id"])
@@ -438,18 +479,111 @@ def import_material(session: Session, *, filename: str, blob: bytes, locator: st
                         normalized_form=token["normalized_form"],
                         pos=token["pos"],
                         reading_form=token["reading_form"],
-                        first_seen_analyzer_dict_version=dict_version,
+                        first_seen_analyzer_dict_version=analyzer_dict_version,
                     )
                 )
-    session.add(
-        Sidecar(
-            material_id=material.id,
-            content_hash=content_hash,
-            segmenter_version=SEGMENTER_VERSION,
-            tokenizer_version=tokenizer_version,
-            analyzer_dict_version=dict_version,
-            payload=msgpack.packb({"sentences": token_payload}, use_bin_type=True),
+
+
+def _publish_generation(
+    session: Session,
+    *,
+    material: Material,
+    sidecar: Sidecar,
+    token_payload: list[dict[str, Any]],
+    analyzer_dict_version: str,
+) -> None:
+    """Write the complete content index for one sidecar and publish it.
+
+    The sparse counts and the immutable payload are flushed before the
+    material pointer moves, and the caller commits them in one short
+    transaction, so a reader never mixes generations and a failure leaves the
+    previous generation current (data-model §2.5/§8.3, ADR-040).
+    """
+
+    counts, total = _generation_counts(token_payload)
+    _persist_lexemes(session, token_payload, analyzer_dict_version)
+    session.flush()
+    for lexeme_id, token_count in counts.items():
+        session.add(
+            MaterialLexemeCount(
+                material_id=material.id,
+                sidecar_id=sidecar.id,
+                lexeme_id=lexeme_id,
+                token_count=token_count,
+            )
         )
+    session.flush()
+    persisted_total = session.scalar(
+        select(func.coalesce(func.sum(MaterialLexemeCount.token_count), 0)).where(
+            MaterialLexemeCount.sidecar_id == sidecar.id
+        )
+    )
+    if persisted_total != total:
+        raise RuntimeError("published counts do not reproduce the token payload")
+    # Publication point: the new generation is fully written and validated;
+    # switching the pointer is the only remaining step of the same commit.
+    material.current_sidecar_id = sidecar.id
+
+
+def retokenize_material(session: Session, *, material_id: uuid.UUID) -> Material:
+    """Re-derive one material's tokens into a new immutable sidecar generation.
+
+    The candidate payload is built from the stored normalized sentences
+    outside the write transaction.  Publication reuses the shared gate: the
+    new sidecar row, its complete MaterialLexemeCount set, and the
+    ``current_sidecar_id`` switch commit together, so re-tokenizing never
+    overwrites the referenced payload and a failure keeps the old generation
+    current (data-model §8.3).  Re-running with an unchanged analyzer identity
+    is idempotent and publishes nothing.
+    """
+
+    material = session.get(Material, material_id)
+    if material is None:
+        raise LookupError(f"素材不存在: {material_id}")
+    sentences = session.scalars(
+        select(Sentence).where(Sentence.material_id == material.id).order_by(Sentence.index)
+    ).all()
+    token_payload, tokenizer_version, dict_version = _tokenize(sentences)
+    current = (
+        session.get(Sidecar, material.current_sidecar_id)
+        if material.current_sidecar_id
+        else None
+    )
+    # Ruby hints annotate positions in the normalized sentence text, which
+    # re-tokenization does not change; carry the stored ones into the
+    # candidate payload instead of dropping them.
+    hints_by_index = {
+        group.get("sentence_index"): list(group.get("ruby_hints", []))
+        for group in (msgpack.unpackb(current.payload, raw=False).get("sentences", []) if current else [])
+    }
+    for token_group in token_payload:
+        token_group["ruby_hints"] = hints_by_index.get(token_group["sentence_index"], [])
+    candidate = msgpack.packb({"sentences": token_payload}, use_bin_type=True)
+    if (
+        current is not None
+        and current.payload == candidate
+        and current.content_hash == material.content_hash
+        and current.segmenter_version == SEGMENTER_VERSION
+        and current.tokenizer_version == tokenizer_version
+        and current.analyzer_dict_version == dict_version
+    ):
+        return material
+    sidecar = Sidecar(
+        material_id=material.id,
+        content_hash=material.content_hash,
+        segmenter_version=SEGMENTER_VERSION,
+        tokenizer_version=tokenizer_version,
+        analyzer_dict_version=dict_version,
+        payload=candidate,
+    )
+    session.add(sidecar)
+    session.flush()
+    _publish_generation(
+        session,
+        material=material,
+        sidecar=sidecar,
+        token_payload=token_payload,
+        analyzer_dict_version=dict_version,
     )
     session.commit()
     session.refresh(material)

@@ -1,26 +1,26 @@
-"""P0 验收：对 schema 做空库检查，确认全部表和关键唯一约束存在。
+"""P1 验收：对 schema 做全量 ORM metadata 检查，确认全部表和关键唯一约束存在。
 
-空库 = `alembic upgrade head` 之后的数据库。迁移通过当前解释器的
-`python -m alembic` 执行（不依赖 `uv` 缓存/环境可写），migration 文件位置由
-`alembic.ini` 的 `script_location` 决定。
+这里的"全量"指 `Base.metadata.create_all` 注册的全部模型形状（数据层契约）；
+可丢弃开发基线的窄表集边界另见 `test_development_rebuild.py`（ADR-042），
+重建路径不创建本文件检查的 P2–P5 领域表。
 """
 
 from __future__ import annotations
 
-import subprocess
-import sys
-from pathlib import Path
-
 import pytest
-from sqlalchemy import inspect
+from sqlalchemy import create_engine, inspect
 from sqlalchemy.engine import Engine
 
-BACKEND_DIR = Path(__file__).resolve().parents[1]
+from learningj.db.base import Base
+import learningj.db.models  # noqa: F401  # 注册全部表
+from learningj.db.models.invariant_triggers import install_invariant_triggers
 
 EXPECTED_TABLES = {
     "materials",
     "sentences",
     "sidecars",
+    "material_lexeme_counts",
+    "lexemes",
     "spans",
     "occurrence_spans",
     "analysis_section_spans",
@@ -30,7 +30,6 @@ EXPECTED_TABLES = {
     "dictionary_definitions",
     "dictionary_assets",
     "dictionary_import_runs",
-    "lexemes",
     "known_evidence",
     "knowledge_points",
     "aliases",
@@ -48,51 +47,31 @@ EXPECTED_TABLES = {
 
 
 @pytest.fixture(scope="module")
-def upgraded_db(tmp_path_factory) -> Path:
-    """在空 SQLite 文件上执行 `alembic upgrade head`，返回数据库路径。"""
-    db_path = tmp_path_factory.mktemp("schema") / "upgraded.db"
-    subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "alembic",
-            "-x",
-            f"db_url=sqlite:///{db_path}",
-            "upgrade",
-            "head",
-        ],
-        cwd=BACKEND_DIR,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return db_path
+def full_schema_engine(tmp_path_factory) -> Engine:
+    """直接 `create_all` 的全量 ORM 引擎（schema 形状与触发器安装检查用）。"""
+    engine = create_engine(f"sqlite:///{tmp_path_factory.mktemp('schema')}/full.db")
+    Base.metadata.create_all(engine)
+    install_invariant_triggers(engine)
+    return engine
 
 
-@pytest.fixture(scope="module")
-def upgraded_engine(upgraded_db: Path) -> Engine:
-    from learningj.db.session import make_engine
-
-    return make_engine(upgraded_db)
-
-
-def test_upgrade_head_creates_all_tables(upgraded_engine: Engine) -> None:
-    tables = set(inspect(upgraded_engine).get_table_names())
+def test_full_schema_creates_all_tables(full_schema_engine: Engine) -> None:
+    tables = set(inspect(full_schema_engine).get_table_names())
     missing = EXPECTED_TABLES - tables
-    assert not missing, f"upgrade head 后缺少表: {sorted(missing)}"
+    assert not missing, f"create_all 后缺少表: {sorted(missing)}"
 
 
-def test_no_polymorphic_owner_columns(upgraded_engine: Engine) -> None:
+def test_no_polymorphic_owner_columns(full_schema_engine: Engine) -> None:
     """§1：禁止 owner_type/owner_id 多态外键，必须使用真实外键关联表。"""
-    inspector = inspect(upgraded_engine)
+    inspector = inspect(full_schema_engine)
     for table in EXPECTED_TABLES:
         columns = {c["name"] for c in inspector.get_columns(table)}
         assert "owner_type" not in columns, f"{table} 不应有 owner_type"
         assert "owner_id" not in columns, f"{table} 不应有 owner_id"
 
 
-def test_span_link_tables_use_real_foreign_keys(upgraded_engine: Engine) -> None:
-    inspector = inspect(upgraded_engine)
+def test_span_link_tables_use_real_foreign_keys(full_schema_engine: Engine) -> None:
+    inspector = inspect(full_schema_engine)
     fks = {
         table: {(fk["referred_table"], fk["constrained_columns"][0]) for fk in fks}
         for table, fks in (
@@ -110,8 +89,8 @@ def test_span_link_tables_use_real_foreign_keys(upgraded_engine: Engine) -> None
     assert ("spans", "span_id") in fks["annotation_spans"]
 
 
-def test_key_unique_constraints(upgraded_engine: Engine) -> None:
-    inspector = inspect(upgraded_engine)
+def test_key_unique_constraints(full_schema_engine: Engine) -> None:
+    inspector = inspect(full_schema_engine)
 
     def unique_sets(table: str) -> set[frozenset[str]]:
         return {
@@ -140,13 +119,13 @@ def test_key_unique_constraints(upgraded_engine: Engine) -> None:
     assert {"retry_of", "failure_reason", "unresolved_surfaces"} <= extraction_cols
 
 
-def test_invariant_triggers_installed(upgraded_engine: Engine) -> None:
+def test_invariant_triggers_installed(full_schema_engine: Engine) -> None:
     from learningj.db.models.invariant_triggers import (
         RETIRED_TRIGGER_NAMES,
         TRIGGER_NAMES,
     )
 
-    with upgraded_engine.connect() as conn:
+    with full_schema_engine.connect() as conn:
         triggers = {
             row[0]
             for row in conn.exec_driver_sql(
@@ -160,9 +139,9 @@ def test_invariant_triggers_installed(upgraded_engine: Engine) -> None:
     )
 
 
-def test_spans_is_standalone_table(upgraded_engine: Engine) -> None:
+def test_spans_is_standalone_table(full_schema_engine: Engine) -> None:
     """§1：spans 是独立表，有自己的 span_id 主键与 sentence 外键。"""
-    inspector = inspect(upgraded_engine)
+    inspector = inspect(full_schema_engine)
     cols = {c["name"]: c for c in inspector.get_columns("spans")}
     assert cols["span_id"]["primary_key"] == 1
     assert {"sentence_id", "surface", "char_start", "char_end", "alignment_status"} <= (

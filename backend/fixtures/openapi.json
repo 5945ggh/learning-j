@@ -19,6 +19,10 @@
             ],
             "title": "Locator"
           },
+          "storage_mode": {
+            "$ref": "#/components/schemas/MaterialStorageMode",
+            "default": "external_reference"
+          },
           "title": {
             "anyOf": [
               {
@@ -50,6 +54,51 @@
         "title": "HTTPValidationError",
         "type": "object"
       },
+      "MaterialLexemeCountOut": {
+        "properties": {
+          "lexeme_id": {
+            "title": "Lexeme Id",
+            "type": "string"
+          },
+          "token_count": {
+            "title": "Token Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "lexeme_id",
+          "token_count"
+        ],
+        "title": "MaterialLexemeCountOut",
+        "type": "object"
+      },
+      "MaterialLexemeCountsOut": {
+        "description": "One immutable sidecar generation's sparse material token counts.",
+        "properties": {
+          "counts": {
+            "items": {
+              "$ref": "#/components/schemas/MaterialLexemeCountOut"
+            },
+            "title": "Counts",
+            "type": "array"
+          },
+          "material_id": {
+            "title": "Material Id",
+            "type": "string"
+          },
+          "sidecar_generation_id": {
+            "title": "Sidecar Generation Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "material_id",
+          "sidecar_generation_id",
+          "counts"
+        ],
+        "title": "MaterialLexemeCountsOut",
+        "type": "object"
+      },
       "MaterialOut": {
         "description": "`GET /materials` / `POST /materials` 的响应（data-model §8.1 +\n素材无关抽象 §8.2；`sentence_count` 是列表视图的读投影）。",
         "properties": {
@@ -60,6 +109,17 @@
           "copy_stored": {
             "title": "Copy Stored",
             "type": "boolean"
+          },
+          "current_sidecar_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Sidecar Id"
           },
           "id": {
             "title": "Id",
@@ -83,6 +143,25 @@
             "title": "Sentence Count",
             "type": "integer"
           },
+          "source_sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Sha256"
+          },
+          "storage_mode": {
+            "enum": [
+              "external_reference",
+              "managed_copy"
+            ],
+            "title": "Storage Mode",
+            "type": "string"
+          },
           "title": {
             "title": "Title",
             "type": "string"
@@ -95,10 +174,20 @@
           "locator",
           "kind",
           "copy_stored",
+          "storage_mode",
           "sentence_count"
         ],
         "title": "MaterialOut",
         "type": "object"
+      },
+      "MaterialStorageMode": {
+        "description": "原始素材的持有方式（`data-model.md` §8.1）。",
+        "enum": [
+          "external_reference",
+          "managed_copy"
+        ],
+        "title": "MaterialStorageMode",
+        "type": "string"
       },
       "SentenceOut": {
         "description": "`GET /materials/{material_id}/sentences` 的响应；`text` 与\n`anchor_payload` 的偏移均为 Unicode code point（data-model §0/§8.2）。",
@@ -172,7 +261,8 @@
           "material_id",
           "index",
           "text",
-          "anchor_type"
+          "anchor_type",
+          "anchor_payload"
         ],
         "title": "SentenceOut",
         "type": "object"
@@ -201,6 +291,10 @@
             "title": "Segmenter Version",
             "type": "string"
           },
+          "sidecar_generation_id": {
+            "title": "Sidecar Generation Id",
+            "type": "string"
+          },
           "tokenizer_version": {
             "title": "Tokenizer Version",
             "type": "string"
@@ -208,6 +302,7 @@
         },
         "required": [
           "material_id",
+          "sidecar_generation_id",
           "content_hash",
           "segmenter_version",
           "tokenizer_version",
@@ -347,6 +442,45 @@
         "summary": "Create Material"
       }
     },
+    "/materials/{material_id}/lexeme-counts": {
+      "get": {
+        "operationId": "get_material_lexeme_counts_materials__material_id__lexeme_counts_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "material_id",
+            "required": true,
+            "schema": {
+              "title": "Material Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaterialLexemeCountsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Material Lexeme Counts"
+      }
+    },
     "/materials/{material_id}/sentences": {
       "get": {
         "operationId": "list_sentences_materials__material_id__sentences_get",
@@ -427,6 +561,46 @@
           }
         },
         "summary": "Get Sidecar"
+      }
+    },
+    "/materials/{material_id}/sidecar/rebuild": {
+      "post": {
+        "description": "Re-derive the material's tokens as a new immutable generation.\n\nRe-runs with an unchanged analyzer identity return the current\ngeneration unchanged; a changed candidate is published with its\ncomplete MaterialLexemeCount set and the pointer switch in one\ntransaction, so the referenced payload is never overwritten.",
+        "operationId": "rebuild_sidecar_materials__material_id__sidecar_rebuild_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "material_id",
+            "required": true,
+            "schema": {
+              "title": "Material Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SidecarOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Rebuild Sidecar"
       }
     }
   }

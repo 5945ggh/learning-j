@@ -14,10 +14,17 @@ from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from learningj.api.schemas import MaterialOut, SentenceOut, SidecarOut
+from learningj.api.schemas import (
+    MaterialLexemeCountOut,
+    MaterialLexemeCountsOut,
+    MaterialOut,
+    SentenceOut,
+    SidecarOut,
+)
 from learningj.db.session import make_engine, make_session_factory
-from learningj.db.models.material import Material, Sentence, Sidecar
-from learningj.ingest.service import import_material
+from learningj.db.models.material import Material, MaterialLexemeCount, Sentence, Sidecar
+from learningj.domain.enums import MaterialStorageMode
+from learningj.ingest.service import import_material, retokenize_material
 
 
 def create_app(db_url: str = "sqlite:///./learningj.db") -> FastAPI:
@@ -52,6 +59,7 @@ def create_app(db_url: str = "sqlite:///./learningj.db") -> FastAPI:
         file: UploadFile = File(...),
         title: str | None = Form(default=None),
         locator: str | None = Form(default=None),
+        storage_mode: MaterialStorageMode = Form(default=MaterialStorageMode.EXTERNAL_REFERENCE),
         session: Session = Depends(db_session),
     ) -> MaterialOut:
         """Import txt, srt, vtt, or epub content and return its stable id."""
@@ -67,6 +75,7 @@ def create_app(db_url: str = "sqlite:///./learningj.db") -> FastAPI:
                 blob=blob,
                 locator=locator or filename,
                 title=title,
+                storage_mode=storage_mode,
             )
         except (ValueError, RuntimeError, KeyError, OSError) as exc:
             session.rollback()
@@ -101,21 +110,90 @@ def create_app(db_url: str = "sqlite:///./learningj.db") -> FastAPI:
             material_uuid = uuid.UUID(material_id)
         except ValueError as exc:
             raise HTTPException(status_code=404, detail="sidecar 不存在") from exc
-        sidecar = session.scalar(
-            select(Sidecar).where(Sidecar.material_id == material_uuid).order_by(Sidecar.created_at.desc())
+        material = session.get(Material, material_uuid)
+        sidecar = session.get(Sidecar, material.current_sidecar_id) if material and material.current_sidecar_id else None
+        if sidecar is None:
+            raise HTTPException(status_code=404, detail="sidecar 不存在")
+        return _sidecar_response(sidecar)
+
+    @app.post(
+        "/materials/{material_id}/sidecar/rebuild",
+        response_model=SidecarOut,
+    )
+    def rebuild_sidecar(material_id: str, session: Session = Depends(db_session)) -> SidecarOut:
+        """Re-derive the material's tokens as a new immutable generation.
+
+        Re-runs with an unchanged analyzer identity return the current
+        generation unchanged; a changed candidate is published with its
+        complete MaterialLexemeCount set and the pointer switch in one
+        transaction, so the referenced payload is never overwritten.
+        """
+        try:
+            material_uuid = uuid.UUID(material_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail="素材不存在") from exc
+        try:
+            retokenize_material(session, material_id=material_uuid)
+        except LookupError as exc:
+            session.rollback()
+            raise HTTPException(status_code=404, detail="素材不存在") from exc
+        except (ValueError, RuntimeError, KeyError, OSError) as exc:
+            session.rollback()
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        material = session.get(Material, material_uuid)
+        sidecar = (
+            session.get(Sidecar, material.current_sidecar_id)
+            if material and material.current_sidecar_id
+            else None
         )
         if sidecar is None:
             raise HTTPException(status_code=404, detail="sidecar 不存在")
-        return SidecarOut(
-            material_id=str(sidecar.material_id),
-            content_hash=sidecar.content_hash,
-            segmenter_version=sidecar.segmenter_version,
-            tokenizer_version=sidecar.tokenizer_version,
-            analyzer_dict_version=sidecar.analyzer_dict_version,
-            payload=msgpack.unpackb(sidecar.payload, raw=False),
+        return _sidecar_response(sidecar)
+
+    @app.get(
+        "/materials/{material_id}/lexeme-counts",
+        response_model=MaterialLexemeCountsOut,
+    )
+    def get_material_lexeme_counts(
+        material_id: str, session: Session = Depends(db_session)
+    ) -> MaterialLexemeCountsOut:
+        try:
+            material_uuid = uuid.UUID(material_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail="素材不存在") from exc
+        material = session.get(Material, material_uuid)
+        if material is None or material.current_sidecar_id is None:
+            raise HTTPException(status_code=404, detail="素材词频尚未发布")
+        rows = session.scalars(
+            select(MaterialLexemeCount)
+            .where(
+                MaterialLexemeCount.material_id == material.id,
+                MaterialLexemeCount.sidecar_id == material.current_sidecar_id,
+            )
+            .order_by(MaterialLexemeCount.lexeme_id)
+        ).all()
+        return MaterialLexemeCountsOut(
+            material_id=str(material.id),
+            sidecar_generation_id=str(material.current_sidecar_id),
+            counts=[
+                MaterialLexemeCountOut(lexeme_id=row.lexeme_id, token_count=row.token_count)
+                for row in rows
+            ],
         )
 
     return app
+
+
+def _sidecar_response(sidecar: Sidecar) -> SidecarOut:
+    return SidecarOut(
+        material_id=str(sidecar.material_id),
+        sidecar_generation_id=str(sidecar.id),
+        content_hash=sidecar.content_hash,
+        segmenter_version=sidecar.segmenter_version,
+        tokenizer_version=sidecar.tokenizer_version,
+        analyzer_dict_version=sidecar.analyzer_dict_version,
+        payload=msgpack.unpackb(sidecar.payload, raw=False),
+    )
 
 
 def _material_response(session: Session, material: Material) -> MaterialOut:
@@ -129,6 +207,9 @@ def _material_response(session: Session, material: Material) -> MaterialOut:
         locator=material.locator,
         kind=material.kind.value,
         copy_stored=material.copy_stored,
+        storage_mode=material.storage_mode.value,
+        source_sha256=material.source_sha256,
+        current_sidecar_id=str(material.current_sidecar_id) if material.current_sidecar_id else None,
         sentence_count=sentence_count,
     )
 

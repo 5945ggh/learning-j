@@ -35,7 +35,7 @@ from learningj.db.models.dictionary import (
 from learningj.db.models.invariant_triggers import install_invariant_triggers
 from learningj.db.models.knowledge import Alias, KnowledgePoint, Occurrence
 from learningj.db.models.lexeme import KnownEvidence, Lexeme
-from learningj.db.models.material import Material, Sentence, Sidecar
+from learningj.db.models.material import Material, MaterialLexemeCount, Sentence, Sidecar
 from learningj.db.models.memory import LearnerProfileNote, MaterialNote
 from learningj.db.models.span import (
     Span,
@@ -62,6 +62,7 @@ __all__ = [
     "LearnerProfileNote",
     "Lexeme",
     "Material",
+    "MaterialLexemeCount",
     "MaterialNote",
     "Occurrence",
     "ReviewItem",

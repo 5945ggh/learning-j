@@ -36,7 +36,6 @@ from learningj.domain.enums import (
     OccurrenceContentSource,
     OpaqueReason,
     Retention,
-    RetentionSetBy,
     Salience,
 )
 from learningj.domain.ids import new_uuid7
@@ -94,17 +93,13 @@ class KnowledgePoint(Timestamped, Base):
     # 多值自由标签（ADR-021）：可为空、可重叠、可后加（并集累加）。
     # 注意：与 AnalysisSection 的 `kind` 是两套定义，不得复用枚举。
     tags: Mapped[list[str]] = mapped_column(json_list(), nullable=False, default=list)
-    # [不可推迟] 唯一的学习意愿字段；用户的决定。
-    retention: Mapped[Retention] = mapped_column(
-        str_enum(Retention, name="kp_retention"),
+    # [不可推迟] KP 默认复习策略（ADR-041）：不是逐 Occurrence 建卡授权，
+    # 也不表示用户已确认。是否已有用户决定由 KnowledgePointRetentionDecision
+    # 追加记录判定；自动处理不得覆盖用户决定（§0.1）。
+    default_retention: Mapped[Retention] = mapped_column(
+        str_enum(Retention, name="kp_default_retention"),
         nullable=False,
         default=Retention.SRS,
-    )
-    # [不可推迟] 为 `user` 后，重跑抽取与批量重抽不得覆盖。
-    retention_set_by: Mapped[RetentionSetBy] = mapped_column(
-        str_enum(RetentionSetBy, name="kp_retention_set_by"),
-        nullable=False,
-        default=RetentionSetBy.DEFAULT,
     )
     # [不可推迟] 合并指向；空值表示自身即 canonical。撤销合并即清空本字段。
     canonical_id: Mapped[uuid.UUID | None] = mapped_column(

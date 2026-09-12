@@ -50,36 +50,65 @@ def _normalize_ids(node: Any, mapping: dict[str, str]) -> Any:
     return node
 
 
+def populate_fixture_database(db_path: Path) -> dict[str, Any]:
+    """向已初始化的开发库灌入确定性的 txt/srt 样本并返回 API 响应。"""
+    mapping: dict[str, str] = {}
+    client = TestClient(create_app(f"sqlite:///{db_path}"))
+    responses: dict[str, Any] = {}
+    for key, filename, blob in (
+        ("txt", "fixture-sample.txt", _FIXTURE_TXT.encode("utf-8")),
+        ("srt", "fixture-sample.srt", _FIXTURE_SRT.encode("utf-8")),
+    ):
+        created = client.post(
+            "/materials",
+            files={"file": (filename, blob, "text/plain")},
+        )
+        created.raise_for_status()
+        material_id = created.json()["id"]
+        responses[f"materials/{key}"] = created.json()
+        sentences = client.get(f"/materials/{material_id}/sentences")
+        sentences.raise_for_status()
+        responses[f"sentences/{key}"] = sentences.json()
+        sidecar = client.get(f"/materials/{material_id}/sidecar")
+        sidecar.raise_for_status()
+        responses[f"sidecar/{key}"] = sidecar.json()
+        counts = client.get(f"/materials/{material_id}/lexeme-counts")
+        counts.raise_for_status()
+        responses[f"lexeme-counts/{key}"] = counts.json()
+    return _normalize_ids(responses, mapping)
+
+
 def build_fixture() -> dict[str, Any]:
     """导入 txt/srt 样本素材，返回归一后的 API 响应结构。"""
     from learningj.db.base import Base
     from learningj.db.models.invariant_triggers import install_invariant_triggers
+    from learningj.db.models.lexeme import Lexeme
+    from learningj.db.models.material import (
+        Material,
+        MaterialLexemeCount,
+        Sentence,
+        Sidecar,
+    )
 
-    mapping: dict[str, str] = {}
     with tempfile.TemporaryDirectory(prefix="lj-fixture-") as tmp:
-        client = TestClient(create_app(f"sqlite:///{tmp}/fixture.db"))
+        db_path = Path(tmp) / "fixture.db"
+        client = TestClient(create_app(f"sqlite:///{db_path}"))
         engine = client.app.state.engine  # type: ignore[attr-defined]
-        Base.metadata.create_all(engine)
+        # Keep the generated fixture on the same schema as the explicit
+        # development rebuild (material chain + P1 content index); future ORM
+        # models must not leak into a material-chain contract artifact.
+        Base.metadata.create_all(
+            engine,
+            tables=[
+                Material.__table__,
+                Sentence.__table__,
+                Sidecar.__table__,
+                Lexeme.__table__,
+                MaterialLexemeCount.__table__,
+            ],
+        )
         install_invariant_triggers(engine)
-        responses: dict[str, Any] = {}
-        for key, filename, blob in (
-            ("txt", "fixture-sample.txt", _FIXTURE_TXT.encode("utf-8")),
-            ("srt", "fixture-sample.srt", _FIXTURE_SRT.encode("utf-8")),
-        ):
-            created = client.post(
-                "/materials",
-                files={"file": (filename, blob, "text/plain")},
-            )
-            created.raise_for_status()
-            material_id = created.json()["id"]
-            responses[f"materials/{key}"] = created.json()
-            sentences = client.get(f"/materials/{material_id}/sentences")
-            sentences.raise_for_status()
-            responses[f"sentences/{key}"] = sentences.json()
-            sidecar = client.get(f"/materials/{material_id}/sidecar")
-            sidecar.raise_for_status()
-            responses[f"sidecar/{key}"] = sidecar.json()
-    return _normalize_ids(responses, mapping)
+        return populate_fixture_database(db_path)
 
 
 def main(argv: list[str] | None = None) -> int:

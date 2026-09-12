@@ -39,6 +39,13 @@ class MaterialKind(_StrEnum):
     EPUB = "epub"
 
 
+class MaterialStorageMode(_StrEnum):
+    """原始素材的持有方式（`data-model.md` §8.1）。"""
+
+    EXTERNAL_REFERENCE = "external_reference"
+    MANAGED_COPY = "managed_copy"
+
+
 class SentenceAnchorType(_StrEnum):
     """句子位置锚点类型（`data-model.md` §8.2，MVP 三种）。"""
 
@@ -48,32 +55,29 @@ class SentenceAnchorType(_StrEnum):
 
 
 class KnownEvidenceSource(_StrEnum):
-    """已知状态证据来源（`data-model.md` §2.2）。
+    """已知状态证据来源（`data-model.md` §2.2，ADR-040）。
 
-    `listening_native` 与 `listening_tts` 必须是不同的取值（ADR-016）。
+    只包含有明确生产契约的来源。阅读、查词、播放和 SRS 评分不写 KE，
+    不生成 `srs_matured`（§2.4）；listening 来源在出现真实生产者契约前
+    不占枚举位（ADR-016 的原声/TTS 条件区分保留为未来契约）。
     """
 
-    READING_INFERRED = "reading_inferred"
-    ANALYSIS_MARKED = "analysis_marked"
+    USER_ASSERTED = "user_asserted"
     IMPORT_ANKI = "import_anki"
     IMPORT_JPDB = "import_jpdb"
-    SRS_MATURED = "srs_matured"
-    LISTENING_NATIVE = "listening_native"
-    LISTENING_TTS = "listening_tts"
 
 
 class Retention(_StrEnum):
-    """唯一的学习意愿字段（`data-model.md` §3.1）。"""
+    """KP `default_retention` 的取值域（`data-model.md` §3.1，ADR-041）。
+
+    这是默认复习策略，不是逐 Occurrence 建卡授权，也不等于用户决定；
+    是否已有用户决定由 KnowledgePointRetentionDecision 追加记录判定。
+    Occurrence 局部覆盖 `retention_override`（inherit/srs/reference）的
+    枚举随其落地阶段在本模块补充。
+    """
 
     SRS = "srs"
     REFERENCE = "reference"
-
-
-class RetentionSetBy(_StrEnum):
-    """`retention` 的决定者。为 `user` 后，重跑抽取不得覆盖。"""
-
-    DEFAULT = "default"
-    USER = "user"
 
 
 class AnchorShape(_StrEnum):
