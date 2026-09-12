@@ -1,4 +1,11 @@
-import type { Material } from '@/lib/materials'
+import type { Material, MaterialKind } from '@/lib/materials'
+
+const KIND_LABELS: Record<MaterialKind, string> = {
+  subtitle_video: '视频',
+  subtitle_audio: '音频',
+  text: '文本',
+  epub: 'EPUB',
+}
 
 type MaterialListProps = {
   materials: Material[]
@@ -6,10 +13,8 @@ type MaterialListProps = {
   onSelect: (material: Material) => void
 }
 
+/** 素材卡片列表：名称 + 最有用的元数据（DESIGN.md 应用外壳与素材界面）。 */
 export function MaterialList({ materials, selectedId, onSelect }: MaterialListProps) {
-  if (materials.length === 0) {
-    return <p className="rounded-md border border-dashed border-border p-4 text-sm text-muted-foreground">还没有素材。导入 txt、srt、vtt 或 EPUB 后会显示在这里。</p>
-  }
   return (
     <ul className="space-y-1" aria-label="素材列表">
       {materials.map((material) => (
@@ -21,11 +26,13 @@ export function MaterialList({ materials, selectedId, onSelect }: MaterialListPr
             className={`w-full rounded-md border px-3 py-2 text-left transition-colors ${selectedId === material.id ? 'border-study bg-study/10' : 'border-transparent hover:border-border hover:bg-muted'}`}
           >
             <span className="block truncate font-medium">{material.title}</span>
-            <span className="text-xs text-muted-foreground">{material.kind} · {material.sentence_count} 句</span>
+            <span className="text-xs text-muted-foreground">
+              {KIND_LABELS[material.kind]} · {material.sentence_count} 句 ·{' '}
+              {material.current_sidecar_id ? '已建内容索引' : '未建内容索引'}
+            </span>
           </button>
         </li>
       ))}
     </ul>
   )
 }
-

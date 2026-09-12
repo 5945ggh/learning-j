@@ -1,21 +1,21 @@
-import { parseEpubSpineIndex, type Sentence } from '@/lib/materials'
+import { formatSentenceLocation } from '@/lib/anchors'
+import { formatTimeRange } from '@/lib/time'
+import type { Sentence } from '@/lib/materials'
 
 type SentenceContextProps = {
   sentence: Sentence
 }
 
 /**
- * Displays the selected source sentence without implying AI or learning
- * activity. Later reader/study shells can compose this component with their
- * own domain surfaces through props.
+ * 选中句子的来源语境展示：定位描述按 anchor_type 适配
+ * （data-model §8.2）。仅呈现浏览定位，不包含 AI、查词或阅读活动语义；
+ * 后续阅读/学习 shell 通过 props 组合自己的领域界面（ADR-023）。
  */
 export function SentenceContext({ sentence }: SentenceContextProps) {
-  const spineIndex = parseEpubSpineIndex(sentence.anchor_type, sentence.anchor_payload)
-  const location = sentence.anchor_type === 'epub'
-    ? spineIndex === null ? '定位不可用' : `spine ${spineIndex}`
-    : sentence.time_start !== null && sentence.time_end !== null
-      ? '音视频时间轴'
-      : '文本定位'
+  const location = formatSentenceLocation(sentence)
+  const timeRange = sentence.anchor_type === 'subtitle'
+    ? null
+    : formatTimeRange(sentence.time_start, sentence.time_end)
 
   return (
     <article className="rounded-md border border-border bg-card p-5 shadow-sm" aria-labelledby="selected-sentence-heading">
@@ -28,6 +28,7 @@ export function SentenceContext({ sentence }: SentenceContextProps) {
       </div>
       <div className="flex flex-wrap gap-x-4 gap-y-1 pt-4 text-sm text-muted-foreground">
         <span>来源定位：{location}</span>
+        {timeRange ? <span>时间戳：{timeRange}</span> : null}
         {sentence.translation ? <span>译文：{sentence.translation}</span> : null}
       </div>
     </article>

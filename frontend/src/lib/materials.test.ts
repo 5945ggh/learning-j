@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { fetchMaterials, fetchSentences, fetchSidecar, parseEpubSpineIndex } from './materials'
+import { fetchLexemeCounts, fetchMaterials, fetchSentences, fetchSidecar, parseEpubSpineIndex } from './materials'
 
 afterEach(() => vi.unstubAllGlobals())
 
@@ -99,5 +99,66 @@ describe('material API contract', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response({ detail: 'down' }, 503)))
 
     await expect(fetchMaterials()).rejects.toThrow('素材加载失败（503）')
+  })
+})
+
+describe('lexeme-counts API contract', () => {
+  it('reads the single-generation sparse counts shape (MaterialLexemeCountsOut)', async () => {
+    const request = vi.fn().mockResolvedValue(response({
+      material_id: 'fixture-id-001',
+      sidecar_generation_id: 'fixture-id-002',
+      counts: [
+        { lexeme_id: 'lx_9ca0779be06cdd19bcb8577014b30bdcf35ed0aae61773d3f3e62641deaf0bac', token_count: 2 },
+        { lexeme_id: 'lx_621560ee20f258b69e3d35cda37560af3002dded248372c5ec3ec2c9cdaa6624', token_count: 1 },
+      ],
+    }))
+    vi.stubGlobal('fetch', request)
+
+    await expect(fetchLexemeCounts('fixture-id-001')).resolves.toEqual({
+      material_id: 'fixture-id-001',
+      sidecar_generation_id: 'fixture-id-002',
+      counts: [
+        { lexeme_id: 'lx_9ca0779be06cdd19bcb8577014b30bdcf35ed0aae61773d3f3e62641deaf0bac', token_count: 2 },
+        { lexeme_id: 'lx_621560ee20f258b69e3d35cda37560af3002dded248372c5ec3ec2c9cdaa6624', token_count: 1 },
+      ],
+    })
+    expect(request).toHaveBeenCalledWith('/materials/fixture-id-001/lexeme-counts', { signal: undefined })
+  })
+
+  it('URL-encodes material ids on the lexeme-counts path', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response({
+      material_id: 'fixture/id',
+      sidecar_generation_id: 'fixture-id-002',
+      counts: [],
+    })))
+
+    await expect(fetchLexemeCounts('fixture/id')).resolves.toMatchObject({ material_id: 'fixture/id' })
+    expect(fetch).toHaveBeenCalledWith('/materials/fixture%2Fid/lexeme-counts', { signal: undefined })
+  })
+
+  it('rejects malformed lexeme-counts responses', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response({
+      material_id: 'fixture-id-001',
+      sidecar_generation_id: 'fixture-id-002',
+      counts: [{ lexeme_id: 'lx_missing_count' }],
+    })))
+
+    await expect(fetchLexemeCounts('fixture-id-001')).rejects.toThrow('词频响应缺少有效的 token_count')
+  })
+
+  it('rejects non-array counts instead of rendering them', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response({
+      material_id: 'fixture-id-001',
+      sidecar_generation_id: 'fixture-id-002',
+      counts: {},
+    })))
+
+    await expect(fetchLexemeCounts('fixture-id-001')).rejects.toThrow('词频响应缺少有效的 counts')
+  })
+
+  it('reports lexeme-counts endpoint failures', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response({ detail: 'missing' }, 404)))
+
+    await expect(fetchLexemeCounts('fixture-id-404')).rejects.toThrow('词频加载失败（404）')
   })
 })

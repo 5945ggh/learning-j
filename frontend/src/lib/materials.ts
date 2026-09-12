@@ -37,6 +37,22 @@ export type Sidecar = {
   payload: Record<string, unknown>
 }
 
+/** 单条稀疏词频（OpenAPI `MaterialLexemeCountOut`）。 */
+export type MaterialLexemeCount = {
+  lexeme_id: string
+  token_count: number
+}
+
+/**
+ * 单代次材料词频（OpenAPI `MaterialLexemeCountsOut`，data-model §2.5/§11）。
+ * 契约保证一个响应只携带一个 sidecar 代次的词频。
+ */
+export type MaterialLexemeCounts = {
+  material_id: string
+  sidecar_generation_id: string
+  counts: MaterialLexemeCount[]
+}
+
 /** Return an EPUB spine index only when the anchor contract carries a valid location. */
 export function parseEpubSpineIndex(
   anchorType: Sentence['anchor_type'],
@@ -143,6 +159,23 @@ function parseSidecar(value: unknown): Sidecar {
   }
 }
 
+function parseLexemeCounts(value: unknown): MaterialLexemeCounts {
+  const item = requireRecord(value, '词频')
+  const countsValue = item.counts
+  if (!Array.isArray(countsValue)) throw new Error('词频响应缺少有效的 counts')
+  return {
+    material_id: requireString(item.material_id, 'material_id', '词频'),
+    sidecar_generation_id: requireString(item.sidecar_generation_id, 'sidecar_generation_id', '词频'),
+    counts: countsValue.map((entry) => {
+      const record = requireRecord(entry, '词频')
+      return {
+        lexeme_id: requireString(record.lexeme_id, 'lexeme_id', '词频'),
+        token_count: requireInteger(record.token_count, 'token_count', '词频'),
+      }
+    }),
+  }
+}
+
 async function readJson(response: Response, resource: string): Promise<unknown> {
   if (!response.ok) throw new Error(`${resource}加载失败（${response.status}）`)
   return response.json() as Promise<unknown>
@@ -165,4 +198,13 @@ export async function fetchSentences(materialId: string, signal?: AbortSignal): 
 export async function fetchSidecar(materialId: string, signal?: AbortSignal): Promise<Sidecar> {
   const response = await fetch(`/materials/${encodeURIComponent(materialId)}/sidecar`, { signal })
   return parseSidecar(await readJson(response, 'sidecar'))
+}
+
+/** `GET /materials/{material_id}/lexeme-counts`：单代次稀疏材料词频。 */
+export async function fetchLexemeCounts(
+  materialId: string,
+  signal?: AbortSignal,
+): Promise<MaterialLexemeCounts> {
+  const response = await fetch(`/materials/${encodeURIComponent(materialId)}/lexeme-counts`, { signal })
+  return parseLexemeCounts(await readJson(response, '词频'))
 }
