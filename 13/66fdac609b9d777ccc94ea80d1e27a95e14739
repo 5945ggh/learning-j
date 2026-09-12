@@ -1,0 +1,14 @@
+docs/task-packets/reports/P1-frontend-handoff.md
+  h_c735ec7f46d14b 1-96
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "1366fdac609b9d777ccc94ea80d1e27a95e14739",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
