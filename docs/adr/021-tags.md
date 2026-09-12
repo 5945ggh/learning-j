@@ -6,7 +6,7 @@ status: accepted
 # ADR-021 知识内容使用多值标签
 ## 决策
 
-标签可重叠、为空、后加；MVP 先保证 grammar 标签。标签、anchor_shape 与 retention 各司其职。
+标签可重叠、为空、后加；MVP 先保证 grammar 标签。标签、`anchor_shape`、KP `default_retention` 默认策略与 Occurrence `retention_override` 局部覆盖各司其职。
 
 ## 理由与取舍
 

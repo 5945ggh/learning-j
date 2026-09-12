@@ -5,19 +5,22 @@
 LearningJ's documents are a contract, not background reading. Before changing
 code, identify the phase and read the relevant sources in this order:
 
-**Contract migration status (2026-09-10, second pass):** the study-session, Agent,
-history, evidence, query-projection, and occurrence-review-target (ADR-041)
-contracts are reflected in the current product, data-model, prompt, ADR, design,
-and phase-plan documents; the task-packet catalogue
-(`docs/task-packets/CURRENT-PACKETS.md`) has been re-synced to ADR-041
-(Occurrence-level confirmation, P4b creates queued ReviewItem, P5 owns first
-admission) and registers a second bounded P0-backend rework. Entry naming is
-settled: entities stay 学习会话/学习记录/知识库, and the top-level navigation is
-主页/素材库/知识库/解析队列/学习中心, with “学习队列” retired. `data-model.md`
-§7.1/§7.2 put ReviewState creation at the first rating rather than at admission,
-so the already-approved P0-backend round (`306bb3c`) needs that second rework
-before P4b/P5 are dispatched. This status does not certify implementation or phase
-completion.
+**Contract migration status (2026-09-11, documentation audit pass):** the
+study-session, Agent, history, evidence, query-projection, and
+occurrence-review-target contracts are being kept aligned across the current
+core documents. The current field contract uses `KnowledgePoint.default_retention`,
+`Occurrence.retention_override`, and confirmation-time retention snapshots;
+consult `data-model.md` for the authoritative definitions. Entity naming remains
+学习会话/学习记录/知识库, and the top-level navigation remains
+主页/素材库/知识库/解析队列/学习中心, with “学习队列” retired. The
+task-packet catalogue was **not synchronized in this audit pass**; do not treat
+its older assumptions as current requirements. This status does not certify
+implementation or phase completion. Before the first real learning dataset or
+external release, establish a supported schema baseline and protected upgrade
+path; during the disposable development phase, explicitly selected
+development/test databases are deleted and rebuilt against the current schema.
+Do not implement legacy migrations, backfills, or compatibility for this phase;
+old-database upgrades are not dispatch gates (ADR-042, user decision 2026-09-11).
 
 1. `docs/LearningJ-plan-v5.md` for product intent, MVP boundary, and the
    project's only index of open decisions.
@@ -92,11 +95,13 @@ specification to unblock implementation.
   turn the corresponding xfail into a passing test rather than bypassing it.
 - Prompt files are versioned artifacts: create a new version instead of editing
   a prompt in place.
-- Do not modify `docs/` or `prompts/` as part of an implementation task. The one
-  exception is creating or overwriting your own report file under
-  `docs/task-packets/reports/` (see `docs/task-packets/protocols/handoff.md`).
-  Everything else in `docs/` and all of `prompts/` is read-only input; report
-  proposed documentation changes to the lead agent.
+- Do not modify `docs/` or `prompts/` as part of an implementation task. A
+  separately authorized contract-audit pass may revise the named current core
+  documents; it must preserve implementation facts, avoid claiming code or
+  phase completion, and leave task-packets, archived material, prompt versions,
+  migrations, and databases untouched. Everything else in `docs/` and all of
+  `prompts/` is read-only input; report proposed documentation changes to the
+  lead agent.
 
 ## Phase-oriented reading shortcuts
 

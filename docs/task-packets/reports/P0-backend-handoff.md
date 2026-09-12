@@ -8,7 +8,7 @@
 ```text
 STATUS: done
 PACKET: docs/task-packets/CURRENT-PACKETS.md → P0-backend（第二轮有界返工：ReviewState 建立时机改为首次评分）
-BASELINE: HEAD=3539c1a（P0-frontend 入库提交，不含 backend/）；只改 backend/（8 个改动文件 + 1 个新迁移）；docs/ 只写本报告；保留工作区中 lead 对 DESIGN.md、docs/adr/*.md 的未提交改动，未触碰
+BASELINE: HEAD=58d2d02（当前已落地的 P0-backend 第二次有界返工）；本轮确认 backend/ 与本报告相对 HEAD 无未提交改动；保留工作区中既有 AGENTS.md、DESIGN.md、docs/、demo/、experiments/ 等用户修改，未触碰
 ```
 
 Contract ledger:
@@ -24,12 +24,9 @@ Contract ledger:
   keep `trg_review_states_requires_admission` valid；P0 不创建 ReviewItem 行、不排程。
 - ADR-041 / §9 不变量 3、4、18 — reference 不得有 active 卡；retired ⇔ `retired_at`
   非空；新建复习项须有明确加入决定；P0 只落 schema 层语义。
-- `docs/mvp-tech-and-phases.md` §3 P0 第 2 条/验收（第 116、122 行）与 §P5（第 260、
-  261 行）**仍写 “active 必须已有 admitted_at 与 ReviewState”“准入…初始化
-  ReviewState”**，与现行 §7.1/§7.2 冲突。依 AGENTS.md 权威规则（`data-model.md` 是
-  字段级真相来源；该文档自述不复制字段/状态机定义）本包按 current contract 实施，
-  未改该文档，冲突登记在 Open issues。本包 scope 与 current contract 一致，故不判
-  `blocked`。
+- `docs/mvp-tech-and-phases.md` §3 P0 与 §P5 — 当前工作树版本已同步为“active 只需
+  `admitted_at`、ReviewState 首次评分建立、准入不构造 S/D”，与 `data-model.md`
+  §7.1/§7.2 及本包实现一致；本包未修改该文档。
 - 拒绝的假设：不把“active ⇒ ReviewState”继续当作数据层不变量；不臆造历史准入时间；
   不为“旧三态中无 ReviewState 的 active”编造配额证据。
 
@@ -79,14 +76,14 @@ Public contract:
 
 Verified（真实输出）:
 
-- `pytest` — `77 passed, 23 xfailed in 9.75s`（上轮基线 71/23；+6 新测试）。
-- `tests/test_constraints.py` — `21 passed`。
-- `tests/invariants/test_invariants.py` — `2 passed, 23 xfailed`（25 owner：2 点亮 +
+- `uv run pytest -q` — `77 passed, 23 xfailed in 8.95s`。
+- `uv run pytest tests/test_constraints.py tests/test_schema.py tests/test_migration.py tests/test_contract_surface.py tests/invariants/test_invariants.py -q` — `59 passed, 23 xfailed in 4.53s`。
+- `uv run pytest tests/test_constraints.py -q` — `21 passed`；`uv run pytest tests/invariants/test_invariants.py -q` — `2 passed, 23 xfailed`（25 owner：2 点亮 +
   23 strict xfail；台账未变）。
-- `tests/test_contract_surface.py` — `5 passed`（OpenAPI 路径精确集合、无幽灵端点、
+- `uv run pytest tests/test_contract_surface.py -q` — `5 passed`（OpenAPI 路径精确集合、无幽灵端点、
   可复现）。
-- `tests/test_schema.py tests/test_migration.py` — `31 passed`。
-- 迁移复演（`/tmp/p0replay.FfQoIQ`）：`build-regression-sample` →
+- `uv run pytest tests/test_schema.py tests/test_migration.py -q` — `31 passed`。
+- 迁移复演（`/tmp/learningj-p0-verify.WwIs4X`）：`build-regression-sample` →
   `backup`（`integrity_check: ok`、`foreign_key_check: ok`、`schema_version_before:
   1c1fc8f7fc96`）→ `verify-backup`（隔离副本同上）→ 恢复后 `upgrade`
   （`schema_version: 1c1fc8f7fc96 -> d8b3f6a1c204`，输出自动备份路径）。升级后：
@@ -94,15 +91,21 @@ Verified（真实输出）:
   `foreign_key_check: []`、回填
   `[('active',admitted,¬retired),('retired',¬admitted,retired),('paused',¬,¬),('queued',¬,¬)]`、
   `active_without_state=0`、`queued_with_state=0`、`reference_active=0`、
-  `retired_present=[]`、`current_missing=[]`。
+  `retired_present=[]`、`current_missing=[]`；独立命令行检查确认恢复副本与空库均为
+  `d8b3f6a1c204`、`integrity_check=ok`、`foreign_key_check=[]`、四种状态各 1 条、
+  当前触发器 6 个且两个退役触发器不存在。
 - **退役触发器关键证据**（`/tmp/p0replay2.LyH3xa`）：先升级到 `c66997d83060`，手工
   装回两个退役定义（共 8 个触发器：含 `trg_review_items_active_requires_state`、
   `trg_review_items_no_direct_active_insert`），再 `maintenance upgrade` →
   `c66997d83060 -> d8b3f6a1c204`；升级后 6 个触发器，`retired still present: []`、
   `current missing: []`，且产生迁移前自动备份（版本 `c66997d83060`）。即退役触发器
   是从**已升级**的库中清除，而非仅“全新 `create_all` 不含”。
-- fixture 复现：两个生成物重生成前后 sha256 完全一致
-  （`openapi.json 16c8fff1…`、`material-fixture.json 99fa2f11…`）。
+- fixture 复现：`uv run python -m learningj.api.export_openapi` 与
+  `uv run python -m learningj.fixtures.material_fixture` 输出到临时目录，两个生成物
+  与跟踪文件 sha256 完全一致（`openapi.json`
+  `16c8fff13a850b90ed5efa553799a1a044c3b99689a7a9933ce34f3aafb8f633`、
+  `material-fixture.json`
+  `99fa2f110686552d574313c3f2aec721578d7124c8655938d6ec373bd64b3153`）。
 - `alembic heads` — 单一 head `d8b3f6a1c204`。
 
 Known limitations:
@@ -121,8 +124,7 @@ Gate for next packet:
   已升级库中被清除；存储形状与 `create_all` 命名一致。P0-integration 可据此验证
   前滚/恢复与 fixture 复现。
 - Not safe to assume: P5 仍需按“准入只写 `admitted_at`；首次评分同事务建立
-  ReviewState + 首条 ReviewEvent”实施；`docs/mvp-tech-and-phases.md` 的 P0/P5
-  验收文字尚未同步（见 Open issues），不能据其旧措辞回退本次实现。
+  ReviewState + 首条 ReviewEvent”实施；P0 不提供 ReviewEvent 或排程服务。
 
 CR focus:
 
@@ -139,18 +141,101 @@ CR focus:
 
 Open issues:
 
-- **契约文档不一致（需 lead 处理；本包未改 docs）**：`docs/mvp-tech-and-phases.md`
-  第 46 行、§3 P0 第 116 行与第 122 行验收（“active 必须已有 admitted_at 与
-  ReviewState”）、§P5 第 260 行（同）、第 261 行（“准入…并初始化 ReviewState”）
-  仍描述旧语义，与 `data-model.md` §7.1/§7.2（2026-09-10）冲突。依 AGENTS.md 权威
-  规则，字段级语义以 `data-model.md` 为准，且该文档自述不复制字段/状态机定义；本包
-  按 current contract 实施并在此登记，建议 lead 同步上述段落，否则 P0/P5 验收文字会
-  与已批准实现相悖。本包 scope 与 current contract 一致，因此不判 `blocked`。
-- 无其它未决冲突。
+- 无契约冲突或越界修改。
+
+---
+
+## 2026-09-11 当前开发基线补齐（本轮，未放行 P0）
+
+本轮按 ADR-042 的当前开发／测试数据集政策补齐 P0 第 3/6 项；这不是上方
+2026-09-10 的迁移/回填返工，也不把其历史验证重新列作当前闸门。没有新增
+Alembic revision、旧库回填、兼容分支或未来领域表，也没有删除任何工作区数据库。
+
+新增内容：
+
+- `backend/src/learningj/db/maintenance.py`：新增
+  `rebuild-development-db --db <明确的 .db 路径>`。命令只接受显式普通 `.db`
+  文件，拒绝目录、符号链接和 SQLite 辅助文件；不扫描数据库，也不由应用启动调用。
+  它在目标同目录 staging 库以 `Base.metadata.create_all` 和现有触发器创建当前
+  schema，灌入确定性 txt/srt 素材 fixture，写入唯一的
+  `learningj_development_baseline` 记录，验证 `integrity_check` /
+  `foreign_key_check` 后才原子替换该目标。记录包含
+  `learningj-development-schema-2026-09-11`、应用版本、
+  `learningj-contract-2026-09-11` 及
+  `designated-development-test-rebuild-only` 支持范围；它不写 Alembic 版本。
+  fixture 或检查失败时保留原目标，并写 `<target>.rebuild-failure.log`。
+- 后续修复收缩了 P0 建表边界：重建只创建显式列出的
+  `materials`、`sentences`、`sidecars` 与基线登记表，不再因全局 ORM metadata
+  把 P2–P5 领域表带入 P0。素材导入在 Lexeme 表尚未由所属阶段建立时仍生成
+  sidecar token/lexeme_id，但跳过 Lexeme 行写入；完整 schema 测试路径仍保留
+  Lexeme 幂等写入。
+- `backend/src/learningj/fixtures/material_fixture.py`：抽出
+  `populate_fixture_database()`，使同一套通过真实素材 API 生成的确定性 txt/srt
+  fixture 同时供 `build_fixture()` 和开发库重建使用。跟踪生成物
+  `backend/fixtures/material-fixture.json` 已重新生成且字节未变化。
+- `backend/tests/test_development_rebuild.py`：新增临时目录测试，覆盖显式目标替换、
+  非 `.db` / 目录拒绝、普通应用启动不重置未知库、fixture 失败不替换原库并保留诊断、
+  当前 schema/触发器/基线记录/fixture 完整性，以及不创建 StudySession、
+  AnalysisRevision、ReviewEvent 空表。
+- `backend/tests/invariants/test_invariants.py`：不变量 20 已补上 P0 首次验证，
+  覆盖 fixture 失败时原指定库、代表性历史引用和完整性均保持；另保留独立的
+  P4b strict xfail，等待各运行时生产者补测版本化历史引用保护。
+- `backend/tests/test_development_rebuild.py`：新增重建后真实 FastAPI
+  `/materials`、`/sentences`、`/sidecar` 读取断言，闭合 staging → 原子替换 → API
+  的 fixture 证据链。
+
+供 P0-integration 使用：
+
+- 重建命令（目标必须由调用者明确提供）：
+  `cd backend && uv run python -m learningj.db.maintenance rebuild-development-db --db /tmp/learningj-development.db`
+- OpenAPI 生成物：`backend/fixtures/openapi.json`（其 SentenceOut 必填字段修复由并行
+  schema 工作项所有，本轮未将其列为新增实现）。
+- 素材 fixture：`backend/fixtures/material-fixture.json`，生成命令：
+  `cd backend && uv run python -m learningj.fixtures.material_fixture --out fixtures/material-fixture.json`。
+
+本轮验证（全部只用临时数据库）：
+
+- `uv run pytest tests/test_development_rebuild.py tests/test_contract_surface.py tests/test_sentence_schema.py -q`
+  -> 通过（含重建后真实 API 读取）。
+- `uv run pytest tests/test_contract_surface.py tests/test_development_rebuild.py tests/test_sentence_schema.py tests/test_api_materials.py tests/invariants/test_invariants.py -q`
+  -> `21 passed, 23 xfailed`；#20 P0 首次验证通过，P4b 运行时补测仍明确标记。
+- `uv run pytest -q` -> `89 passed, 23 xfailed`。
+- 临时 CLI 实测：`rebuild-development-db --db /tmp/learningj-p0-rebuild.IuxfFz/development.db`
+  记录 schema/app/contract/support 标识；SQL 检查为 `materials=2`、`sentences=5`、
+  `integrity_check=ok`、`foreign_key_check=[]`。
+- 最终 CLI 实测（临时目标）：表集合严格为
+  `learningj_development_baseline`、`materials`、`sentences`、`sidecars`；
+  `integrity_check=ok`、`foreign_key_check=[]`，fixture 计数为 2 个素材／5 个句子。
+- `git diff --check` -> 通过。
+
+当前缺口与边界：
+
+- P0-backend 技术验收已补齐；整体 P0 仍需 P0-integration 报告中的跨边界证据及
+  reviewer-owned `## Review` 复审后，方可派发 P1。
+- 开发基线只允许明确指定开发／测试路径重建。首次真实学习数据或发布前的支持版本范围、
+  版本化升级、备份和隔离恢复属于 ADR-042 后续门，不由该 CLI 提前实现。
+- P1 的用户快照导出/恢复能力仍未实现；现有历史迁移/备份工具和相关测试未作为本轮验收。
 
 ---
 
 ## Review（CR，reviewer）
+
+### 2026-09-11 P0 基线复审（CR，reviewer）
+
+```text
+VERDICT: approve
+Findings: none
+Evidence checked:
+- rebuild-development-db 仅创建显式 P0 表 materials、sentences、sidecars 与基线登记表；不再使用全局 metadata 建表。
+- 重建库完整表集合断言、重建后真实 FastAPI materials/sentences/sidecar 读取、fixture 生成和 SQLite integrity/FK 检查均通过。
+- Lexeme 缺席时素材导入保留 sidecar 派生 ID 但不写未来表；完整 schema 导入测试仍验证 Lexeme 写入。
+- 不变量 #20 的 P0 首次失败保留验证通过；P4b 版本化运行时补测仍严格 xfail。
+- OpenAPI anchor_payload 必填、前端 EPUB 锚点校验、可扩展 OpenAPI 断言未回退；backend 全量 `89 passed, 23 xfailed`，前端 `22 passed`，lint/build 与 git diff --check 通过。
+Gate assessment:
+- P0 开发基线不再预建 P2–P5 领域表，满足 ADR-042/P0 阶段边界；P1 可从当前 API/fixture 基线启动。
+Residual risks:
+- 23 个严格 xfail 仍由后续阶段所有者负责，不构成 P0 阻塞。
+```
 
 > 2026-09-10 并入（lead 从 CR 会话转录）。按 `reports/README.md` 的“一包一份”约定，复审不再单独成文件；原 `P0-backend-cr.md` 的内容移至此处，其历史保留在 git。
 >

@@ -4,7 +4,7 @@
 
 每篇 ADR 顶部的 YAML front matter 是机器可读元数据，状态值使用 `proposed`、`accepted`、`deferred`、`rejected`、`partially_superseded`、`superseded`、`merged`。`docs/adr/archived/` 只存不再属于当前决策面的历史条目；需要追溯历史时再读取。
 
-2026-09-08 将原单文件按编号拆分并精简；001–036 编号和合并关系保留，新增 037–039；2026-09-09 新增 ADR-040，细化证据与查询投影。被替代的条目只保留历史判断与新落点，不构成并行的现行要求。阶段计划已按当前核心契约校准，task-packets 尚未单独同步。
+2026-09-08 将原单文件按编号拆分并精简；001–036 编号和合并关系保留，新增 037–039；2026-09-09 新增 ADR-040，细化证据与查询投影；2026-09-11 新增 ADR-042，定义开发 schema 重建许可与真实数据首次投入前的保护基线；2026-09-12 在 ADR-042 内补充迁移工具链执行删除的决定。被替代的条目只保留历史判断与新落点，不构成并行的现行要求。阶段计划与核心契约正在本轮审计中同步，task-packets 本轮未同步。
 
 | 编号 | 决策 | 状态 |
 |---|---|---|
@@ -49,3 +49,4 @@
 | <a id="adr-039"></a>ADR-039 | [分级历史保护与可更新当前状态](adr/039-history-protection.md) | 已接受（2026-09-08） |
 | <a id="adr-040"></a>ADR-040 | [证据、用户裁定与查询投影](adr/040-evidence-and-query-projections.md) | 已接受（2026-09-09） |
 | <a id="adr-041"></a>ADR-041 | [Occurrence 级复习对象与双层复习意愿](adr/041-occurrence-review-targets.md) | 已接受（2026-09-10） |
+| <a id="adr-042"></a>ADR-042 | [开发库重建与正式数据基线](adr/042-development-schema-baseline.md) | 已接受（2026-09-11） |

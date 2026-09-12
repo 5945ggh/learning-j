@@ -14,4 +14,4 @@ status: proposed
 
 ## 当前落点
 
-[产品规划 §11](../LearningJ-plan-v5.md#11-c-类发现机制)
+[产品规划 §11](../LearningJ-plan-v5.md#11-c-类用户的发现机制)

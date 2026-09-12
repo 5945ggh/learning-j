@@ -1,44 +1,93 @@
-# P0-frontend · handoff
-
 STATUS: done
-PACKET: docs/task-packets/CURRENT-PACKETS.md → P0-frontend
-BASELINE: HEAD=5484224；保留工作区中既有未追踪的 frontend/ 与 experiments/ 内容，仅修改 frontend 前端实现并新增本报告
+PACKET: docs/task-packets/CURRENT-PACKETS.md -> P0-frontend
+BASELINE: HEAD=58d2d0256f8ae6670f84e0364feab84a4d2bbfc9; preserved all pre-existing dirty and untracked files
 
 Contract ledger:
-- `docs/mvp-tech-and-phases.md` §1.2、§3/P0 — 前端组件由 shell 通过 props 和回调装配；P0 只保留素材浏览，不实现 Study、LLM、提取、复习或其他未来领域行为。
-- `DESIGN.md` Components/Accessibility 与 ADR-023 — 组件不反向依赖 shell 或路由；选择句子必须是可键盘操作的本地 UI 行为，来源上下文保持可读且不暗示学习活动。
-- `docs/task-packets/reports/P0-contract-handoff.md` — P0-contract 闸门已 clear；P0 后端实际公开的可用素材端点不包含旧 Analysis、追问、抽取或 retention 端点。
-- `frontend/src/lib/text.ts` — 持久化文本区间使用 Unicode code point 半开区间；业务切片只能通过 `sliceByCodePoint()`，不放宽既有 ESLint 规则。
+- docs/LearningJ-plan-v5.md §§1-3 and 3/P0 — P0 frontend is limited to material browsing and location preparation; it must not implement AI learning, analysis, extraction, candidates, review, or reading-activity claims.
+- docs/mvp-tech-and-phases.md P0 §§1.2 and 3/P0 — consume the material-only OpenAPI/fixture contract; obsolete analysis endpoints must not be called; preserve the independent material browsing shell.
+- DESIGN.md 组件／无障碍／响应式 — components receive data and callbacks through props, remain shell-independent, preserve readable source context, and keep keyboard-accessible controls and explicit status labels.
+- docs/adr/023-shell-independence.md — components may not depend on reader, Study, review shells, routing, or hidden shell-owned lifecycle; shells compose independent components.
+- docs/task-packets/reports/P0-contract-handoff.md — current material endpoints are `/materials`, `/materials/{material_id}/sentences`, and `/materials/{material_id}/sidecar`; legacy Analysis state/API is not authoritative; code-point offsets are half-open.
+- docs/task-packets/protocols/implementation.md and handoff.md — preserve unrelated dirty changes, write this report as the only docs change, verify with real command output, and report a gate explicitly.
+
+Assumptions refused:
+- Do not infer or recreate an AnalysisPanel, StudySession, AI endpoint, provider state, extraction state, KP, Occurrence, ReviewItem, or reading-activity metric from legacy/demo material.
+- Do not assume `anchor_payload` contains only numeric values; the frontend must preserve the generated OpenAPI/material fixture shape without inventing fields.
+- Do not treat selecting a sentence as a learning action or a reading-exposure fact.
+
+Owned files:
+- `frontend/` implementation and behavior tests.
+- This report only under `docs/task-packets/reports/`.
+
+Blockers:
+- None identified at ledger time.
 
 Changed:
-- `frontend/src/shells/MaterialWorkspace.tsx` — 删除旧 Analysis 状态、请求和内嵌面板；shell 现在只负责素材/句子加载、选择、错误和取消请求，并通过 props 装配独立组件。
-- `frontend/src/components/SentenceContext.tsx` — 新增只读的选中句子来源上下文组件，展示句子、序号、来源定位和可选译文，不创建任何学习或 AI 记录。
-- `frontend/src/components/SentenceList.tsx` — 将旧“打开解析”动作改为“选择句子”，并为选择按钮补充 `aria-pressed` 状态。
-- `frontend/src/lib/analysis.ts` — 删除旧的平行 Analysis/KnowledgePoint API 契约及不存在端点调用。
+- `frontend/src/shells/MaterialWorkspace.tsx` — keeps loading, cancellation, selection, and error state in the shell while composing independent material components; no AnalysisPanel or AI lifecycle remains.
+- `frontend/src/components/MaterialList.tsx` — renders material selection from props.
+- `frontend/src/components/SentenceList.tsx` — renders source sentences and selection from props; EPUB anchor display narrows untrusted payload values before rendering.
+- `frontend/src/components/SentenceContext.tsx` — renders selected source context only; EPUB anchor display is type-safe.
+- `frontend/src/lib/materials.ts` — models the material-only OpenAPI surface, including sidecar provenance, validates JSON boundaries, URL-encodes IDs, and preserves arbitrary anchor payload values.
+- `frontend/src/lib/text.ts` — provides the shared code-point length/slicing helper and branded sentence text type.
+- `frontend/src/lib/materials.test.ts` — adds material/sentence/sidecar fixture-shaped API behavior tests, malformed response handling, URL encoding, and HTTP failure behavior.
+- `frontend/src/lib/text.test.ts` — covers supplementary code points, half-open slicing, negative/out-of-range indices, and ZWJ code-point behavior.
+- `frontend/eslint.config.js` — enforces shell/router independence for components and rejects bare string slicing.
 
 Public contract:
-- P0 前端仅调用 `GET /materials` 与 `GET /materials/{material_id}/sentences`；选择句子不触发网络请求。
-- `MaterialList`、`SentenceList`、`SentenceContext` 均通过 props 接收数据和回调；组件不 import shell 或路由。
-- code-point 文本切片继续由 `sliceByCodePoint()` 提供，后续 reader/sidecar 组件可复用同一 helper。
+- `GET /materials` returns validated `Material[]` with OpenAPI kinds `subtitle_video|subtitle_audio|text|epub`.
+- `GET /materials/{material_id}/sentences` returns validated `Sentence[]`; `anchor_payload` remains an open JSON object and all persisted offsets are treated as code-point half-open ranges.
+- `GET /materials/{material_id}/sidecar` returns validated sidecar provenance and payload without introducing an AI or analysis contract.
+- Material and sentence components accept data and callbacks through props; components do not import shells or routing.
+- `sliceByCodePoint()` is the only frontend string-range helper for persisted sentence offsets.
 
 Verified:
-- `cd frontend && pnpm lint` — pass。
-- `cd frontend && pnpm test` — pass，1 个测试文件、8 个测试通过（含代理对、负索引、边界和 ZWJ code-point 切片）。
-- `cd frontend && pnpm build` — pass，`tsc -b` 与 Vite production build 均成功。
-- `test ! -e src/lib/analysis.ts` + source marker scan — pass，旧 AnalysisPanel、旧路径及 retention/抽取请求均不存在。
-- component import scan — pass，`src/components` 无 shell 或 react-router 依赖。
+- `cd frontend && pnpm lint` — pass; ESLint completed with no errors.
+- `cd frontend && pnpm test` — pass; 2 test files and 13 tests passed.
+- `cd frontend && pnpm build` — pass; `tsc -b` and Vite production build completed, output included `dist/assets/index-CdjKvpW4.js` and `index-Dl7-fXFe.css`.
+- `cd frontend && rg -n -i 'AnalysisPanel|analysis\\.ts|/analysis|/questions|/extract|/retention|/knowledge-points|session_closed|turn_count|extraction_status|extraction_trigger' src --glob '!**/*.test.*'` — pass; no forbidden legacy frontend markers.
+- `cd frontend && rg -n "from ['\\\"](?:\\.\\.?/)*shells|from ['\\\"]react-router" src/components` — pass; no component shell/router imports.
+- `cd frontend && rg -n '\\.(slice|substring|substr)\\(' src --glob '!**/text.ts' --glob '!**/*.test.*'` — pass; no bare string slicing outside the helper.
 
 Known limitations:
-- P0 不接入 fixture、sidecar/token lookup、StudySession、AnalysisRevision、AI、词典、提取、KnowledgePoint、ReviewItem 或排程；这些属于后续 packet。
-- `SentenceContext` 只呈现当前来源上下文，不提供 reader/player 控件或领域写入。
+- P0 has no algorithmic tokenization, dictionary lookup, AI, extraction, review, or reading-activity behavior.
+- The sidecar client is typed and validated for the current endpoint but is not fetched by the P0 browsing screen; token rendering belongs to P2.
+- Backend OpenAPI generation and fixture generation are owned by P0-contract/P0-backend; this packet validates the frontend against their published material shapes through fixture-shaped tests.
 
 Gate for next packet:
-- Ready: P0-integration 可验证前端构建、组件 shell 边界、code-point helper，以及素材 fixture 对接前的无旧 AI 请求基线。
-- Not safe to assume: P1 reader/fixture 或 P2 lookup 行为已经实现；不得把当前句子上下文当作 Study/Analysis 文档。
+- Ready: P0-integration can verify the frontend against the generated backend OpenAPI and material fixture, with no obsolete AI calls and with ADR-023/code-point static gates passing.
+- Not safe to assume: algorithmic tokens, Yomitan lookup, StudySession, AnalysisRevision, extraction, KP/Occurrence, ReviewItem, scheduling, or reading activity exist in the frontend.
 
 CR focus:
-- 确认旧平行 Analysis 契约已完整移除且构建产物不再包含其请求字符串；确认 shell 仍只持有页面加载/选择状态，组件仍可由其他 shell 直接复用。
-- 检查窄屏/键盘下句子选择的可达性与 `aria-pressed` 语义，以及未来引入 span 时继续使用 `sliceByCodePoint()`。
+- Verify no obsolete analysis/AI endpoint or embedded AnalysisPanel remains in frontend source or output, component imports preserve ADR-023 direction, and arbitrary fixture anchor payloads are not narrowed into a false numeric contract.
 
 Open issues:
-- 无阻塞项；P1 的 fixture/type library 与 reader 行为按 packet 顺序后续实现。
+- None; no contract conflict or cross-scope change was required.
+
+## Review
+
+### Lead Repair Verification (2026-09-11)
+
+- The original review below remains the recorded verdict pending independent re-review; current P0/P1 dispatch is not approved.
+- Backend SentenceOut.anchor_payload is now required; regenerated backend/fixtures/openapi.json declares it required. New test_sentence_schema.py reproduced the missing-field bug before repair, then passed. Targeted backend schema/API/fixture tests: 8 passed.
+- Frontend shares parseEpubSpineIndex and displays unavailable location instead of inventing spine 0; regression tests cover missing, negative, fractional, string, valid zero and non-EPUB input.
+- Integration checks now allow additional paths/properties, require GET operations and 200 JSON response references, and accept reference-only object schemas.
+- Lead verification: frontend lint and build passed; after schema repair frontend tests: 22 passed. git diff --check passed.
+- Outstanding: backend development database rebuild and current invariant owner/history-protection evidence, then integration verification against that rebuilt schema. No legacy migration is required.
+
+### Original Review
+
+2026-09-11: Lead transcription of Lovelace's read-only review supplied in this task. This is a concise record of the findings, not a new verification run. Repairs and re-review are pending.
+
+```text
+VERDICT: changes-requested
+Findings:
+- [P1] frontend/src/lib/materials.ts:97 — The client requires anchor_payload but SentenceOut currently makes it optional through default_factory. Backend must align the required field with data-model §8.2 and regenerate OpenAPI/fixtures; frontend must not silently weaken that contract.
+- [P1] frontend/src/components/SentenceContext.tsx:7 and SentenceList.tsx:10 — Invalid/missing EPUB spine_index silently becomes 0, inventing a valid location. Validate nonnegative integers at the API boundary or represent unavailable location explicitly, with regression coverage.
+- [P2] The two components duplicate untrusted anchor parsing. Centralize the validated result or a shared number/null parser.
+Evidence checked:
+- Reviewer inspected frontend changes, backend schemas/fixtures, data-model §8.2 and P0/P1 contracts; TypeScript diagnostics and static boundary scans were clean.
+Gate assessment:
+- P0-frontend requires repairs and re-review before a clean gate.
+Residual risks:
+- Existing passing tests omit optional anchor_payload and invalid EPUB spine_index cases.
+```

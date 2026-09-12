@@ -7,7 +7,7 @@ superseded_by: [ADR-037]
 # ADR-019 知识保留与复习闸门
 ## 决策
 
-Occurrence 与有效提取的 KP 保留；新卡受每日配额、按 Occurrence 的显式选择及 salience/FIFO 优先级控制。所有会话模式新建复习项都须用户明确选择，取代旧 batch/background 默认自动建卡；ReviewItem 的 Occurrence 粒度与双层 retention 见 ADR-041。
+Occurrence 与有效提取的 KP 保留；新卡受每日配额、按 Occurrence 的显式选择及 salience/FIFO 优先级控制。所有会话模式新建复习项都须用户明确选择，取代旧 batch/background 默认自动建卡；ReviewItem 的 Occurrence 粒度、KP `default_retention` 默认策略与 Occurrence `retention_override` 局部覆盖见 ADR-041。默认策略不等于逐例句建卡授权。
 
 ## 理由与取舍
 

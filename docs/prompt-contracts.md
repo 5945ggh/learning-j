@@ -1,7 +1,7 @@
 # LearningJ 模型与 Agent 契约
 
 > 本文规定生成、讨论 Agent、上下文组装与提取协议；实体和持久化以 [数据模型](data-model.md) 为准。决策理由见 [ADR 索引](adr.md)。
-> 学习会话目标契约于 2026-09-08 更新，证据边界于 2026-09-09 补充（ADR-040）；阶段计划已按当前核心契约校准，task-packets 尚待单独同步。
+> 学习会话目标契约于 2026-09-08 更新，证据边界于 2026-09-09 补充（ADR-040）；阶段计划已按当前核心契约校准。任务包状态以 `CURRENT-PACKETS.md` 及对应交接报告为准。
 > 版本化 prompt 文件仍是独立实现产物，本次不修改既有 prompt 文件。
 
 ## 1. 解析模块
@@ -66,7 +66,7 @@ orthography／汉字方向尚未采纳为独立模块，学习对象身份与词
 
 每个写工具返回成功／失败、受影响对象、提交后的 revision 与可读摘要。不存在、越界或过期目标必须报错；Agent 先刷新再修改。一次文档编辑提交是原子的，不把尚未完成的一组操作暴露为成功文档。
 
-工具修改须对应用户当前请求或已授权的学习辅助范围；只读问题不隐式改变复习意愿。讨论工具不能绕过第二阶段直接创建 KP/Occurrence，不能擅自改变 retention、完成会话或触发外部导出。笔记修改对用户可见、可撤销或纠正。
+工具修改须对应用户当前请求或已授权的学习辅助范围；只读问题不隐式改变复习意愿。讨论工具不能绕过第二阶段直接创建 KP/Occurrence，不能擅自改变 KP `default_retention` 或 Occurrence `retention_override`、完成会话或触发外部导出。笔记修改对用户可见、可撤销或纠正。
 
 执行器以 `(agent_run_id, call_id)` 去重并核对规范化输入 hash；同键同输入返回既有结果，同键不同输入报协议冲突。执行器记录副作用；工具返回失败不能被回复描述成成功。运行失败／取消时，先前已成功提交的编辑保留，页面显示已完成部分与剩余失败。
 
@@ -94,13 +94,13 @@ orthography／汉字方向尚未采纳为独立模块，学习对象身份与词
 2. 工具调用及对应结果作为完整协议单元裁切；重试、续接与同一用户回合内多次调用由运行器处理。
 3. 文档超过配置预算时，可读取目录／摘要并按需读取小节；定点修改仍以完整、已持久化的当前文档为准。提取阶段必须拿到确定版本的完整内容。
 4. 上下文裁切不删除学习记录；不永久保存每轮完整注入副本。模板版本、目标文档版本和必要审计元数据保留。
-5. 模型调用数、token 或费用预算达到上限时暂停并保留现场；不默认把预算耗尽解释为用户认可并自动提取。MVP 不提供由讨论预算触发的自动收尾；automatic 是创建时明确选择的另一种模式。
+5. 模型调用数、token 或费用预算达到上限时，运行器将当前 `AgentRun` 持久化为 `status = paused`、`pause_reason = budget_exhausted` 并保留现场；不默认把预算耗尽解释为用户认可并自动提取。用户明确“继续”时创建新的 `AgentRun`，通过 `resume_of_agent_run_id` 续接同一会话和当前文档 revision；不得把暂停运行原地改写为成功，也不得由续接隐式触发提取。MVP 不提供由讨论预算触发的自动收尾；automatic 是创建时明确选择的另一种模式。
 
 ## 4. 学习上下文与笔记
 
 ### 4.1 KP 检索
 
-从当前句的 sidecar lexeme 序列匹配 KP.lexical_anchors，注入 anchor、已有 Occurrence.brief 与实际 SRS 状态。不按 retention 过滤：reference 同样属于已经讲过的内容。
+从当前句的 sidecar lexeme 序列匹配 KP.lexical_anchors，注入 anchor、已有 Occurrence.brief 与实际 SRS 状态。不按复习策略过滤：reference 同样属于已经讲过的内容。
 
 MVP 不实现语法模式自动匹配；语法再遇不能承诺达到词汇锚匹配的覆盖。检索是确定性来源，“某点是否讲过”不另交给散文记忆维护。
 
@@ -116,7 +116,7 @@ MVP 不实现语法模式自动匹配；语法再遇不能承诺达到词汇锚�
 
 作品笔记按 material_id，画像按当前单用户范围检索；在槽位预算内注入。画像只承载偏好、困难和学习背景，作品笔记承载人物关系、语域和作品上下文。
 
-Agent 通过同一笔记工具进行读取与修改，后端强制条数 N、单条长度 M、作用域与版本。写满时 add 被拒绝，可改用修改／合并；不以 prompt 中“请克制”代替写入约束。成功修改后后续请求能读取新内容，用户能看到修改反馈并编辑、删除。
+Agent 通过同一笔记工具进行读取与修改，后端强制条数 N、单条长度 M、作用域与版本。写满时 add 被拒绝，可改用修改／合并；不以 prompt 中“请克制”代替写入约束。成功修改后后续请求能读取新内容，用户能看到修改反馈并编辑、删除；Study 的 Agent 侧栏提供“笔记与画像”管理入口，明确显示作品笔记／学情画像作用域。
 
 ## 5. 从固定文档版本提取
 
@@ -140,7 +140,7 @@ Agent 通过同一笔记工具进行读取与修改，后端强制条数 N、单
         {"type": "literal", "text": "に"}
       ]},
       "surfaces": ["素人相手に"],
-      "slot_bindings": {"N1": {"surface": "素人"}},
+      "slot_surfaces": {"N1": "素人"},
       "tags": ["grammar"],
       "salience": "primary",
       "section_id": "已提供的逻辑小节 ID",
@@ -156,17 +156,17 @@ Agent 通过同一笔记工具进行读取与修改，后端强制条数 N、单
 ### 5.2 候选与定位
 
 - shape 为 `pattern` / `lexical` / `entity` / `opaque`，payload 形状以 data-model §3.1 为准。
-- 每个候选必有 `surfaces`，表示该知识点在原句中的完整出现范围；slot_bindings 的 surface 是其中的槽位实例，不能替代完整范围。
-- 模型给语义判断和原文表层子串，不给 anchor、偏移、token 索引、lexeme 三元组或 span_id。`display_form` 是人工覆写，不由提取模型覆盖。
+- 每个候选必有 `surfaces`，表示该知识点在原句中的完整出现范围；`slot_surfaces` 是其中的槽位原文表层，不能替代完整范围。模型侧字段到持久化形状的边界固定为：模型输出 `slot_surfaces`，后端定位并把候选槽位 ID 映射到既有模式的规范槽位 ID，再持久化为 `Occurrence.slot_bindings`（值为 Span ID）。
+- 模型给语义判断和原文表层子串，不给 anchor、偏移、token 索引、lexeme 三元组、scope_form_key 或 span_id。`display_form` 是人工覆写，不由提取模型覆盖。具体词形作用域键按 data-model §0 从原词形派生，不由模型或客户端自由填写。
 - 每个完整 surface 独立 find_all；多处命中时各产生一条带 ambiguous 完整 Span 的 Occurrence。不同候选可重叠，不为重复出现复制同一候选。
-- pattern 的槽位在每个完整命中范围内定位，必须完整、有序且跨槽位不相交；完整 Span 可以包含槽位 Span。绑定无法唯一确定或不能满足模式约束时拒绝该次出现，记入 unresolved_patterns，不猜选一处。
+- pattern 的槽位在每个完整命中范围内定位，必须完整、有序且跨槽位不相交；完整 Span 可以包含槽位 Span。复用已有 pattern KP 时，先按结构位置及 category/form 将候选槽位 ID 映射到已有 KP 的规范槽位 ID，再校验绑定完整性；映射无法唯一确定或不能满足模式约束时拒绝该次出现，记入 unresolved_patterns，不猜选一处。
 - Occurrence.spans 有序包含完整匹配 Span 与成功的槽位 Span；同一个 span_id 不重复关联。slot_bindings 的值必须属于该数组。语法层 optional/repeat 等不连续模式仍未实现，多 Span 存储不等于 DSL 已支持它们。
 - 普通 surface 命中但 token 不对齐可保留为 partial/unaligned；模式槽位若无法完成必要验证，拒绝该模式出现并记录原因。两种结果分开统计。
 - `primary` 仅来自当前最终文档 takeaway 点名的 1–3 项，其余 secondary；不让模型决定用户的复习意愿。brief 必填，候选内容必须有可引用的解析小节。
 
 ### 5.3 身份召回与消解
 
-先用原句与既有 payload 的字面量召回 top-k（临时 k=10），让模型选择复用或按规范新建。形式键已经存在直接复用；键不存在但有归一化近邻时，条件触发一次小调用询问复用或新建；无近邻直接新建。释义不参与身份判定。
+先用原句与既有 payload 的字面量召回 top-k（临时 k=10），让模型选择复用或按规范新建。形式键已经存在直接复用；pattern 复用时按结构位置把候选槽位 ID 重映射为既有 KP 的槽位 ID，再由后端校验键集合与 category/form；键不存在但有归一化近邻时，条件触发一次小调用询问复用或新建；无近邻直接新建。entity 以规范化 `entity_type + entity_label` 形式键直接复用，不以语义近邻自动合并。释义不参与身份判定。
 
 复用只允许输入候选中的合法 ID，并由后端校验形状／模式兼容性；无效 ID 不得写入引用。实体唯一约束、合并与用户意愿保护见 data-model §3。
 
@@ -174,7 +174,7 @@ Agent 通过同一笔记工具进行读取与修改，后端强制条数 N、单
 
 `standalone` 必须支持，输入自足。`continued_turn` 可利用先前上下文，但必须明确注入同一固定文档版本，不从旧对话里的过时文档抽取。两条路径使用同版本提取规范，实验 1 比较质量后决定默认路径；当前保留续轮为可选快路径。
 
-提取不调用编辑文档或修改画像的工具。失败只重试同一文档版本，不重做初始生成。用户需要修改解析时创建新的关联会话；维护式重抽不自动进入用户的解析队列。带用户 hint 的重抽、已成功产物的弃用及同会话回到 discussion 尚待产品规划 §15 第 20 项决策，不能自行解释为已有 retry 权限。
+提取不调用编辑文档或修改画像的工具。失败只重试同一文档版本，不重做初始生成。用户需要修改解析时创建新的关联会话，同时写入 `parent_session_id` 与 `source_analysis_revision_id`；它不复用旧会话的确认、Occurrence 或 ReviewItem。维护式重抽不自动进入用户的解析队列。提取产物发布使用 run 级原子幂等闸门：提交前检查 run 仍为 `running` 及预期版本，在同一事务中提交全部成功产物并标记 `done`；并发提交至多一方成功，done 重放读取原结果，提交前崩溃回滚，响应丢失可通过原 run 读取结果。不得用 `(run, kp, start, end)` 做跨小节内容去重。带用户 hint 的重抽、已成功产物的弃用及同会话回到 discussion 尚待产品规划 §15 第 20 项决策，不能自行解释为已有 retry 权限。
 
 ### 5.5 失败与部分成功
 
@@ -182,17 +182,18 @@ Agent 通过同一笔记工具进行读取与修改，后端强制条数 N、单
 
 1. 输出不能通过 JSON／schema 校验，或 sections 无法完整绑定输入版本。
 2. 正文超过配置阈值但 candidates 为空。
-3. 没有任何候选可以形成有效 Occurrence，包括全部 surface 未命中或全部模式绑定失败。
+3. 候选非空但没有任何候选可以形成有效 Occurrence，包括全部 surface 未命中或全部模式绑定失败。
 
-个别 surface／模式失败时记录 unresolved_surfaces、invalid_patterns、unresolved_patterns；其余有效候选可原子提交。该规则取代“任一槽位失败就整次重跑”的笼统表述。短文零候选可以合法完成，返回明确结果交用户完成会话。
+个别 surface／模式失败时记录 unresolved_surfaces、invalid_patterns、unresolved_patterns；其余有效候选可原子提交。该规则取代“任一槽位失败就整次重跑”的笼统表述。
+合法空结果仅限 `candidates` 为空且正文未超过配置阈值的情形，不属于整体失败；正文超过阈值且 `candidates` 为空仍按第 2 条整体失败处理。
 
 弱信号仅提示：条数与正文比例异常、全部新建零复用、没有 primary。缺少 takeaway 时建议回到新的编辑会话修订文档，不靠反复提取修复不存在的总结。
 
 ## 6. 确认与排程边界
 
-KP retention 的产品含义是“默认复习策略”，不表达卡片数量或逐 Occurrence 授权。Occurrence 局部值与用户确认分开：默认 `inherit` 不等于已确认；用户明确沿用时记录具体 Occurrence、局部值和当次有效值。有效值为 srs 的加入确认与 ReviewItem 创建／复用原子提交，失败不报告已加入；queued 已是持久 ReviewItem，配额只控制首次准入排程。KP 策略变化不替未建卡 Occurrence 补造加入决定或 ReviewItem。
+KP `default_retention` 的产品含义是“默认复习策略”，不表达卡片数量或逐 Occurrence 授权。Occurrence 的 `retention_override` 与用户确认分开：默认 `inherit` 不等于已确认；用户明确沿用时记录具体 Occurrence、局部覆盖和当次有效值。有效值为 srs 的加入确认与 ReviewItem 创建／复用原子提交，失败不报告已加入；queued 已是持久 ReviewItem，配额只控制首次准入排程。KP 策略变化不替未建卡 Occurrence 补造加入决定或 ReviewItem。
 
-提取成功不等于用户确认；KP 意愿、Occurrence 局部意愿与实际卡片状态分开。所有模式的默认候选均不自动建卡，用户明确选择具体 Occurrence 后立即创建 ReviewItem；配额不足时进入 `queued`。salience 用于候选排序与新卡待建优先级，不表示是否适合成为 KP。KP 为 `reference` 时，继承状态的 Occurrence 可灰显或默认不选，但用户可以明确选择局部 `srs`；同步开放整个 KP 必须是单独的明确操作。
+提取成功不等于用户确认；KP 默认策略、Occurrence 局部覆盖与实际卡片状态分开。确认组合只有 `(user, srs, NULL)`、`(user, reference, NULL)`、`(inherited, inherit, current_kp_decision_id)`，其中 user 的有效策略等于所选局部值，inherited 的有效策略等于当前原始 KP 决定快照；没有 KP 决定记录时不能沿用初始化默认值。所有模式的默认候选均不自动建卡，用户明确选择具体 Occurrence 后立即创建或复用 ReviewItem；新建项恰好一条 `ReviewItemAdmissionDecision`，复用既有非 retired 项不新增授权、不初始化或丢弃 queued／准入状态或进度，但仍可按有效策略正常转换；配额不足时新建项进入 `queued`。salience 用于候选排序和 queued 首次准入优先级，不表示是否适合成为 KP。KP 为 `reference` 时，继承状态的既有非 retired 项可暂停，但 retired 项不复活；新建与复用仍按当前状态规则处理。退役 ReviewItem 的再次加入必须由用户明确触发并写入 `ReviewItemAdmissionDecision(source = explicit_readd)`，会话内重建可选关联 `session_confirmation_id`，普通知识库操作为空。
 
 本次会话确认、知识库全局意愿与历史快照的唯一写入规则见 data-model §§3.1、4.2、7；前端不得以 KP 当前 default 数量推导会话完成，也不得因知识库变更重新打开旧会话。“排除本次候选”与 reference 不同，目前未新增排除结果或优先级覆盖；仍须处理当前 run 的全部不同 Occurrence，或搁置会话。提取产物的 salience、brief、Span 与来源不可在确认界面原地修改。
 
