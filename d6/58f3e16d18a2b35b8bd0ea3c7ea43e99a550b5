@@ -1,0 +1,16 @@
+backend/tests/test_p1_integration.py
+  h_c735ec7f46d14b 1-637
+frontend/src/lib/p1-integration.contract.test.ts
+  h_c735ec7f46d14b 1-359
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "d658f3e16d18a2b35b8bd0ea3c7ea43e99a550b5",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
