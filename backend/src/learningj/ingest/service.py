@@ -7,7 +7,6 @@ and anchor payloads, which keeps the rest of the application source agnostic.
 
 from __future__ import annotations
 
-import importlib.metadata
 import io
 import hashlib
 import posixpath
@@ -25,6 +24,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from learningj.db.models.material import Material, MaterialLexemeCount, Sentence, Sidecar
+from learningj.domain import versions as domain_versions
 from learningj.domain.enums import MaterialStorageMode
 from learningj.db.models.lexeme import Lexeme
 from learningj.domain.enums import MaterialKind, SentenceAnchorType
@@ -366,7 +366,7 @@ def _tokenize(sentences: list[Sentence], analyzer_dict_version: str | None = Non
     dictionary = Dictionary()
     tokenizer = dictionary.create()
     mode = SplitMode.A
-    dict_version = analyzer_dict_version or importlib.metadata.version("SudachiDict-core")
+    dict_version = analyzer_dict_version or domain_versions.analyzer_dict_version()
     tokenizer_version = getattr(sudachipy, "__version__", "sudachipy")
     payload: list[dict[str, Any]] = []
     for sentence in sentences:

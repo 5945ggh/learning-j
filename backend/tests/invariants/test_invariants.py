@@ -16,7 +16,20 @@ P0 已点亮（schema／开发基线层语义）：
 P1 已点亮（生产者层语义）：
 - 不变量 5 的生产者扩面 —— 素材链写入路径（导入／重分词代次）产出的
   Lexeme.first_seen_analyzer_dict_version 与 sidecar 三个版本戳全部非空，
-  且 Lexeme 首见版本来自某个真实代次；KE 侧生产者扩面仍归 P2。
+  且 Lexeme 首见版本来自某个真实代次。
+
+P2 已点亮：
+- 不变量 5 的 KE 侧生产者扩面 —— user_asserted KE 写路径携带
+  analyzer_dict_version 与 resolver_version（test_invariant_5_evidence_producers）；
+- 不变量 8 的首次验证 —— 身份空间隔离 + 查词/导入/划线零 KE 零裁定
+  （test_invariant_8_id_spaces_do_not_leak；P3/P4/P5 生产者继续补测）；
+- 不变量 21 —— 作用域生效、unknown 压过导入/SRS、clear 不复活、撤回
+  原子失效（test_invariant_21_user_decisions_scope_and_precedence；
+  完整行为面见 tests/test_evidence.py）。
+
+不变量 6 的 P2 生产者补测：Annotation Span 定位路径的切片回读断言位于
+`tests/test_annotations.py`（矩阵把首次全量验证留给 P4a 的 find_all 提取
+定位，此处 xfail 维持不变，不机械沿用也不提前抢跑）。
 
 P0 已覆盖数据层、但仍按 P5 排程服务语义保留 xfail：不变量 3（reference
 不激活 queued/active）、不变量 4（retired ⇔ retired_at、active 须有
@@ -29,10 +42,10 @@ admitted_at；ReviewState 在首次评分时建立，准入但未首评的 activ
 | 阶段 | 不变量 |
 |---|---|
 | P0 | 20（开发重建失败恢复的首次验证） |
-| P2 | 21 |
+| P2（本轮点亮） | 5（KE 侧生产者扩面）、8、21 |
 | P2-known-import | 22 |
 | P3b | 7 |
-| P4b | 1、2、6、8–13、15–17、19、20（版本化运行时补测） |
+| P4b | 1、2、6、9–13、15–17、19、20（版本化运行时补测） |
 | P5 | 3、4、18、23、24、25 |
 
 旧的点亮计划（不变量 1–11 → P4、3/4 → P5、7 → P3）作废；旧壳挂在
@@ -108,6 +121,44 @@ def test_invariant_5_ingest_producers_stamp_analyzer_dict_versions(tmp_path) -> 
         assert lexeme_versions
         for (version,) in lexeme_versions:
             assert version and version in analyzer_versions
+
+
+def test_invariant_5_evidence_producers_stamp_versions(dev_reader_environment) -> None:
+    """§9 不变量 5（P2 KE 侧生产者扩面）：user_asserted KE 与裁定写路径
+    携带非空 analyzer_dict_version 与 resolver_version，观测时间依据明确，
+    作用域键为派生值。"""
+    client = dev_reader_environment
+    materials = client.get("/materials").json()
+    sentence = client.get(f"/materials/{materials[0]['id']}/sentences").json()[0]
+    token = client.get(f"/sentences/{sentence['id']}/tokens").json()["tokens"][0]
+
+    for decision, key in (("known", "inv5-k"), ("unknown", "inv5-u")):
+        response = client.post(
+            f"/lexemes/{token['lexeme_id']}/decisions",
+            json={
+                "decision": decision,
+                "input_surface": token["surface"],
+                "conjugated_form": token["surface"] if decision == "unknown" else None,
+                "operation_key": key,
+            },
+        )
+        assert response.status_code == 201
+
+    engine = client.app.state.engine  # type: ignore[attr-defined]
+    with engine.connect() as conn:
+        ke_rows = conn.exec_driver_sql(
+            "SELECT analyzer_dict_version, resolver_version, observed_at_basis,"
+            " scope_form_key FROM known_evidence"
+        ).fetchall()
+        decision_rows = conn.exec_driver_sql(
+            "SELECT analyzer_dict_version, scope_form_key FROM lexeme_knowledge_decisions"
+        ).fetchall()
+    assert ke_rows and decision_rows
+    for analyzer, resolver, basis, scope in ke_rows:
+        assert analyzer and resolver and basis
+        assert scope.startswith(("lexeme:", "form:"))
+    for analyzer, scope in decision_rows:
+        assert analyzer and scope.startswith(("lexeme:", "form:"))
 
 
 def test_invariant_14_pattern_has_grammar_version_and_opaque_has_reason(migrated_engine) -> None:
@@ -210,7 +261,9 @@ def test_invariant_4_at_most_one_default_review_item_per_kp() -> None:
 @pytest.mark.xfail(strict=True, reason="点亮阶段 P4b：Span 偏移合法且切片回读等于 surface（后端 find_all 落地）")
 def test_invariant_6_span_offsets_slice_back_to_surface() -> None:
     """任何 Span 的 code point 半开区间非空、在原句内，
-    `sentence.text[char_start:char_end] == span.surface`（§9.6 / §1）。"""
+    `sentence.text[char_start:char_end] == span.surface`（§9.6 / §1）。
+    P2 已为 Annotation Span 生产路径补测（见 `tests/test_annotations.py`），
+    本条按 §3.1 矩阵在 P4a（ExtractionRun 定位落地）做首次全量验证。"""
     raise NotImplementedError
 
 
@@ -221,12 +274,62 @@ def test_invariant_7_memory_slot_limit_enforced_on_write() -> None:
     raise NotImplementedError
 
 
-@pytest.mark.xfail(strict=True, reason="点亮阶段 P4b：全部证据生产者落地后验证查词/播放/阅读/评分不产 KE")
-def test_invariant_8_id_spaces_do_not_leak() -> None:
-    """Lexeme 不进 Alias，KP 不成为 KnownEvidence 的 target；查词、播放、
-    阅读曝光和评分不产生 KE（§9.8 / §2.2 / ADR-040）。数据层 FK 已隔离
-    身份空间；行为边界待生产者落地后验证。"""
-    raise NotImplementedError
+def test_invariant_8_id_spaces_do_not_leak(dev_reader_environment) -> None:
+    """§9 不变量 8（P2 首次验证）：Lexeme 不进 Alias，KP 不成为 KnownEvidence
+    的 target；查词、播放、阅读曝光不产生 KE。
+
+    P2 可验证面：
+    - 数据层：known_evidence.lexeme_id 外键只指向 lexemes（KP 不可能成为
+      target）；aliases 表无 lexeme 列，Lexeme 无法进入 KP 别名空间；
+    - 生产行为面：词典导入、精确查找/搜索、token 读取、Annotation 创建/读取
+      全部零 KE、零裁定写入（行为断言见各生产者测试文件，此处以真实 API
+      复核一遍）；
+    - P3/P4/P5 生产者（会话、提取、复习）落地后各自补测不自动写 KE。
+    """
+    from sqlalchemy import inspect as sa_inspect
+
+    from learningj.db.base import Base
+
+    client = dev_reader_environment
+    engine = client.app.state.engine  # type: ignore[attr-defined]
+    inspector = sa_inspect(engine)
+    ke_fks = {
+        fk["referred_table"] for fk in inspector.get_foreign_keys("known_evidence")
+    }
+    # 证据 target 只能是 Lexeme（materials 是断言出出处，非 target）；
+    # KP 表不出现在外键里，KP 不可能成为 target。
+    assert "lexemes" in ke_fks and "knowledge_points" not in ke_fks
+    # Lexeme 不进 Alias：canonical aliases 表（P4a 才建）的形状里没有
+    # lexeme 列，且 P2 开发基线根本不携带 KP/Alias 表。
+    alias_columns = set(Base.metadata.tables["aliases"].columns.keys())
+    assert "lexeme_id" not in alias_columns
+    assert "aliases" not in inspector.get_table_names()
+
+    # 生产行为面：真实 API 走一遍词典/查词/token/划线，证据表保持为空
+    from conftest import build_yomitan_zip
+
+    materials = client.get("/materials").json()
+    material = materials[0]
+    sentences = client.get(f"/materials/{material['id']}/sentences").json()
+    client.get(f"/sentences/{sentences[0]['id']}/tokens")
+    imported = client.post(
+        "/dictionaries/import",
+        files={"file": ("d.zip", build_yomitan_zip(), "application/zip")},
+    )
+    assert imported.status_code == 201
+    client.get("/dictionaries/lookup", params={"expression": "走る"})
+    client.get("/dictionaries/search", params={"query": "走"})
+    client.post(
+        f"/materials/{material['id']}/annotations",
+        json={"spans": [{"sentence_id": sentences[0]["id"], "surface": sentences[0]["text"][0]}]},
+    )
+    client.get(f"/materials/{material['id']}/annotations")
+    with engine.connect() as conn:
+        ke_count = conn.exec_driver_sql("SELECT count(*) FROM known_evidence").scalar_one()
+        decision_count = conn.exec_driver_sql(
+            "SELECT count(*) FROM lexeme_knowledge_decisions"
+        ).scalar_one()
+    assert ke_count == 0 and decision_count == 0
 
 
 @pytest.mark.xfail(strict=True, reason="点亮阶段 P4b：StudySession 阶段门控与提取输入固定（P3a/P3b 落机制）")
@@ -373,11 +476,99 @@ def test_invariant_20_versioned_runtime_updates_preserve_history_references() ->
     raise NotImplementedError
 
 
-@pytest.mark.xfail(strict=True, reason="点亮阶段 P2：Lexeme 证据入口与裁定/撤回写路径落地（ADR-040）")
-def test_invariant_21_user_decisions_scope_and_precedence() -> None:
-    """用户当前裁定按作用域生效，unknown 压过导入和 SRS；clear 不复活旧
-    用户 KE。撤回保留来源历史，并与失效记录原子提交（§9.21 / §2.2）。"""
-    raise NotImplementedError
+def test_invariant_21_user_decisions_scope_and_precedence(dev_reader_environment) -> None:
+    """§9 不变量 21（P2 首次验证）：用户当前裁定按作用域生效，unknown 压过
+    导入和 SRS；clear 不复活旧用户 KE。撤回保留来源历史，并与失效记录
+    原子提交（§9.21 / §2.2 / ADR-040）。
+
+    按 plan P2 测试边界，导入与 SRS 事实用合成夹具直接构造（import_anki
+    KE 直插事实表 + 投影重建），不提前实现 KnownImportRun 或 ReviewEvent
+    生产者；完整作用域/回退/幂等行为面见 `tests/test_evidence.py`。
+    """
+    import uuid as uuid_module
+    from datetime import datetime, timezone
+
+    from sqlalchemy import text
+
+    from learningj.db.session import make_engine, make_session_factory
+    from learningj.domain import versions
+    from learningj.evidence import service as evidence_service
+
+    client = dev_reader_environment
+    materials = client.get("/materials").json()
+    sentence = client.get(f"/materials/{materials[0]['id']}/sentences").json()[0]
+    token = client.get(f"/sentences/{sentence['id']}/tokens").json()["tokens"][0]
+    lexeme_id, surface = token["lexeme_id"], token["surface"]
+
+    # 合成导入事实（SRS 信号 P5 才有生产者；unknown 对两者的压过语义相同）
+    engine = make_engine(f"sqlite:///{client.app.state.db_path}")  # type: ignore[attr-defined]
+    with make_session_factory(engine)() as session:
+        session.execute(
+            text(
+                "INSERT INTO known_evidence (id, lexeme_id, conjugated_form, scope_form_key,"
+                " source, confidence, observed_at, observed_at_basis, analyzer_dict_version,"
+                " resolver_version, input_surface, input_reading, operation_key,"
+                " created_at, updated_at)"
+                " VALUES (:id, :lexeme_id, NULL, 'lexeme:', 'import_anki', 0.8, :observed,"
+                " 'external', :adv, :rv, '合成', NULL, :op, :observed, :observed)"
+            ),
+            {
+                "id": uuid_module.uuid4().hex,
+                "lexeme_id": lexeme_id,
+                "observed": datetime.now(timezone.utc).isoformat(),
+                "adv": versions.analyzer_dict_version(),
+                "rv": "learningj-scope-resolver-v1",
+                "op": f"synthetic-inv-21-{lexeme_id[:12]}",
+            },
+        )
+        session.commit()
+        evidence_service.rebuild_summaries(session, lexeme_ids=[lexeme_id])
+        session.commit()
+
+    def effective() -> dict:
+        return client.post(
+            "/lexemes/known-views/batch", json={"items": [{"lexeme_id": lexeme_id}]}
+        ).json()["items"][0]["effective"]
+
+    # 导入支持 → 无人工裁定时 known（basis=import_evidence）
+    assert effective()["state"] == "known"
+    # unknown 压过导入
+    client.post(
+        f"/lexemes/{lexeme_id}/decisions",
+        json={"decision": "unknown", "input_surface": surface, "operation_key": "inv21-u"},
+    )
+    assert effective()["state"] == "unknown"
+    # clear → 回到其他来源（导入），不伪造负向 KE
+    client.post(
+        f"/lexemes/{lexeme_id}/decisions",
+        json={"decision": "clear", "input_surface": surface, "operation_key": "inv21-c"},
+    )
+    assert effective()["basis"] == "import_evidence"
+    # 再 known：user_asserted KE 与决定同事务产生，压回导入
+    known = client.post(
+        f"/lexemes/{lexeme_id}/decisions",
+        json={"decision": "known", "input_surface": surface, "operation_key": "inv21-k"},
+    ).json()
+    assert effective()["basis"] == "lexeme_decision"
+    assert effective()["evidence_id"] == known["evidence_id"]
+    # 撤回当前 known 引用的 KE → 同事务追加 clear（不回退更旧决定），
+    # 全部来源历史保留；clear 后回到导入支持（旧 user KE 不复活——它已被
+    # 撤回，且 clear 也不会重新启用更早的人工决定）。
+    retraction = client.post(
+        f"/known-evidence/{known['evidence_id']}/retractions",
+        json={"reason": "误点", "operation_key": "inv21-r"},
+    )
+    assert retraction.status_code == 201 and retraction.json()["appended_clear"] is True
+    final = effective()
+    assert final["state"] == "known" and final["basis"] == "import_evidence"
+    with engine.connect() as conn:
+        decisions = conn.exec_driver_sql(
+            "SELECT decision FROM lexeme_knowledge_decisions ORDER BY decision_seq"
+        ).fetchall()
+        ke_total = conn.exec_driver_sql("SELECT count(*) FROM known_evidence").scalar_one()
+    assert [row[0] for row in decisions] == ["unknown", "clear", "known", "clear"]
+    assert ke_total == 2  # 合成导入 KE + known 时的 user_asserted KE，均保留
+    engine.dispose()
 
 
 @pytest.mark.xfail(strict=True, reason="点亮阶段 P2-known-import 切片：KnownImportRun/Entry 落地")

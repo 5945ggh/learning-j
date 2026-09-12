@@ -57,6 +57,10 @@ class Span(Timestamped, Base):
     # 存储后即权威值。
     char_start: Mapped[int] = mapped_column(Integer, nullable=False)
     char_end: Mapped[int] = mapped_column(Integer, nullable=False)
+    # [不可推迟] 本次 token 对齐使用的不可变 Sidecar；存在 token 区间时必填。
+    alignment_sidecar_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("sidecars.id"), nullable=True
+    )
     # sidecar 分词序列内的 token 索引，派生值，可空。
     token_start: Mapped[int | None] = mapped_column(Integer, nullable=True)
     token_end: Mapped[int | None] = mapped_column(Integer, nullable=True)

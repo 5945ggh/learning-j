@@ -1,6 +1,250 @@
 {
   "components": {
     "schemas": {
+      "AlgorithmTokenOut": {
+        "description": "单个 token：表层、规范化形、POS、reading、code point 半开区间与\n确定性 lexeme_id（ADR-018）。偏移以 Unicode code point 计（§0）。",
+        "properties": {
+          "char_end": {
+            "title": "Char End",
+            "type": "integer"
+          },
+          "char_start": {
+            "title": "Char Start",
+            "type": "integer"
+          },
+          "dictionary_source_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Dictionary Source Ids",
+            "type": "array"
+          },
+          "lexeme_id": {
+            "title": "Lexeme Id",
+            "type": "string"
+          },
+          "normalized_form": {
+            "title": "Normalized Form",
+            "type": "string"
+          },
+          "pos": {
+            "title": "Pos",
+            "type": "string"
+          },
+          "reading_form": {
+            "title": "Reading Form",
+            "type": "string"
+          },
+          "reading_source": {
+            "title": "Reading Source",
+            "type": "string"
+          },
+          "surface": {
+            "title": "Surface",
+            "type": "string"
+          }
+        },
+        "required": [
+          "surface",
+          "normalized_form",
+          "pos",
+          "reading_form",
+          "reading_source",
+          "lexeme_id",
+          "char_start",
+          "char_end",
+          "dictionary_source_ids"
+        ],
+        "title": "AlgorithmTokenOut",
+        "type": "object"
+      },
+      "AnnotationCreateIn": {
+        "properties": {
+          "color": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Color"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "spans": {
+            "items": {
+              "$ref": "#/components/schemas/AnnotationSpanIn"
+            },
+            "title": "Spans",
+            "type": "array"
+          }
+        },
+        "required": [
+          "spans"
+        ],
+        "title": "AnnotationCreateIn",
+        "type": "object"
+      },
+      "AnnotationOut": {
+        "properties": {
+          "color": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Color"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "material_id": {
+            "title": "Material Id",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "spans": {
+            "items": {
+              "$ref": "#/components/schemas/AnnotationSpanOut"
+            },
+            "title": "Spans",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "material_id",
+          "created_at",
+          "spans"
+        ],
+        "title": "AnnotationOut",
+        "type": "object"
+      },
+      "AnnotationSpanIn": {
+        "properties": {
+          "sentence_id": {
+            "title": "Sentence Id",
+            "type": "string"
+          },
+          "surface": {
+            "title": "Surface",
+            "type": "string"
+          }
+        },
+        "required": [
+          "sentence_id",
+          "surface"
+        ],
+        "title": "AnnotationSpanIn",
+        "type": "object"
+      },
+      "AnnotationSpanOut": {
+        "description": "Span 的 code point 半开区间由后端定位得出，切片恒等于 surface\n（§1 约束 1；§9 不变量 6 的生产行为面）。",
+        "properties": {
+          "alignment_sidecar_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alignment Sidecar Id"
+          },
+          "alignment_status": {
+            "enum": [
+              "aligned",
+              "partial",
+              "ambiguous",
+              "unaligned"
+            ],
+            "title": "Alignment Status",
+            "type": "string"
+          },
+          "char_end": {
+            "title": "Char End",
+            "type": "integer"
+          },
+          "char_start": {
+            "title": "Char Start",
+            "type": "integer"
+          },
+          "sentence_id": {
+            "title": "Sentence Id",
+            "type": "string"
+          },
+          "span_id": {
+            "title": "Span Id",
+            "type": "string"
+          },
+          "surface": {
+            "title": "Surface",
+            "type": "string"
+          },
+          "token_end": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Token End"
+          },
+          "token_start": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Token Start"
+          }
+        },
+        "required": [
+          "span_id",
+          "sentence_id",
+          "surface",
+          "char_start",
+          "char_end",
+          "alignment_status"
+        ],
+        "title": "AnnotationSpanOut",
+        "type": "object"
+      },
       "Body_create_material_materials_post": {
         "properties": {
           "file": {
@@ -41,6 +285,627 @@
         "title": "Body_create_material_materials_post",
         "type": "object"
       },
+      "Body_import_dictionary_dictionaries_import_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_import_dictionary_dictionaries_import_post",
+        "type": "object"
+      },
+      "DecisionCreateIn": {
+        "properties": {
+          "conjugated_form": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conjugated Form"
+          },
+          "decision": {
+            "enum": [
+              "known",
+              "unknown",
+              "clear"
+            ],
+            "title": "Decision",
+            "type": "string"
+          },
+          "input_reading": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Reading"
+          },
+          "input_surface": {
+            "title": "Input Surface",
+            "type": "string"
+          },
+          "material_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Material Id"
+          },
+          "operation_key": {
+            "title": "Operation Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "decision",
+          "input_surface",
+          "operation_key"
+        ],
+        "title": "DecisionCreateIn",
+        "type": "object"
+      },
+      "DecisionOut": {
+        "properties": {
+          "conjugated_form": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conjugated Form"
+          },
+          "created": {
+            "title": "Created",
+            "type": "boolean"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "decision": {
+            "enum": [
+              "known",
+              "unknown",
+              "clear"
+            ],
+            "title": "Decision",
+            "type": "string"
+          },
+          "decision_id": {
+            "title": "Decision Id",
+            "type": "string"
+          },
+          "decision_seq": {
+            "title": "Decision Seq",
+            "type": "integer"
+          },
+          "evidence_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence Id"
+          },
+          "lexeme_id": {
+            "title": "Lexeme Id",
+            "type": "string"
+          },
+          "operation_key": {
+            "title": "Operation Key",
+            "type": "string"
+          },
+          "scope_form_key": {
+            "title": "Scope Form Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "decision_id",
+          "lexeme_id",
+          "scope_form_key",
+          "decision",
+          "decision_seq",
+          "operation_key",
+          "created_at",
+          "created"
+        ],
+        "title": "DecisionOut",
+        "type": "object"
+      },
+      "DictionaryDefinitionOut": {
+        "description": "纯文本投影始终可用（资源缺失时定义仍可降级显示）；\nstructured_content 保留原始富文本 payload。",
+        "properties": {
+          "ordinal": {
+            "title": "Ordinal",
+            "type": "integer"
+          },
+          "plain_text": {
+            "title": "Plain Text",
+            "type": "string"
+          },
+          "structured_content": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Structured Content"
+          }
+        },
+        "required": [
+          "ordinal",
+          "plain_text"
+        ],
+        "title": "DictionaryDefinitionOut",
+        "type": "object"
+      },
+      "DictionaryImportOut": {
+        "description": "`POST /dictionaries/import`：canonical source + 运行记录；同 archive\nhash 重放时 `idempotent_replay=true` 且不产生新条目。",
+        "properties": {
+          "idempotent_replay": {
+            "title": "Idempotent Replay",
+            "type": "boolean"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "source": {
+            "$ref": "#/components/schemas/DictionarySourceOut"
+          },
+          "stats": {
+            "additionalProperties": true,
+            "title": "Stats",
+            "type": "object"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "run_id",
+          "status",
+          "stats",
+          "idempotent_replay"
+        ],
+        "title": "DictionaryImportOut",
+        "type": "object"
+      },
+      "DictionaryLookupOut": {
+        "description": "`GET /dictionaries/lookup`：精确查找；无命中时 entries 为空列表。",
+        "properties": {
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/LookupEntryOut"
+            },
+            "title": "Entries",
+            "type": "array"
+          },
+          "expression": {
+            "title": "Expression",
+            "type": "string"
+          },
+          "reading": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reading"
+          }
+        },
+        "required": [
+          "expression",
+          "entries"
+        ],
+        "title": "DictionaryLookupOut",
+        "type": "object"
+      },
+      "DictionarySearchOut": {
+        "description": "`GET /dictionaries/search`：精确匹配优先，FTS5 前缀匹配随后。",
+        "properties": {
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/LookupEntryOut"
+            },
+            "title": "Entries",
+            "type": "array"
+          },
+          "query": {
+            "title": "Query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "query",
+          "entries"
+        ],
+        "title": "DictionarySearchOut",
+        "type": "object"
+      },
+      "DictionarySourceOut": {
+        "properties": {
+          "archive_hash": {
+            "title": "Archive Hash",
+            "type": "string"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "format": {
+            "title": "Format",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "imported_at": {
+            "title": "Imported At",
+            "type": "string"
+          },
+          "license_metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "License Metadata"
+          },
+          "schema_version": {
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "source_version": {
+            "title": "Source Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "format",
+          "display_name",
+          "source_version",
+          "schema_version",
+          "archive_hash",
+          "imported_at"
+        ],
+        "title": "DictionarySourceOut",
+        "type": "object"
+      },
+      "EffectiveKnownOut": {
+        "properties": {
+          "basis": {
+            "anyOf": [
+              {
+                "enum": [
+                  "form_decision",
+                  "lexeme_decision",
+                  "import_evidence"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Basis"
+          },
+          "decision_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decision Id"
+          },
+          "evidence_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence Id"
+          },
+          "state": {
+            "anyOf": [
+              {
+                "enum": [
+                  "known",
+                  "unknown",
+                  "clear"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State"
+          }
+        },
+        "title": "EffectiveKnownOut",
+        "type": "object"
+      },
+      "EvidenceItemOut": {
+        "properties": {
+          "analyzer_dict_version": {
+            "title": "Analyzer Dict Version",
+            "type": "string"
+          },
+          "confidence": {
+            "title": "Confidence",
+            "type": "number"
+          },
+          "conjugated_form": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conjugated Form"
+          },
+          "evidence_id": {
+            "title": "Evidence Id",
+            "type": "string"
+          },
+          "input_reading": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Reading"
+          },
+          "input_surface": {
+            "title": "Input Surface",
+            "type": "string"
+          },
+          "material_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Material Id"
+          },
+          "observed_at": {
+            "title": "Observed At",
+            "type": "string"
+          },
+          "observed_at_basis": {
+            "title": "Observed At Basis",
+            "type": "string"
+          },
+          "resolver_version": {
+            "title": "Resolver Version",
+            "type": "string"
+          },
+          "retracted": {
+            "title": "Retracted",
+            "type": "boolean"
+          },
+          "retraction_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retraction Id"
+          },
+          "scope_form_key": {
+            "title": "Scope Form Key",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "evidence_id",
+          "source",
+          "confidence",
+          "observed_at",
+          "observed_at_basis",
+          "analyzer_dict_version",
+          "resolver_version",
+          "scope_form_key",
+          "input_surface",
+          "retracted"
+        ],
+        "title": "EvidenceItemOut",
+        "type": "object"
+      },
+      "EvidenceListOut": {
+        "description": "`GET /lexemes/{lexeme_id}/evidence`：原始证据分页读取（§2.5）。",
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceItemOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "lexeme_id": {
+            "title": "Lexeme Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "lexeme_id",
+          "items"
+        ],
+        "title": "EvidenceListOut",
+        "type": "object"
+      },
+      "EvidenceSummaryOut": {
+        "description": "`GET /lexemes/{lexeme_id}/evidence-summary`：按词证据摘要\n（可重建投影；写路径同事务更新，写后读一致）。",
+        "properties": {
+          "lexeme_id": {
+            "title": "Lexeme Id",
+            "type": "string"
+          },
+          "projection_revision": {
+            "title": "Projection Revision",
+            "type": "integer"
+          },
+          "scopes": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceSummaryScopeOut"
+            },
+            "title": "Scopes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "lexeme_id",
+          "projection_revision",
+          "scopes"
+        ],
+        "title": "EvidenceSummaryOut",
+        "type": "object"
+      },
+      "EvidenceSummaryScopeOut": {
+        "properties": {
+          "current_decision": {
+            "anyOf": [
+              {
+                "enum": [
+                  "known",
+                  "unknown",
+                  "clear"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Decision"
+          },
+          "current_decision_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Decision Id"
+          },
+          "current_decision_seq": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Decision Seq"
+          },
+          "input_revision": {
+            "title": "Input Revision",
+            "type": "integer"
+          },
+          "known_evidence_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Known Evidence Id"
+          },
+          "known_rule_version": {
+            "title": "Known Rule Version",
+            "type": "string"
+          },
+          "resolver_version": {
+            "title": "Resolver Version",
+            "type": "string"
+          },
+          "scope_form_key": {
+            "title": "Scope Form Key",
+            "type": "string"
+          },
+          "valid_source_counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Valid Source Counts",
+            "type": "object"
+          }
+        },
+        "required": [
+          "scope_form_key",
+          "valid_source_counts",
+          "input_revision",
+          "known_rule_version",
+          "resolver_version"
+        ],
+        "title": "EvidenceSummaryScopeOut",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -52,6 +917,192 @@
           }
         },
         "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "KnownViewIn": {
+        "properties": {
+          "form": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Form"
+          },
+          "lexeme_id": {
+            "title": "Lexeme Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "lexeme_id"
+        ],
+        "title": "KnownViewIn",
+        "type": "object"
+      },
+      "KnownViewItemOut": {
+        "properties": {
+          "effective": {
+            "$ref": "#/components/schemas/EffectiveKnownOut"
+          },
+          "form": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Form"
+          },
+          "form_scope": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EvidenceSummaryScopeOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lexeme_id": {
+            "title": "Lexeme Id",
+            "type": "string"
+          },
+          "lexeme_scope": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EvidenceSummaryScopeOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "lexeme_id",
+          "effective"
+        ],
+        "title": "KnownViewItemOut",
+        "type": "object"
+      },
+      "KnownViewsBatchIn": {
+        "description": "阅读器按当前页去重 Lexeme 集合批量取摘要（§11.1），不逐 token 请求。",
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/KnownViewIn"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "KnownViewsBatchIn",
+        "type": "object"
+      },
+      "KnownViewsBatchOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/KnownViewItemOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "known_rule_version": {
+            "title": "Known Rule Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "known_rule_version",
+          "items"
+        ],
+        "title": "KnownViewsBatchOut",
+        "type": "object"
+      },
+      "LookupEntryOut": {
+        "properties": {
+          "definitions": {
+            "items": {
+              "$ref": "#/components/schemas/DictionaryDefinitionOut"
+            },
+            "title": "Definitions",
+            "type": "array"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "expression": {
+            "title": "Expression",
+            "type": "string"
+          },
+          "reading": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reading"
+          },
+          "score": {
+            "title": "Score",
+            "type": "integer"
+          },
+          "sequence": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sequence"
+          },
+          "source_id": {
+            "title": "Source Id",
+            "type": "string"
+          },
+          "source_local_id": {
+            "title": "Source Local Id",
+            "type": "string"
+          },
+          "source_version": {
+            "title": "Source Version",
+            "type": "string"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Tags",
+            "type": "array"
+          }
+        },
+        "required": [
+          "source_id",
+          "display_name",
+          "source_version",
+          "source_local_id",
+          "expression",
+          "tags",
+          "score",
+          "definitions"
+        ],
+        "title": "LookupEntryOut",
         "type": "object"
       },
       "MaterialLexemeCountOut": {
@@ -189,6 +1240,79 @@
         "title": "MaterialStorageMode",
         "type": "string"
       },
+      "RetractionCreateIn": {
+        "properties": {
+          "operation_key": {
+            "title": "Operation Key",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "operation_key"
+        ],
+        "title": "RetractionCreateIn",
+        "type": "object"
+      },
+      "RetractionOut": {
+        "properties": {
+          "appended_clear": {
+            "title": "Appended Clear",
+            "type": "boolean"
+          },
+          "created": {
+            "title": "Created",
+            "type": "boolean"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "evidence_id": {
+            "title": "Evidence Id",
+            "type": "string"
+          },
+          "operation_key": {
+            "title": "Operation Key",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "retraction_id": {
+            "title": "Retraction Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "retraction_id",
+          "evidence_id",
+          "operation_key",
+          "appended_clear",
+          "created",
+          "created_at"
+        ],
+        "title": "RetractionOut",
+        "type": "object"
+      },
       "SentenceOut": {
         "description": "`GET /materials/{material_id}/sentences` 的响应；`text` 与\n`anchor_payload` 的偏移均为 Unicode code point（data-model §0/§8.2）。",
         "properties": {
@@ -267,6 +1391,61 @@
         "title": "SentenceOut",
         "type": "object"
       },
+      "SentenceTokensOut": {
+        "description": "`GET /sentences/{sentence_id}/tokens` 的响应：当前已发布 sidecar\n代次的 token 视图，带完整版本来源（§8.3 三个版本戳 + 代次 id）。",
+        "properties": {
+          "analyzer_dict_version": {
+            "title": "Analyzer Dict Version",
+            "type": "string"
+          },
+          "dictionary_sources": {
+            "items": {
+              "$ref": "#/components/schemas/TokenProvenanceOut"
+            },
+            "title": "Dictionary Sources",
+            "type": "array"
+          },
+          "material_id": {
+            "title": "Material Id",
+            "type": "string"
+          },
+          "segmenter_version": {
+            "title": "Segmenter Version",
+            "type": "string"
+          },
+          "sentence_id": {
+            "title": "Sentence Id",
+            "type": "string"
+          },
+          "sidecar_generation_id": {
+            "title": "Sidecar Generation Id",
+            "type": "string"
+          },
+          "tokenizer_version": {
+            "title": "Tokenizer Version",
+            "type": "string"
+          },
+          "tokens": {
+            "items": {
+              "$ref": "#/components/schemas/AlgorithmTokenOut"
+            },
+            "title": "Tokens",
+            "type": "array"
+          }
+        },
+        "required": [
+          "sentence_id",
+          "material_id",
+          "sidecar_generation_id",
+          "segmenter_version",
+          "tokenizer_version",
+          "analyzer_dict_version",
+          "dictionary_sources",
+          "tokens"
+        ],
+        "title": "SentenceTokensOut",
+        "type": "object"
+      },
       "SidecarOut": {
         "description": "`GET /materials/{material_id}/sidecar` 的响应；payload 为\nmsgpack 解包后的分句/分词结果（data-model §8.3）。",
         "properties": {
@@ -310,6 +1489,30 @@
           "payload"
         ],
         "title": "SidecarOut",
+        "type": "object"
+      },
+      "TokenProvenanceOut": {
+        "description": "词典来源 provenance（§2.0：查询结果必须带 source/version）。",
+        "properties": {
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "source_id": {
+            "title": "Source Id",
+            "type": "string"
+          },
+          "source_version": {
+            "title": "Source Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_id",
+          "display_name",
+          "source_version"
+        ],
+        "title": "TokenProvenanceOut",
         "type": "object"
       },
       "ValidationError": {
@@ -361,6 +1564,216 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/annotations/{annotation_id}": {
+      "delete": {
+        "description": "删除个人批注数据（§0.1）：移除关联行并清理不再被引用的 Span。",
+        "operationId": "delete_annotation_annotations__annotation_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "annotation_id",
+            "required": true,
+            "schema": {
+              "title": "Annotation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Annotation"
+      }
+    },
+    "/dictionaries": {
+      "get": {
+        "operationId": "list_dictionaries_dictionaries_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DictionarySourceOut"
+                  },
+                  "title": "Response List Dictionaries Dictionaries Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Dictionaries"
+      }
+    },
+    "/dictionaries/import": {
+      "post": {
+        "description": "导入 Yomitan ZIP：解析与资源落盘在事务外，发布是单个短事务。\n\n同一 archive hash 的重复导入幂等：不重复写条目，仅记录重放运行\n（此时返回 200 而非 201）。",
+        "operationId": "import_dictionary_dictionaries_import_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_import_dictionary_dictionaries_import_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DictionaryImportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Import Dictionary"
+      }
+    },
+    "/dictionaries/lookup": {
+      "get": {
+        "description": "精确查找：expression 相等；带 reading 时限定该读音或空读音。\n\n只读路径：查词不产生 KE（§9 不变量 8），无命中返回空 entries。",
+        "operationId": "lookup_dictionary_dictionaries_lookup_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "expression",
+            "required": true,
+            "schema": {
+              "title": "Expression",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "reading",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Reading"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DictionaryLookupOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Lookup Dictionary"
+      }
+    },
+    "/dictionaries/search": {
+      "get": {
+        "description": "搜索框路径：精确匹配优先，FTS5 前缀匹配随后（派生投影，可重建）。",
+        "operationId": "search_dictionary_dictionaries_search_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "query",
+            "required": true,
+            "schema": {
+              "title": "Query",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DictionarySearchOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Search Dictionary"
+      }
+    },
     "/healthz": {
       "get": {
         "operationId": "healthz_healthz_get",
@@ -381,6 +1794,245 @@
           }
         },
         "summary": "Healthz"
+      }
+    },
+    "/known-evidence/{evidence_id}/retractions": {
+      "post": {
+        "description": "撤回一条 KE（误点撤回）：追加保存来源历史；若撤回的是当前 known\n引用的 KE，同事务追加该作用域 clear。同键重试返回原结果（200）。",
+        "operationId": "retract_evidence_known_evidence__evidence_id__retractions_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "evidence_id",
+            "required": true,
+            "schema": {
+              "title": "Evidence Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetractionCreateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetractionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Retract Evidence"
+      }
+    },
+    "/lexemes/known-views/batch": {
+      "post": {
+        "description": "阅读器目标集合批量读取（§11.1）：一次请求返回每个目标的作用域\n摘要与有效已知状态组合。unknown 压过导入；clear 回退其他来源。",
+        "operationId": "batch_known_views_lexemes_known_views_batch_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KnownViewsBatchIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnownViewsBatchOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Batch Known Views"
+      }
+    },
+    "/lexemes/{lexeme_id}/decisions": {
+      "post": {
+        "description": "记录 known/unknown/clear 裁定；known 与其引用的 user_asserted KE\n同事务产生。同 operation_key 同输入幂等返回（200），异输入 409。",
+        "operationId": "create_decision_lexemes__lexeme_id__decisions_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "lexeme_id",
+            "required": true,
+            "schema": {
+              "title": "Lexeme Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionCreateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Decision"
+      }
+    },
+    "/lexemes/{lexeme_id}/evidence": {
+      "get": {
+        "description": "原始证据分页读取（§2.5）；撤回标记一并返回。",
+        "operationId": "list_evidence_lexemes__lexeme_id__evidence_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "lexeme_id",
+            "required": true,
+            "schema": {
+              "title": "Lexeme Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenceListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Evidence"
+      }
+    },
+    "/lexemes/{lexeme_id}/evidence-summary": {
+      "get": {
+        "description": "按词证据摘要（投影与写事务同步更新；写后读一致）。",
+        "operationId": "get_evidence_summary_lexemes__lexeme_id__evidence_summary_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "lexeme_id",
+            "required": true,
+            "schema": {
+              "title": "Lexeme Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenceSummaryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Evidence Summary"
       }
     },
     "/materials": {
@@ -440,6 +2092,167 @@
           }
         },
         "summary": "Create Material"
+      }
+    },
+    "/materials/{material_id}/annotations": {
+      "get": {
+        "description": "列表检索：按文本（note/surface 子串）与时间筛选；spans 即跳回\n原文所需的定位数据。",
+        "operationId": "list_annotations_materials__material_id__annotations_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "material_id",
+            "required": true,
+            "schema": {
+              "title": "Material Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "in": "query",
+            "name": "since",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Since"
+            }
+          },
+          {
+            "in": "query",
+            "name": "until",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Until"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AnnotationOut"
+                  },
+                  "title": "Response List Annotations Materials  Material Id  Annotations Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Annotations"
+      },
+      "post": {
+        "operationId": "create_annotation_materials__material_id__annotations_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "material_id",
+            "required": true,
+            "schema": {
+              "title": "Material Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnnotationCreateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnnotationOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Annotation"
       }
     },
     "/materials/{material_id}/lexeme-counts": {
@@ -601,6 +2414,46 @@
           }
         },
         "summary": "Rebuild Sidecar"
+      }
+    },
+    "/sentences/{sentence_id}/tokens": {
+      "get": {
+        "description": "当前已发布 sidecar 代次的句子 token 表（算法阅读器数据面）。\n\n只读：token 表层/偏移/lexeme_id 来自不可变代次，响应携带完整版本\n来源；词典 provenance 按目标集一次批量查询。",
+        "operationId": "get_sentence_tokens_sentences__sentence_id__tokens_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sentence_id",
+            "required": true,
+            "schema": {
+              "title": "Sentence Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SentenceTokensOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Sentence Tokens"
       }
     }
   }

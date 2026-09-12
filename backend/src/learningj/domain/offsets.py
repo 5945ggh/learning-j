@@ -44,3 +44,21 @@ def slice_by_code_point(text: str, start: int, end: int) -> str:
             f"char_end ({end}) exceeds code point length ({len(chars)})"
         )
     return "".join(chars[start:end])
+
+
+def find_all_occurrences(text: str, surface: str) -> list[tuple[int, int]]:
+    """在规范化句文本中定位 surface 的全部命中（`data-model.md` §1 定位规则）。
+
+    返回按出现顺序排列的 code point 半开区间列表；0 命中返回空列表，
+    >1 命中由调用方按 §1 规则（全部标 `ambiguous`）处理。模型与用户选区
+    都只提供 surface，偏移一律由本函数在后端得出（ADR-009）。
+    Python `str` 即 code point 序列，`str.find` 天然按 code point 返回索引。
+    """
+    if not surface:
+        raise ValueError("surface 不能为空")
+    spans: list[tuple[int, int]] = []
+    start = text.find(surface)
+    while start != -1:
+        spans.append((start, start + len(surface)))
+        start = text.find(surface, start + 1)
+    return spans

@@ -57,6 +57,10 @@ class DictionaryEntry(UuidPk, Timestamped, Base):
     __table_args__ = (
         UniqueConstraint("source_id", "source_local_id"),
         Index("ix_dictionary_entries_source_expression", "source_id", "expression"),
+        # 跨来源按 expression（及读音）精确查找的访问路径（§2.0「查询结果
+        # 必须带 source/version provenance」的读面）。
+        Index("ix_dictionary_entries_expression", "expression"),
+        Index("ix_dictionary_entries_reading", "reading"),
     )
 
     source_id: Mapped[uuid.UUID] = mapped_column(

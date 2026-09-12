@@ -42,21 +42,41 @@ from pathlib import Path
 MANIFEST_SUFFIX = ".manifest.json"
 _SNAPSHOT_MANIFEST_TYPE = "learningj-library-snapshot"
 DEVELOPMENT_BASELINE_TABLE = "learningj_development_baseline"
-DEVELOPMENT_SCHEMA_ID = "learningj-development-schema-2026-09-11-p1"
-DEVELOPMENT_CONTRACT_ID = "learningj-contract-2026-09-11-p1"
+DEVELOPMENT_SCHEMA_ID = "learningj-development-schema-2026-09-12-p2"
+DEVELOPMENT_CONTRACT_ID = "learningj-contract-2026-09-12-p2"
 DEVELOPMENT_SUPPORTED_DATABASES = "designated-development-test-rebuild-only"
-# P0 delivered the material browsing chain; P1 owns the content index, so the
-# disposable baseline also carries the deterministic Lexeme identity table and
-# the sparse MaterialLexemeCount index (data-model §§2.1/2.5, §11.1).  Later
-# domain tables (KP, Occurrence, ReviewItem, …) are still created by their
-# owning phase when first used; they must not leak into this baseline merely
-# because they are registered on the global ORM metadata.
+# P0 delivered the material browsing chain; P1 owns the content index
+# (lexemes + MaterialLexemeCount); P2 owns the reader evidence layer: the
+# canonical dictionary tables, KnownEvidence plus decisions/retractions/summary
+# projection, and Annotation with its shared spans table (data-model §§2/5,
+# §11.1).  Later domain tables (KP, Occurrence, ReviewItem, StudySession, …)
+# are still created by their owning phase when first used; they must not leak
+# into this baseline merely because they are registered on the global ORM
+# metadata.  occurrence_spans / analysis_section_spans stay out because their
+# owning tables do not exist yet.
 DEVELOPMENT_BASELINE_TABLES = (
     "materials",
     "sentences",
     "sidecars",
     "lexemes",
     "material_lexeme_counts",
+    # P2: canonical dictionary model (data-model §2.0)
+    "dictionary_sources",
+    "dictionary_entries",
+    "dictionary_definitions",
+    "dictionary_assets",
+    "dictionary_import_runs",
+    # P2: evidence, decisions, retraction, summary projection (§2.2/§2.5/§11.2)
+    "known_evidence",
+    "lexeme_knowledge_decisions",
+    "known_evidence_retractions",
+    "lexeme_evidence_summaries",
+    "lexeme_projection_state",
+    # P2: Annotation + shared spans (§5, §1; annotation_spans only — the other
+    # span link tables reference P4 tables that do not exist in this baseline)
+    "annotations",
+    "spans",
+    "annotation_spans",
 )
 
 
@@ -154,19 +174,35 @@ def rebuild_development_database(db_path: Path) -> dict[str, str]:
 
     No database discovery, automatic startup hook, migration, legacy read, or
     backfill participates in this operation.  The replacement only occurs
-    after the temporary database has the explicit P1 schema (material chain
-    plus content-index tables), baseline metadata, the reproducible material
-    fixture, and SQLite integrity checks. Future domain triggers are
-    intentionally absent until their owning tables exist.
+    after the temporary database has the explicit P1+P2 schema (material
+    chain, content index, reader evidence layer), baseline metadata, the
+    reproducible material fixture, and SQLite integrity checks. Future
+    domain triggers are intentionally absent until their owning tables exist.
     """
     from learningj.db.base import Base
-    from learningj.db.models.lexeme import Lexeme
+    from learningj.db.models.annotation import Annotation
+    from learningj.db.models.dictionary import (
+        DictionaryAsset,
+        DictionaryDefinition,
+        DictionaryEntry,
+        DictionaryImportRun,
+        DictionarySource,
+    )
+    from learningj.db.models.lexeme import (
+        KnownEvidence,
+        KnownEvidenceRetraction,
+        Lexeme,
+        LexemeEvidenceSummary,
+        LexemeKnowledgeDecision,
+        LexemeProjectionState,
+    )
     from learningj.db.models.material import (
         Material,
         MaterialLexemeCount,
         Sentence,
         Sidecar,
     )
+    from learningj.db.models.span import Span, annotation_spans
     from learningj.db.models.invariant_triggers import install_invariant_triggers
     from learningj.db.session import make_engine
     from learningj.fixtures.material_fixture import populate_fixture_database
@@ -180,7 +216,7 @@ def rebuild_development_database(db_path: Path) -> dict[str, str]:
         engine = make_engine(staging)
         try:
             # Do not call Base.metadata.create_all() without an explicit table
-            # list: that would materialize P2–P5 tables in the P1 baseline.
+            # list: that would materialize P3–P5 tables in the P2 baseline.
             Base.metadata.create_all(
                 engine,
                 tables=[
@@ -189,6 +225,19 @@ def rebuild_development_database(db_path: Path) -> dict[str, str]:
                     Sidecar.__table__,
                     Lexeme.__table__,
                     MaterialLexemeCount.__table__,
+                    DictionarySource.__table__,
+                    DictionaryEntry.__table__,
+                    DictionaryDefinition.__table__,
+                    DictionaryAsset.__table__,
+                    DictionaryImportRun.__table__,
+                    KnownEvidence.__table__,
+                    LexemeKnowledgeDecision.__table__,
+                    KnownEvidenceRetraction.__table__,
+                    LexemeEvidenceSummary.__table__,
+                    LexemeProjectionState.__table__,
+                    Annotation.__table__,
+                    Span.__table__,
+                    annotation_spans,
                 ],
             )
             install_invariant_triggers(engine)

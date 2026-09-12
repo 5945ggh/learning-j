@@ -67,6 +67,31 @@ class KnownEvidenceSource(_StrEnum):
     IMPORT_JPDB = "import_jpdb"
 
 
+class KnownObservedAtBasis(_StrEnum):
+    """KnownEvidence.observed_at 的时间依据（`data-model.md` §2.2）。
+
+    用户断言时间是 user_action；外部观测时间为 external；外部时间缺失时
+    使用导入时间并记 imported_at。
+    """
+
+    USER_ACTION = "user_action"
+    EXTERNAL = "external"
+    IMPORTED_AT = "imported_at"
+
+
+class LexemeDecision(_StrEnum):
+    """Lexeme 级／词形级的用户当前裁定（`data-model.md` §2.2，ADR-040）。
+
+    known 必须引用同次提交、同目标同作用域的 user_asserted KE；unknown
+    压过该作用域的导入与 SRS 估计；clear 清除人工覆盖回到其他来源求值，
+    不重新启用旧 user_asserted。
+    """
+
+    KNOWN = "known"
+    UNKNOWN = "unknown"
+    CLEAR = "clear"
+
+
 class Retention(_StrEnum):
     """KP `default_retention` 的取值域（`data-model.md` §3.1，ADR-041）。
 
