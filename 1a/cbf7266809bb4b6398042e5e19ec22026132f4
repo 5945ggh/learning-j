@@ -1,0 +1,56 @@
+frontend/package.json
+  h_c735ec7f46d14b 24-27,38
+frontend/pnpm-lock.yaml
+  h_c735ec7f46d14b 30-41,72-74,89,93-103,159-162,175-178,185-220,269-277,529-563,567-569,824-834,883-885,934-940,944-947,977-979,991-994,1003-1008,1020-1023,1314-1317,1330-1333,1405-1407,1457-1465,1649-1652,1656-1659,1670-1676,1759-1761,1792-1795,1809-1811,1816-1819,1828-1831,1857-1860,1946-1949,1954-1956,1979-1993,2045-2048,2145-2164,2195-2201,2220-2236,2314-2315,2339-2342,2355-2378,2429-2430,2600-2636,2642-2643,2864-2871,2936-2939,2998-3004,3007-3013,3040-3041,3056-3057,3064-3067,3081-3082,3469-3474,3481-3482,3564-3565,3613-3638,3766-3767,3772-3773,3784-3787,3881-3884,3905-3910,3923-3924,3929-3933,3954-3955,4007-4010,4116-4119,4122-4123,4139-4152,4226-4227,4277,4295,4299-4322,4375-4378
+frontend/src/components/ContentIndexPanel.test.tsx
+  h_c735ec7f46d14b 1-51
+frontend/src/components/ContentIndexPanel.tsx
+  h_c735ec7f46d14b 1-70
+frontend/src/components/MaterialLibrary.test.tsx
+  h_c735ec7f46d14b 1-74
+frontend/src/components/MaterialLibrary.tsx
+  h_c735ec7f46d14b 1-90
+frontend/src/components/MaterialList.tsx
+  h_c735ec7f46d14b 1-8,16,29-32
+frontend/src/components/SentenceContext.test.tsx
+  h_c735ec7f46d14b 1-46
+frontend/src/components/SentenceContext.tsx
+  h_c735ec7f46d14b 1-3,10-12,15-18,31
+frontend/src/components/SentenceList.test.tsx
+  h_c735ec7f46d14b 1-61
+frontend/src/components/SentenceList.tsx
+  h_c735ec7f46d14b 1-3,12-15,17-30,34-38,41,43-44,48-57
+frontend/src/lib/anchors.test.ts
+  h_c735ec7f46d14b 1-155
+frontend/src/lib/anchors.ts
+  h_c735ec7f46d14b 1-85
+frontend/src/lib/library.test.ts
+  h_c735ec7f46d14b 1-34
+frontend/src/lib/library.ts
+  h_c735ec7f46d14b 1-27
+frontend/src/lib/material-fixtures.ts
+  h_c735ec7f46d14b 1-191
+frontend/src/lib/materials.test.ts
+  h_c735ec7f46d14b 2,104-164
+frontend/src/lib/materials.ts
+  h_c735ec7f46d14b 40-55,162-178,202-210
+frontend/src/lib/time.test.ts
+  h_c735ec7f46d14b 1-29
+frontend/src/lib/time.ts
+  h_c735ec7f46d14b 1-28
+frontend/src/shells/MaterialWorkspace.test.tsx
+  h_c735ec7f46d14b 1-128
+frontend/src/shells/MaterialWorkspace.tsx
+  h_c735ec7f46d14b 1-3,6-16,18-35,38-41,43-44,46,48,51-56,59-60,65,68-70,73,78-80,85,88-91,93-95,98,100-137,139-159,162,165-174,177-199,201-209
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "1acbf7266809bb4b6398042e5e19ec22026132f4",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
