@@ -1,47 +1,31 @@
 # LearningJ agent guide
 
-## Read the documentation before implementation
+## Route reading by what the change touches
 
-LearningJ's documents are a contract, not background reading. Before changing
-code, identify the phase and read the relevant sources in this order:
+LearningJ's documents are contracts, not background reading. Do not read
+everything by default: identify the surfaces the change touches, then read the
+routed sources first. Phase is the primary routing key (see the shortcuts at
+the end of this file); the table covers the remaining task types.
 
-**Contract migration status (2026-09-11, documentation audit pass):** the
-study-session, Agent, history, evidence, query-projection, and
-occurrence-review-target contracts are being kept aligned across the current
-core documents. The current field contract uses `KnowledgePoint.default_retention`,
-`Occurrence.retention_override`, and confirmation-time retention snapshots;
-consult `data-model.md` for the authoritative definitions. Entity naming remains
-学习会话/学习记录/知识库, and the top-level navigation remains
-主页/素材库/知识库/解析队列/学习中心, with “学习队列” retired. The
-task-packet catalogue was **not synchronized in this audit pass**; do not treat
-its older assumptions as current requirements. This status does not certify
-implementation or phase completion. Before the first real learning dataset or
-external release, establish a supported schema baseline and protected upgrade
-path; during the disposable development phase, explicitly selected
-development/test databases are deleted and rebuilt against the current schema.
-Do not implement legacy migrations, backfills, or compatibility for this phase;
-old-database upgrades are not dispatch gates (ADR-042, user decision 2026-09-11).
+| When the change touches… | Read first |
+|---|---|
+| Product scope, MVP boundary, open decisions | `docs/LearningJ-plan-v5.md` — §15 is the project's only open-items index; §15.14 settles entry/entity naming and the retired queue label |
+| Phase scope, sequencing, acceptance | `docs/mvp-tech-and-phases.md` — the assigned phase section, the §3.1 invariant matrix, and the phase shortcuts below |
+| Persistent entities, fields, state transitions, Span/offset conventions, invariants, `[不可推迟]` fields | `docs/data-model.md` — §0 global conventions apply whenever anything is persisted |
+| Creating, rendering, consuming, or storing analysis, extraction, memory, or prompt data | `docs/prompt-contracts.md` |
+| Database schema or migrations | `docs/adr/042-development-schema-baseline.md` plus `mvp-tech-and-phases.md` §1.6: designated development/test datasets are delete-and-rebuild only; no legacy migrations, backfills, or compatibility branches; a supported baseline with upgrade protection is required only before the first real learning data or external release |
+| Why a constraint exists, or whether a design was rejected | `docs/adr.md` as the index, then the matching `docs/adr/NNN-*.md` (`docs/adr/archived/` is historical context only); do not reintroduce a rejected design without escalating it |
+| User-facing work: information architecture, visual language, interaction states, accessibility, responsive behavior, shell-independent component ownership | `DESIGN.md` |
+| An experiment, or an implementation depending on an open empirical decision | `docs/spike-checklist.md` |
+| A dispatched implementation slice | the assigned row in `docs/task-packets/CURRENT-PACKETS.md`, `docs/task-packets/protocols/implementation.md`, and the predecessor's report under `docs/task-packets/reports/` |
 
-1. `docs/LearningJ-plan-v5.md` for product intent, MVP boundary, and the
-   project's only index of open decisions.
-2. `docs/mvp-tech-and-phases.md` for the current phase's scope, acceptance
-   criteria, and delivery order.
-3. `docs/data-model.md` for persistent entities, state transitions, text/span
-   conventions, invariants, and fields marked `[不可推迟]`.
-4. `docs/prompt-contracts.md` whenever a change creates, renders, consumes, or
-   stores analysis, extraction, memory, or prompt data.
-5. `docs/adr.md` as the decision index, then the matching
-   `docs/adr/NNN-*.md` file (or `docs/adr/archived/NNN-*.md` only for
-   historical context) for rationale and explicitly rejected alternatives
-   behind a constraint. Do not reintroduce a rejected design without escalating it.
-6. `DESIGN.md` for all user-facing work: information architecture, visual
-   language, interaction states, accessibility, responsive behavior, and
-   shell-independent component ownership.
-7. `docs/spike-checklist.md` only when working on an experiment, or when an
-   implementation depends on an open empirical decision.
-8. The assigned row in `docs/task-packets/CURRENT-PACKETS.md`, plus
-   `docs/task-packets/protocols/implementation.md` and the predecessor's report
-   under `docs/task-packets/reports/`, for the assigned implementation slice.
+**Proportionality.** A change that touches none of the contract surfaces —
+persistent fields, offsets and Spans, state machines, confirmation /
+authorization / review semantics, prompt data, shell boundaries, audit and
+idempotency — for example a copy fix, comment, or isolated style adjustment —
+only needs the non-negotiable rules below plus the affected component's local
+conventions. If the change touches any listed surface, read the routed contract
+sections before editing. When in doubt, treat it as touched.
 
 ## Archived directories
 
@@ -99,7 +83,7 @@ specification to unblock implementation.
   separately authorized contract-audit pass may revise the named current core
   documents; it must preserve implementation facts, avoid claiming code or
   phase completion, and leave task-packets, archived material, prompt versions,
-  migrations, and databases untouched. Everything else in `docs/` and all of
+  and databases untouched. Everything else in `docs/` and all of
   `prompts/` is read-only input; report proposed documentation changes to the
   lead agent.
 
