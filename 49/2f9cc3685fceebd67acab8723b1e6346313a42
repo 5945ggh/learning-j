@@ -1,0 +1,22 @@
+frontend/src/components/SentenceContext.tsx
+  h_c735ec7f46d14b 1,13,15
+frontend/src/components/SentenceList.tsx
+  h_c735ec7f46d14b 1,27-32,37
+frontend/src/lib/materials.test.ts
+  h_c735ec7f46d14b 1-103
+frontend/src/lib/materials.ts
+  h_c735ec7f46d14b 3-4,12-14,27-148,153-155,160-162,165-168
+frontend/src/lib/p0-integration.contract.test.ts
+  h_c735ec7f46d14b 1-182
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "492f9cc3685fceebd67acab8723b1e6346313a42",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
