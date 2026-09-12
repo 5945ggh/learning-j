@@ -1,0 +1,64 @@
+backend/src/learningj/dictionary/importer.py
+  s_23ee8256eecd07::t_c9d463b8d4aec4 244-246,248,259
+backend/fixtures/openapi.json
+  s_23ee8256eecd07::t_a0aeb803415548 325-326,362-363
+  s_23ee8256eecd07::t_bd87f032e04a98 324,327
+backend/src/learningj/db/models/dictionary.py
+  s_23ee8256eecd07::t_5fafa3d6d70d0a 19,110-115
+backend/src/learningj/api/app.py
+  s_23ee8256eecd07::t_381f7bd90b4c0a 461
+  s_23ee8256eecd07::t_12c9426e9751b1 347-350
+backend/src/learningj/evidence/service.py
+  s_23ee8256eecd07::t_7f06cad8883fd4 134,136-140
+  s_23ee8256eecd07::t_ad9c24114ebf88 23,181-187,291-297,324-330
+  s_23ee8256eecd07::t_37cc6767d9a5f9 162,174-180,211-217,232-235,242,265-268,307,316,341-350
+  s_23ee8256eecd07::t_94be65eb139f04 282-290,298,321-323,331-334
+  s_23ee8256eecd07::t_d3919ed482104a 104,135
+  s_23ee8256eecd07::t_7ca5154a55dd85 351-352
+backend/tests/test_evidence.py
+  s_23ee8256eecd07::t_c26f8340618c72 202-205,211-252,476-480,519-524,531-539,541-549
+  s_23ee8256eecd07::t_39c05a32a5603a 206-210
+  s_23ee8256eecd07::t_d333599c25f9a7 117,151-156,167-172,180-185,191-197,269-274,294-299,303-308,322-327,344-349,353-358,379-384,393,421,438-443,490-495,499-504,525-530,540,559-564,591-596
+  s_23ee8256eecd07::t_b9ff915aac87d4 550-551
+backend/src/learningj/db/models/lexeme.py
+  s_23ee8256eecd07::t_381f7bd90b4c0a 168-169
+backend/src/learningj/api/schemas.py
+  s_23ee8256eecd07::t_b25ff7b645fe1a 240
+  s_23ee8256eecd07::t_c536918d537909 237-239,241
+  s_23ee8256eecd07::t_09f9ee2fb0c315 13,242-245
+backend/src/learningj/dictionary/service.py
+  s_23ee8256eecd07::t_92a759a15c41c2 323,325-333
+  s_23ee8256eecd07::t_750f0bc6404636 354-356,366-369
+  s_23ee8256eecd07::t_5fafa3d6d70d0a 15,17,25,48-51,59,61-71,90,120,344-347
+backend/tests/test_dictionary_import.py
+  s_23ee8256eecd07::t_d1acde895196c0 324-345
+  s_23ee8256eecd07::t_c26f8340618c72 81-84,138-142,226-247
+  s_23ee8256eecd07::t_e71a159768748f 299-321
+  s_23ee8256eecd07::t_739f5e151f402e 248-250
+  s_23ee8256eecd07::t_2f8fd57ad39bea 322-323
+backend/tests/invariants/test_invariants.py
+  s_23ee8256eecd07::t_39c05a32a5603a 143,539-544,550-555,561-566
+backend/src/learningj/fixtures/reader_fixture.py
+  s_23ee8256eecd07::t_706afcf4ed3446 168
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "f3d22c1f3ebfe05861099b1bb37f039a6ba4a925",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_23ee8256eecd07": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a094f6-1005-7c60-bed9-a44611112b15",
+        "model": "gpt-5.6-luna"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
