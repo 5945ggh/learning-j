@@ -91,6 +91,7 @@ Evidence checked:
 - 快照 manifest 身份（评审重点 5）：`_baseline_identity` 读库内登记表，无登记表记 (None, None)，`verify_snapshot` 要求 manifest 与隔离副本逐项一致（含 null==null），`test_unregistered_database_exports_null_identity` 锁定；符合 §1.6 导出携带契约/schema 版本的要求。
 - 前端透传（评审重点 6）：`materials.ts`/`materials.test.ts` 仅新增 storage_mode/source_sha256/current_sidecar_id/sidecar_generation_id 的类型、按字段顺序校验与 Sidecar 读取；SentenceContext/SentenceList 是已获批准的 P0 修复（parseEpubSpineIndex，「定位不可用」语义）；无 P1-frontend UI 越界，无 `String.slice` 直接用于持久化偏移。
 - 实际重跑（真实输出）：backend `uv run pytest -q` → `80 passed, 23 xfailed in 5.58s`；`rebuild-development-db --db /tmp/learningj-p1-cr-probe.db` → `-p1` schema/契约身份、表集合恰为登记表+五张 P1 表、触发器恰为 trg_sidecars_immutable_update/delete（并实测拒绝 UPDATE/DELETE）、行数 materials=2/sentences=5/sidecars=2/lexemes=22/counts=24、integrity ok、FK 空；`export-snapshot`+`verify-snapshot` → manifest 身份 `-p1`、integrity_check ok、foreign_key_check ok；frontend `pnpm test` → `22 passed (22)`、`pnpm lint` 通过、`pnpm build` 通过；`git diff --check` 干净；git status 与基线对照无 docs 意外改动（ADR-042 的 2026-09-12 段与 P0-integration 报告已在 1812c17 提交，本轮 docs 新增仅本报告）。
+- 评审进行期间 lead 并行提交 9dd60af（AGENTS.md 阅读指导改造：移除日期化契约迁移状态块、改为契约面路由表，清理失效 migrations 字样）。该提交只触及 AGENTS.md、不触及任何字段契约（字段契约权威仍是 data-model.md），不改变本节结论；正文引用「AGENTS.md 契约迁移状态」处以评审时点（170baa8 上的工作树）为准。
 Gate assessment:
 - P1-frontend 可锁定再生成的 OpenAPI/fixture（MaterialOut 新字段、SidecarOut.sidecar_generation_id、lexeme-counts 条目）并在 shell 无关组件上建库/浏览界面；P1-integration 可在交付 API 上验证四格式、幂等重分词、原子代次切换、快照导出/隔离恢复与无 shell 反向依赖。
 Residual risks:
