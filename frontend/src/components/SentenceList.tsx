@@ -1,4 +1,4 @@
-import type { Material, Sentence } from '@/lib/materials'
+import { parseEpubSpineIndex, type Material, type Sentence } from '@/lib/materials'
 
 type SentenceListProps = {
   material: Material | null
@@ -24,11 +24,17 @@ export function SentenceList({ material, sentences, selectedId, onSelect }: Sent
       {sentences.map((sentence) => {
         const start = formatTime(sentence.time_start)
         const end = formatTime(sentence.time_end)
+        const location = sentence.anchor_type === 'epub'
+          ? (() => {
+            const spineIndex = parseEpubSpineIndex(sentence.anchor_type, sentence.anchor_payload)
+            return spineIndex === null ? '定位不可用' : `spine ${spineIndex}`
+          })()
+          : '文本定位'
         return (
           <li key={sentence.id} className={`rounded-md border bg-card p-4 transition-colors ${selectedId === sentence.id ? 'border-study ring-1 ring-study/20' : 'border-border'}`}>
             <div className="mb-2 flex items-center justify-between gap-3 text-xs text-muted-foreground">
               <span>#{sentence.index + 1}</span>
-              {start && end ? <span>{start}–{end}</span> : <span>{sentence.anchor_type === 'epub' ? `spine ${sentence.anchor_payload.spine_index ?? 0}` : '文本定位'}</span>}
+              {start && end ? <span>{start}–{end}</span> : <span>{location}</span>}
             </div>
             <p className="font-serif-jp text-lg leading-8">{sentence.text}</p>
             {sentence.translation ? <p className="mt-2 border-l-2 border-lexical pl-3 text-sm text-muted-foreground">{sentence.translation}</p> : null}

@@ -1,4 +1,4 @@
-import type { Sentence } from '@/lib/materials'
+import { parseEpubSpineIndex, type Sentence } from '@/lib/materials'
 
 type SentenceContextProps = {
   sentence: Sentence
@@ -10,8 +10,9 @@ type SentenceContextProps = {
  * own domain surfaces through props.
  */
 export function SentenceContext({ sentence }: SentenceContextProps) {
+  const spineIndex = parseEpubSpineIndex(sentence.anchor_type, sentence.anchor_payload)
   const location = sentence.anchor_type === 'epub'
-    ? `spine ${sentence.anchor_payload.spine_index ?? 0}`
+    ? spineIndex === null ? '定位不可用' : `spine ${spineIndex}`
     : sentence.time_start !== null && sentence.time_end !== null
       ? '音视频时间轴'
       : '文本定位'
