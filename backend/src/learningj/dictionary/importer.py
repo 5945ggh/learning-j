@@ -241,10 +241,11 @@ def parse_yomitan_archive(blob: bytes) -> ParsedDictionaryArchive:
         total_uncompressed = 0
         members: dict[str, zipfile.ZipInfo] = {}
         for info in infos:
-            _safe_member_name(info.filename)
-            if info.filename in names:
+            canonical_path = _safe_member_name(info.filename)
+            canonical_name = canonical_path.as_posix()
+            if canonical_name in names:
                 _fail(f"成员 {info.filename!r}", "重复的成员名")
-            names.add(info.filename)
+            names.add(canonical_name)
             if info.file_size > MAX_FILE_UNCOMPRESSED_BYTES:
                 _fail(
                     f"成员 {info.filename!r}",
@@ -255,7 +256,7 @@ def parse_yomitan_archive(blob: bytes) -> ParsedDictionaryArchive:
                 raise DictionaryImportError(
                     f"档案解压总量超过上限 {MAX_TOTAL_UNCOMPRESSED_BYTES} 字节"
                 )
-            members[info.filename] = info
+            members[canonical_name] = info
 
         index_info = members.get("index.json")
         if index_info is None:

@@ -78,9 +78,10 @@ def test_import_maps_yomitan_to_canonical_model(client: TestClient) -> None:
         ).fetchone()
         assert asset[0] == "img/run.png" and asset[1] == "image/png"
         assert asset[2].startswith(str(source["id"]))
-        assert conn.execute(
-            "SELECT status FROM dictionary_import_runs"
-        ).fetchone()[0] == "done"
+        run_status, finished_at = conn.execute(
+            "SELECT status, finished_at FROM dictionary_import_runs"
+        ).fetchone()
+        assert run_status == "done" and finished_at is not None
 
     # 资源真实落盘
     assets_root = Path(client.app.state.assets_root)  # type: ignore[attr-defined]
@@ -133,6 +134,11 @@ def test_path_traversal_members_are_rejected_with_location() -> None:
         blob = build_zip(extra_files={name: b"{}"})
         with pytest.raises(DictionaryImportError, match="成员"):
             parse_yomitan_archive(blob)
+
+    with pytest.raises(DictionaryImportError, match="重复的成员名"):
+        parse_yomitan_archive(
+            build_zip(extra_files={"img/a.txt": b"one", "img//a.txt": b"two"})
+        )
 
 
 @pytest.mark.filterwarnings("ignore:Duplicate name")
@@ -204,8 +210,6 @@ def test_import_failure_leaves_no_rows_and_no_assets(
     assert _counts(client, "dictionary_sources") == 0
     assert _counts(client, "dictionary_entries") == 0
     assert _counts(client, "dictionary_import_runs") == 0
-    assets_root = Path(client.app.state.assets_root)  # type: ignore[attr-defined]
-    assert not assets_root.exists() or not any(assets_root.iterdir())
 
     # 解析期失败同样零行（压缩炸弹式声明尺寸超限）
     monkeypatch.undo()
@@ -217,6 +221,32 @@ def test_import_failure_leaves_no_rows_and_no_assets(
     assert response.status_code == 422
     assert "超过单文件上限" in response.json()["detail"]
     assert _counts(client, "dictionary_import_runs") == 0
+
+
+def test_asset_write_failure_cleans_staging_and_final_directories(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    blob = build_zip(
+        entries=[["走る", "はしる", "", "", 10, "to run"]],
+        extra_files={"img/a.txt": b"one", "img/b.txt": b"two"},
+    )
+    original_write_bytes = Path.write_bytes
+    writes = 0
+
+    def flaky_write(self: Path, data: bytes) -> int:
+        nonlocal writes
+        writes += 1
+        if writes == 2:
+            raise OSError("simulated asset write failure")
+        return original_write_bytes(self, data)
+
+    monkeypatch.setattr(Path, "write_bytes", flaky_write)
+    response = client.post(
+        "/dictionaries/import", files={"file": ("bad-assets.zip", blob, "application/zip")}
+    )
+    assert response.status_code == 422
+    assets_root = Path(client.app.state.assets_root)  # type: ignore[attr-defined]
+    assert not assets_root.exists() or not any(assets_root.iterdir())
 
 
 def test_lookup_exact_match_with_source_provenance(client: TestClient) -> None:
@@ -264,6 +294,53 @@ def test_search_prefers_exact_then_fts_prefix(client: TestClient) -> None:
     assert expressions[0] == "頑張る"  # 精确前缀命中排序在前
     empty = client.get("/dictionaries/search", params={"query": "存在しない"})
     assert empty.json()["entries"] == []
+
+
+def test_search_index_failure_is_visible_not_silently_downgraded(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from learningj.dictionary import service as dictionary_service
+
+    client.post(
+        "/dictionaries/import",
+        files={
+            "file": (
+                "d.zip",
+                build_zip(entries=[["頑張る", "がんばる", "", "v5", 9, "to persevere"]]),
+                "application/zip",
+            )
+        },
+    )
+
+    def fail(_query: str) -> str:
+        raise RuntimeError("corrupt FTS")
+
+    monkeypatch.setattr(dictionary_service, "_escape_fts", fail)
+    response = client.get("/dictionaries/search", params={"query": "頑張"})
+    assert response.status_code == 503
+    assert "搜索索引不可用" in response.json()["detail"]
+
+
+def test_missing_search_index_with_existing_entries_is_visible(
+    client: TestClient,
+) -> None:
+    client.post(
+        "/dictionaries/import",
+        files={
+            "file": (
+                "d.zip",
+                build_zip(entries=[["頑張る", "がんばる", "", "v5", 9, "to persevere"]]),
+                "application/zip",
+            )
+        },
+    )
+    with sqlite3.connect(client.app.state.db_path) as conn:  # type: ignore[attr-defined]
+        conn.execute("DROP TABLE dictionary_search_fts")
+        conn.commit()
+
+    response = client.get("/dictionaries/search", params={"query": "頑張"})
+    assert response.status_code == 503
+    assert "搜索索引缺失" in response.json()["detail"]
 
 
 def test_structured_content_preserved_and_degrades_to_plain_text(client: TestClient) -> None:

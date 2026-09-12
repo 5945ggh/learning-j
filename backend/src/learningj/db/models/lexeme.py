@@ -165,6 +165,8 @@ class KnownEvidenceRetraction(UuidPk, Timestamped, Base):
             "(evidence_id IS NOT NULL) != (import_run_id IS NOT NULL)",
             name="exactly_one_retraction_target",
         ),
+        UniqueConstraint("evidence_id", name="one_retraction_per_evidence"),
+        UniqueConstraint("import_run_id", name="one_retraction_per_import_run"),
     )
 
     evidence_id: Mapped[uuid.UUID | None] = mapped_column(

@@ -12,7 +12,9 @@ assets / FTS 索引行同事务提交），失败零行落地。同一 archive h
 from __future__ import annotations
 
 import hashlib
+import os
 import shutil
+import tempfile
 import uuid
 from pathlib import Path
 from typing import Any
@@ -20,6 +22,7 @@ from typing import Any
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
+from learningj.db.base import utcnow
 from learningj.db.models.dictionary import (
     DictionaryAsset,
     DictionaryDefinition,
@@ -42,6 +45,10 @@ _SEARCH_MAX_LIMIT = 100
 _BATCH_SIZE = 2000
 
 
+class DictionarySearchError(RuntimeError):
+    """词典 FTS 派生索引不可用，不能静默降级为不完整结果。"""
+
+
 def _write_assets(parsed: ParsedDictionaryArchive, assets_root: Path, source_id: uuid.UUID) -> Path | None:
     """把资源写到 {assets_root}/{source_id}/ 下（写事务之外的文件 I/O）。
 
@@ -49,13 +56,19 @@ def _write_assets(parsed: ParsedDictionaryArchive, assets_root: Path, source_id:
     """
     if not parsed.assets:
         return None
+    assets_root.mkdir(parents=True, exist_ok=True)
     source_dir = assets_root / str(source_id)
-    source_dir.mkdir(parents=True, exist_ok=True)
-    for asset in parsed.assets:
-        target = source_dir / asset.relative_path
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_bytes(asset.content)
-    return source_dir
+    staging_dir = Path(tempfile.mkdtemp(prefix=f".{source_id}.", dir=assets_root))
+    try:
+        for asset in parsed.assets:
+            target = staging_dir / asset.relative_path
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(asset.content)
+        os.replace(staging_dir, source_dir)
+        return source_dir
+    except Exception:
+        shutil.rmtree(staging_dir, ignore_errors=True)
+        raise
 
 
 def import_yomitan_archive(
@@ -74,6 +87,7 @@ def import_yomitan_archive(
         run = DictionaryImportRun(
             archive_hash=archive_hash,
             status=DictionaryImportRunStatus.DONE,
+            finished_at=utcnow(),
             stats={"idempotent_replay": True, "source_id": str(existing.id)},
         )
         session.add(run)
@@ -103,6 +117,7 @@ def import_yomitan_archive(
         run = DictionaryImportRun(
             archive_hash=parsed.archive_hash,
             status=DictionaryImportRunStatus.DONE,
+            finished_at=utcnow(),
             stats={**parsed.stats, "idempotent_replay": False},
         )
         session.add(run)
@@ -305,8 +320,17 @@ def search(
             .limit(limit)
         )
     )
-    if len(exact) >= limit or not search_index_exists(session):
+    if len(exact) >= limit:
         return exact
+    if not search_index_exists(session):
+        # An empty dictionary has no prefix results to lose.  Once canonical
+        # entries exist, however, a missing derived index makes the response
+        # incomplete and must be visible to the caller for rebuild/retry.
+        if session.scalar(select(DictionaryEntry.id).limit(1)) is None:
+            return exact
+        raise DictionarySearchError(
+            "词典搜索索引缺失，请重建 dictionary_search_fts 后重试"
+        )
     remaining = limit - len(exact)
     excluded_ids = {entry.id for entry in exact}
     try:
@@ -317,15 +341,19 @@ def search(
             ),
             {"pattern": f'"{_escape_fts(query)}"*', "limit": remaining * 4},
         ).all()
-    except Exception:
-        return exact
+    except Exception as exc:
+        raise DictionarySearchError(
+            "词典搜索索引不可用，请重建 dictionary_search_fts 后重试"
+        ) from exc
     candidate_ids: list[uuid.UUID] = []
     seen: set[uuid.UUID] = set()
     for (entry_id,) in matched:
         try:
             candidate = uuid.UUID(entry_id)
         except (TypeError, ValueError):
-            continue
+            raise DictionarySearchError(
+                "词典搜索索引包含非法条目引用，请重建 dictionary_search_fts 后重试"
+            )
         if candidate in excluded_ids or candidate in seen:
             continue
         seen.add(candidate)
@@ -335,6 +363,10 @@ def search(
     prefix_rows = session.scalars(
         select(DictionaryEntry).where(DictionaryEntry.id.in_(candidate_ids))
     ).all()
+    if len(prefix_rows) != len(candidate_ids):
+        raise DictionarySearchError(
+            "词典搜索索引包含过期条目引用，请重建 dictionary_search_fts 后重试"
+        )
     by_id = {entry.id: entry for entry in prefix_rows}
     ordered = [by_id[cid] for cid in candidate_ids if cid in by_id]
     return exact + ordered[:remaining]

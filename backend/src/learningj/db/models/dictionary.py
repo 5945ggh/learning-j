@@ -16,6 +16,7 @@ from datetime import datetime
 from typing import Any
 
 from sqlalchemy import (
+    CheckConstraint,
     DateTime,
     ForeignKey,
     Index,
@@ -106,6 +107,12 @@ class DictionaryAsset(UuidPk, Timestamped, Base):
 
 class DictionaryImportRun(UuidPk, Timestamped, Base):
     __tablename__ = "dictionary_import_runs"
+    __table_args__ = (
+        CheckConstraint(
+            "status != 'done' OR finished_at IS NOT NULL",
+            name="done_runs_have_finished_at",
+        ),
+    )
 
     archive_hash: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     started_at: Mapped[datetime] = mapped_column(

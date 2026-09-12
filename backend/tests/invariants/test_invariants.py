@@ -140,6 +140,7 @@ def test_invariant_5_evidence_producers_stamp_versions(dev_reader_environment) -
                 "input_surface": token["surface"],
                 "conjugated_form": token["surface"] if decision == "unknown" else None,
                 "operation_key": key,
+                "expected_decision_seq": 0,
             },
         )
         assert response.status_code == 201
@@ -535,19 +536,34 @@ def test_invariant_21_user_decisions_scope_and_precedence(dev_reader_environment
     # unknown 压过导入
     client.post(
         f"/lexemes/{lexeme_id}/decisions",
-        json={"decision": "unknown", "input_surface": surface, "operation_key": "inv21-u"},
+        json={
+            "decision": "unknown",
+            "input_surface": surface,
+            "operation_key": "inv21-u",
+            "expected_decision_seq": 0,
+        },
     )
     assert effective()["state"] == "unknown"
     # clear → 回到其他来源（导入），不伪造负向 KE
     client.post(
         f"/lexemes/{lexeme_id}/decisions",
-        json={"decision": "clear", "input_surface": surface, "operation_key": "inv21-c"},
+        json={
+            "decision": "clear",
+            "input_surface": surface,
+            "operation_key": "inv21-c",
+            "expected_decision_seq": 1,
+        },
     )
     assert effective()["basis"] == "import_evidence"
     # 再 known：user_asserted KE 与决定同事务产生，压回导入
     known = client.post(
         f"/lexemes/{lexeme_id}/decisions",
-        json={"decision": "known", "input_surface": surface, "operation_key": "inv21-k"},
+        json={
+            "decision": "known",
+            "input_surface": surface,
+            "operation_key": "inv21-k",
+            "expected_decision_seq": 2,
+        },
     ).json()
     assert effective()["basis"] == "lexeme_decision"
     assert effective()["evidence_id"] == known["evidence_id"]

@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel
+from pydantic import AliasChoices, BaseModel, Field
 
 MaterialKindLiteral = Literal["subtitle_video", "subtitle_audio", "text", "epub"]
 MaterialStorageModeLiteral = Literal["external_reference", "managed_copy"]
@@ -234,6 +234,15 @@ class DecisionCreateIn(BaseModel):
     conjugated_form: str | None = None
     material_id: str | None = None
     operation_key: str
+    # Latest decision_seq observed for this scope; every write must carry this
+    # optimistic-concurrency token.  Aliases preserve clients that used the
+    # generic revision/sequence terminology while keeping one canonical field.
+    expected_decision_seq: int = Field(
+        ...,
+        validation_alias=AliasChoices(
+            "expected_decision_seq", "expected_sequence", "expected_seq", "expected_revision"
+        ),
+    )
 
 
 class DecisionOut(BaseModel):

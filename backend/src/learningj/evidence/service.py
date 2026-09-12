@@ -20,6 +20,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import Session
 
 from learningj.db.base import utcnow
@@ -100,6 +101,7 @@ def record_decision(
     conjugated_form: str | None = None,
     material_id: uuid.UUID | None = None,
     operation_key: str,
+    expected_decision_seq: int,
 ) -> DecisionResult:
     """记录一次用户裁定；known 同事务创建被引用的 user_asserted KE。"""
     if not input_surface:
@@ -129,6 +131,13 @@ def record_decision(
         )
         return DecisionResult(existing, False)
 
+    current_seq = _current_decision_seq(session, lexeme_id, scope_form_key)
+    if expected_decision_seq != current_seq:
+        raise OperationConflictError(
+            f"作用域 {scope_form_key!r} 的裁定序号已变更（expected={expected_decision_seq}, "
+            f"current={current_seq}）；请刷新后重试"
+        )
+
     evidence_id: uuid.UUID | None = None
     if decision is LexemeDecision.KNOWN:
         evidence = KnownEvidence(
@@ -150,7 +159,7 @@ def record_decision(
         session.flush()
         evidence_id = evidence.id
 
-    next_seq = _next_decision_seq(session, lexeme_id, scope_form_key)
+    next_seq = current_seq + 1
     row = LexemeKnowledgeDecision(
         lexeme_id=lexeme_id,
         conjugated_form=conjugated_form,
@@ -162,7 +171,20 @@ def record_decision(
         operation_key=operation_key,
     )
     session.add(row)
-    session.flush()
+    try:
+        session.flush()
+    except IntegrityError as exc:
+        session.rollback()
+        raise OperationConflictError(
+            f"作用域 {scope_form_key!r} 的裁定序号已被并发写入；请刷新后重试"
+        ) from exc
+    except OperationalError as exc:
+        if "locked" not in str(exc).lower():
+            raise
+        session.rollback()
+        raise OperationConflictError(
+            f"作用域 {scope_form_key!r} 正在被并发写入；请刷新后重试"
+        ) from exc
     revision = bump_projection_revision(session)
     recompute_scope_summary(session, lexeme_id, scope_form_key, revision)
     session.flush()
@@ -185,10 +207,14 @@ def _ensure_same_operation(
         "conjugated_form": existing.conjugated_form,
     }
     if existing.decision is LexemeDecision.KNOWN:
-        actual["input_surface"] = existing.input_surface
-        actual["input_reading"] = existing.input_reading
         evidence = session.get(KnownEvidence, existing.evidence_id)
-        actual["material_id"] = evidence.material_id if evidence else None
+        if evidence is None:
+            raise OperationConflictError(
+                f"operation_key {existing.operation_key!r} 引用的 user_asserted KE 不存在"
+            )
+        actual["input_surface"] = evidence.input_surface
+        actual["input_reading"] = evidence.input_reading
+        actual["material_id"] = evidence.material_id
     else:
         expected = {
             key: value
@@ -203,13 +229,17 @@ def _ensure_same_operation(
 
 
 def _next_decision_seq(session: Session, lexeme_id: str, scope_form_key: str) -> int:
+    return _current_decision_seq(session, lexeme_id, scope_form_key) + 1
+
+
+def _current_decision_seq(session: Session, lexeme_id: str, scope_form_key: str) -> int:
     current = session.scalar(
         select(func.max(LexemeKnowledgeDecision.decision_seq)).where(
             LexemeKnowledgeDecision.lexeme_id == lexeme_id,
             LexemeKnowledgeDecision.scope_form_key == scope_form_key,
         )
     )
-    return (current or 0) + 1
+    return current or 0
 
 
 def retract_evidence(
@@ -232,6 +262,10 @@ def retract_evidence(
             raise OperationConflictError(
                 f"operation_key {operation_key!r} 已绑定不同输入（evidence_id 不一致）"
             )
+        if existing.reason != reason:
+            raise OperationConflictError(
+                f"operation_key {operation_key!r} 已绑定不同输入（reason 不一致）"
+            )
         return RetractionResult(existing, False, False)
     already = session.scalar(
         select(KnownEvidenceRetraction).where(KnownEvidenceRetraction.evidence_id == evidence_id)
@@ -245,6 +279,23 @@ def retract_evidence(
         evidence_id=evidence_id, reason=reason, operation_key=operation_key
     )
     session.add(retraction)
+    try:
+        # Materialize the retraction before deriving the internal clear key;
+        # this also turns a concurrent duplicate target/key into a stable 409
+        # domain conflict rather than leaking an IntegrityError.
+        session.flush()
+    except IntegrityError as exc:
+        session.rollback()
+        raise OperationConflictError(
+            f"证据 {evidence_id} 的撤回已被并发写入；请刷新后重试"
+        ) from exc
+    except OperationalError as exc:
+        if "locked" not in str(exc).lower():
+            raise
+        session.rollback()
+        raise OperationConflictError(
+            f"证据 {evidence_id} 正在被并发撤回；请刷新后重试"
+        ) from exc
 
     appended_clear = False
     current = _current_decision(session, evidence.lexeme_id, evidence.scope_form_key)
@@ -253,6 +304,7 @@ def retract_evidence(
         and current.decision is LexemeDecision.KNOWN
         and current.evidence_id == evidence_id
     ):
+        clear_operation_key = _new_internal_operation_key(session, "retraction-clear")
         clear = LexemeKnowledgeDecision(
             lexeme_id=evidence.lexeme_id,
             conjugated_form=evidence.conjugated_form,
@@ -261,16 +313,41 @@ def retract_evidence(
             decision=LexemeDecision.CLEAR,
             evidence_id=None,
             decision_seq=_next_decision_seq(session, evidence.lexeme_id, evidence.scope_form_key),
-            operation_key=f"{operation_key}#clear",
+            operation_key=clear_operation_key,
         )
         session.add(clear)
         appended_clear = True
 
-    session.flush()
+    try:
+        session.flush()
+    except IntegrityError as exc:
+        session.rollback()
+        raise OperationConflictError(
+            f"证据 {evidence_id} 的撤回附加裁定发生并发冲突；请刷新后重试"
+        ) from exc
+    except OperationalError as exc:
+        if "locked" not in str(exc).lower():
+            raise
+        session.rollback()
+        raise OperationConflictError(
+            f"证据 {evidence_id} 的撤回附加裁定发生并发冲突；请刷新后重试"
+        ) from exc
     revision = bump_projection_revision(session)
     recompute_scope_summary(session, evidence.lexeme_id, evidence.scope_form_key, revision)
     session.flush()
     return RetractionResult(retraction, True, appended_clear)
+
+
+def _new_internal_operation_key(session: Session, namespace: str) -> str:
+    """Generate an operation key outside the caller-controlled key space."""
+    while True:
+        key = f"__learningj_internal__:{namespace}:{uuid.uuid4().hex}"
+        if session.scalar(
+            select(LexemeKnowledgeDecision.id).where(
+                LexemeKnowledgeDecision.operation_key == key
+            )
+        ) is None:
+            return key
 
 
 def _current_decision(

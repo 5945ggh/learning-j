@@ -321,6 +321,10 @@
             "title": "Decision",
             "type": "string"
           },
+          "expected_decision_seq": {
+            "title": "Expected Decision Seq",
+            "type": "integer"
+          },
           "input_reading": {
             "anyOf": [
               {
@@ -355,7 +359,8 @@
         "required": [
           "decision",
           "input_surface",
-          "operation_key"
+          "operation_key",
+          "expected_decision_seq"
         ],
         "title": "DecisionCreateIn",
         "type": "object"

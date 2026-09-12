@@ -114,6 +114,7 @@ def test_known_decision_creates_referenced_user_asserted_ke_in_same_transaction(
             "input_surface": surface,
             "material_id": material_id,
             "operation_key": "op-known-1",
+            "expected_decision_seq": 0,
         },
     )
     assert response.status_code == 201
@@ -147,7 +148,12 @@ def test_decision_operation_key_idempotency_and_conflict(
     client: TestClient, material_and_lexeme
 ) -> None:
     _, lexeme_id, surface = material_and_lexeme
-    payload = {"decision": "unknown", "input_surface": surface, "operation_key": "op-x"}
+    payload = {
+        "decision": "unknown",
+        "input_surface": surface,
+        "operation_key": "op-x",
+        "expected_decision_seq": 0,
+    }
     first = client.post(f"/lexemes/{lexeme_id}/decisions", json=payload)
     replay = client.post(f"/lexemes/{lexeme_id}/decisions", json=payload)
     assert first.status_code == 201 and replay.status_code == 200
@@ -158,7 +164,12 @@ def test_decision_operation_key_idempotency_and_conflict(
 
     conflicting = client.post(
         f"/lexemes/{lexeme_id}/decisions",
-        json={"decision": "known", "input_surface": surface, "operation_key": "op-x"},
+        json={
+            "decision": "known",
+            "input_surface": surface,
+            "operation_key": "op-x",
+            "expected_decision_seq": 0,
+        },
     )
     assert conflicting.status_code == 409
 
@@ -166,15 +177,77 @@ def test_decision_operation_key_idempotency_and_conflict(
     assert (
         client.post(
             f"/lexemes/{unknown_lexeme}/decisions",
-            json={"decision": "unknown", "input_surface": "x", "operation_key": "op-y"},
+            json={
+                "decision": "unknown",
+                "input_surface": "x",
+                "operation_key": "op-y",
+                "expected_decision_seq": 0,
+            },
         ).status_code
         == 404
     )
     empty_form = client.post(
         f"/lexemes/{lexeme_id}/decisions",
-        json={"decision": "unknown", "input_surface": "x", "conjugated_form": "", "operation_key": "op-z"},
+        json={
+            "decision": "unknown",
+            "input_surface": "x",
+            "conjugated_form": "",
+            "operation_key": "op-z",
+            "expected_decision_seq": 0,
+        },
     )
     assert empty_form.status_code == 422
+
+
+def test_known_replay_reads_input_from_referenced_evidence_and_expected_seq(
+    client: TestClient, material_and_lexeme
+) -> None:
+    _, lexeme_id, surface = material_and_lexeme
+    missing_token = client.post(
+        f"/lexemes/{lexeme_id}/decisions",
+        json={"decision": "unknown", "input_surface": surface, "operation_key": "op-missing-seq"},
+    )
+    assert missing_token.status_code == 422
+    payload = {
+        "decision": "known",
+        "input_surface": surface,
+        "operation_key": "op-known-replay",
+        "expected_decision_seq": 0,
+    }
+    first = client.post(f"/lexemes/{lexeme_id}/decisions", json=payload)
+    replay = client.post(f"/lexemes/{lexeme_id}/decisions", json=payload)
+    assert first.status_code == 201 and replay.status_code == 200
+    assert replay.json()["decision_id"] == first.json()["decision_id"]
+
+    # A stale optimistic-concurrency token is a visible conflict, not a
+    # database UNIQUE/IntegrityError response.
+    stale = client.post(
+        f"/lexemes/{lexeme_id}/decisions",
+        json={
+            "decision": "unknown",
+            "input_surface": surface,
+            "operation_key": "op-stale-seq",
+            "expected_decision_seq": 0,
+        },
+    )
+    assert stale.status_code == 409
+
+    fresh = client.post(
+        f"/lexemes/{lexeme_id}/decisions",
+        json={
+            "decision": "unknown",
+            "input_surface": surface,
+            "operation_key": "op-fresh-seq",
+            "expected_decision_seq": 1,
+        },
+    )
+    assert fresh.status_code == 201 and fresh.json()["decision_seq"] == 2
+
+    changed_surface = client.post(
+        f"/lexemes/{lexeme_id}/decisions",
+        json={**payload, "input_surface": "不同表层"},
+    )
+    assert changed_surface.status_code == 409
 
 
 def test_unknown_overrides_synthetic_import_facts(
@@ -193,7 +266,12 @@ def test_unknown_overrides_synthetic_import_facts(
 
     unknown = client.post(
         f"/lexemes/{lexeme_id}/decisions",
-        json={"decision": "unknown", "input_surface": surface, "operation_key": "op-unknown"},
+        json={
+            "decision": "unknown",
+            "input_surface": surface,
+            "operation_key": "op-unknown",
+            "expected_decision_seq": 0,
+        },
     )
     assert unknown.status_code == 201
     after = client.post(
@@ -213,11 +291,21 @@ def test_clear_removes_user_override_without_reactivating_old_user_ke(
     _, lexeme_id, surface = material_and_lexeme
     known = client.post(
         f"/lexemes/{lexeme_id}/decisions",
-        json={"decision": "known", "input_surface": surface, "operation_key": "op-k1"},
+        json={
+            "decision": "known",
+            "input_surface": surface,
+            "operation_key": "op-k1",
+            "expected_decision_seq": 0,
+        },
     ).json()
     client.post(
         f"/lexemes/{lexeme_id}/decisions",
-        json={"decision": "clear", "input_surface": surface, "operation_key": "op-c1"},
+        json={
+            "decision": "clear",
+            "input_surface": surface,
+            "operation_key": "op-c1",
+            "expected_decision_seq": 1,
+        },
     )
     view = client.post(
         "/lexemes/known-views/batch", json={"items": [{"lexeme_id": lexeme_id}]}
@@ -231,7 +319,12 @@ def test_clear_removes_user_override_without_reactivating_old_user_ke(
     # re-known 建立新 KE + 新决定（纠错不改写原记录）
     reknown = client.post(
         f"/lexemes/{lexeme_id}/decisions",
-        json={"decision": "known", "input_surface": surface, "operation_key": "op-k2"},
+        json={
+            "decision": "known",
+            "input_surface": surface,
+            "operation_key": "op-k2",
+            "expected_decision_seq": 2,
+        },
     ).json()
     assert reknown["evidence_id"] != known["evidence_id"]
     assert reknown["decision_seq"] == 3
@@ -248,11 +341,21 @@ def test_clear_falls_back_to_import_but_unknown_beats_it(
     _synthetic_import_ke(client, lexeme_id)
     client.post(
         f"/lexemes/{lexeme_id}/decisions",
-        json={"decision": "unknown", "input_surface": surface, "operation_key": "op-u1"},
+        json={
+            "decision": "unknown",
+            "input_surface": surface,
+            "operation_key": "op-u1",
+            "expected_decision_seq": 0,
+        },
     )
     client.post(
         f"/lexemes/{lexeme_id}/decisions",
-        json={"decision": "clear", "input_surface": surface, "operation_key": "op-c1"},
+        json={
+            "decision": "clear",
+            "input_surface": surface,
+            "operation_key": "op-c1",
+            "expected_decision_seq": 1,
+        },
     )
     view = client.post(
         "/lexemes/known-views/batch", json={"items": [{"lexeme_id": lexeme_id}]}
@@ -273,7 +376,12 @@ def test_word_form_scope_precedence_and_lexeme_summary_isolation(
     form = surface
     client.post(
         f"/lexemes/{lexeme_id}/decisions",
-        json={"decision": "known", "input_surface": surface, "operation_key": "op-lex"},
+        json={
+            "decision": "known",
+            "input_surface": surface,
+            "operation_key": "op-lex",
+            "expected_decision_seq": 0,
+        },
     )
     client.post(
         f"/lexemes/{lexeme_id}/decisions",
@@ -282,6 +390,7 @@ def test_word_form_scope_precedence_and_lexeme_summary_isolation(
             "input_surface": form,
             "conjugated_form": form,
             "operation_key": "op-form",
+            "expected_decision_seq": 0,
         },
     )
     view = client.post(
@@ -309,6 +418,7 @@ def test_word_form_scope_precedence_and_lexeme_summary_isolation(
             "input_surface": form,
             "conjugated_form": form,
             "operation_key": "op-form-clear",
+            "expected_decision_seq": 1,
         },
     )
     view2 = client.post(
@@ -325,7 +435,12 @@ def test_retraction_keeps_history_and_atomically_appends_clear(
     _, lexeme_id, surface = material_and_lexeme
     decision = client.post(
         f"/lexemes/{lexeme_id}/decisions",
-        json={"decision": "known", "input_surface": surface, "operation_key": "op-k1"},
+        json={
+            "decision": "known",
+            "input_surface": surface,
+            "operation_key": "op-k1",
+            "expected_decision_seq": 0,
+        },
     ).json()
     evidence_id = decision["evidence_id"]
 
@@ -358,6 +473,11 @@ def test_retraction_keeps_history_and_atomically_appends_clear(
     )
     assert replay.status_code == 200
     assert replay.json()["created"] is False
+    changed_reason = client.post(
+        f"/known-evidence/{evidence_id}/retractions",
+        json={"reason": "不同原因", "operation_key": "op-r1"},
+    )
+    assert changed_reason.status_code == 409
     # 换键重复撤回同一证据 → 冲突
     second_key = client.post(
         f"/known-evidence/{evidence_id}/retractions",
@@ -367,11 +487,21 @@ def test_retraction_keeps_history_and_atomically_appends_clear(
     # unknown 之后撤回旧 KE 不追加 clear（当前决定不是引用它的 known）
     other = client.post(
         f"/lexemes/{lexeme_id}/decisions",
-        json={"decision": "known", "input_surface": surface, "operation_key": "op-k2"},
+        json={
+            "decision": "known",
+            "input_surface": surface,
+            "operation_key": "op-k2",
+            "expected_decision_seq": 2,
+        },
     ).json()
     client.post(
         f"/lexemes/{lexeme_id}/decisions",
-        json={"decision": "unknown", "input_surface": surface, "operation_key": "op-u1"},
+        json={
+            "decision": "unknown",
+            "input_surface": surface,
+            "operation_key": "op-u1",
+            "expected_decision_seq": 3,
+        },
     )
     retract_other = client.post(
         f"/known-evidence/{other['evidence_id']}/retractions",
@@ -386,6 +516,39 @@ def test_retraction_keeps_history_and_atomically_appends_clear(
     assert scope["valid_source_counts"] == {}
 
 
+def test_retraction_internal_clear_key_does_not_collide_with_user_key(
+    client: TestClient, material_and_lexeme
+) -> None:
+    _, lexeme_id, surface = material_and_lexeme
+    known = client.post(
+        f"/lexemes/{lexeme_id}/decisions",
+        json={
+            "decision": "known",
+            "input_surface": surface,
+            "operation_key": "op-r-clear",
+            "expected_decision_seq": 0,
+        },
+    ).json()
+    # Occupy the old `{operation_key}#clear` spelling in an unrelated scope.
+    occupied = client.post(
+        f"/lexemes/{lexeme_id}/decisions",
+        json={
+            "decision": "unknown",
+            "input_surface": surface,
+            "conjugated_form": "其他作用域",
+            "operation_key": "op-r-clear#clear",
+            "expected_decision_seq": 0,
+        },
+    )
+    assert occupied.status_code == 201
+    retracted = client.post(
+        f"/known-evidence/{known['evidence_id']}/retractions",
+        json={"operation_key": "op-r-clear"},
+    )
+    assert retracted.status_code == 201
+    assert retracted.json()["appended_clear"] is True
+
+
 def test_projection_revision_records_every_write_atomically(
     client: TestClient, material_and_lexeme
 ) -> None:
@@ -393,7 +556,12 @@ def test_projection_revision_records_every_write_atomically(
     base = client.get(f"/lexemes/{lexeme_id}/evidence-summary").json()["projection_revision"]
     client.post(
         f"/lexemes/{lexeme_id}/decisions",
-        json={"decision": "known", "input_surface": surface, "operation_key": "op-r1"},
+        json={
+            "decision": "known",
+            "input_surface": surface,
+            "operation_key": "op-r1",
+            "expected_decision_seq": 0,
+        },
     )
     after_known = client.get(f"/lexemes/{lexeme_id}/evidence-summary").json()["projection_revision"]
     assert after_known == base + 1
@@ -420,7 +588,12 @@ def test_summaries_are_rebuildable_from_facts(client: TestClient, material_and_l
     _, lexeme_id, surface = material_and_lexeme
     client.post(
         f"/lexemes/{lexeme_id}/decisions",
-        json={"decision": "known", "input_surface": surface, "operation_key": "op-k1"},
+        json={
+            "decision": "known",
+            "input_surface": surface,
+            "operation_key": "op-k1",
+            "expected_decision_seq": 0,
+        },
     )
     evidence_hex = _rows(client, "SELECT id FROM known_evidence LIMIT 1")[0][0]
     client.post(

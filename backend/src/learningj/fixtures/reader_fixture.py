@@ -165,6 +165,7 @@ def build_fixture() -> dict[str, Any]:
                 "input_reading": target["reading_form"],
                 "material_id": material_by_kind["text"]["id"],
                 "operation_key": "fixture-known-jun",
+                "expected_decision_seq": 0,
             },
         )
         decision.raise_for_status()

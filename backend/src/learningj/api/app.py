@@ -344,7 +344,10 @@ def create_app(
         session: Session = Depends(db_session),
     ) -> DictionarySearchOut:
         """搜索框路径：精确匹配优先，FTS5 前缀匹配随后（派生投影，可重建）。"""
-        entries = dictionary_service.search(session, query=query, limit=limit)
+        try:
+            entries = dictionary_service.search(session, query=query, limit=limit)
+        except dictionary_service.DictionarySearchError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
         return _lookup_response(query, None, entries, session, wrapper="search")
 
     # ------------------------------------------------------------------
@@ -455,6 +458,7 @@ def create_app(
                 conjugated_form=payload.conjugated_form,
                 material_id=material_uuid,
                 operation_key=payload.operation_key,
+                expected_decision_seq=payload.expected_decision_seq,
             )
         except evidence_service.LexemeNotFoundError as exc:
             session.rollback()
