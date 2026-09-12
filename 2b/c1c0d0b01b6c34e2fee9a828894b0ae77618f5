@@ -1,0 +1,65 @@
+backend/src/learningj/api/app.py
+  s_a00fd130a12e79::t_ee51325ebc5116 558-561
+backend/tests/test_p2_integration.py
+  s_9e8de381916bf8::t_a77b283702f9c0 1-18,20-46,68-109,137-181,193-219,221-222,224-226,230-258,280-290,306-307,316-318,322-338,340-341,343-347
+  s_9e8de381916bf8::t_3f7a3330bfc8da 190-191
+  s_9e8de381916bf8::t_f6a7a8fd5c0da6 227-229
+  s_9e8de381916bf8::t_8bed0db134afbc 259-261,265-269,276-278
+  s_9e8de381916bf8::t_03e1f8a76a6d51 262-264,270-275,279
+  s_9e8de381916bf8::t_776a72e075cc64 182-189
+  s_9e8de381916bf8::t_62b9ba81f5da41 56-67
+  s_9e8de381916bf8::t_c9421cd7775a29 220,223
+  s_9e8de381916bf8::t_ea5585e8120faf 348-377,383-384
+  s_9e8de381916bf8::t_ed316387f7d65d 378-382
+  s_9e8de381916bf8::t_cb41fdd6dfaf2c 192
+  s_9e8de381916bf8::t_9f4e1772227fcd 127-130
+  s_9e8de381916bf8::t_f51e2e11baaf2f 19,47-55,110-126,131-136
+  s_9e8de381916bf8::t_85a3d45222c924 291-305,308-315,319-321,339,342
+docs/task-packets/reports/P2-integration-handoff.md
+  s_939aa3e010cd38::t_d489f91e365bc7 67-83
+  s_9e8de381916bf8::t_35ddcd943933f0 1,13-15,20,32,36-37,41-43,46
+  s_9e8de381916bf8::t_1f5aee64892c54 23-24,40
+  s_939aa3e010cd38::t_ac501cebab994a 47-66
+  s_9e8de381916bf8::t_62cc166c9691be 2-12,16-19,21-22,25-31,33-35,38-39,44-45
+frontend/src/lib/p2-integration.contract.test.ts
+  s_9e8de381916bf8::t_28f490d1b17147 1-71
+backend/src/learningj/evidence/service.py
+  s_a00fd130a12e79::t_d4e4fc7df2c689 407-413,415-416,418-424,461-477,500-564,573
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "2bc1c0d0b01b6c34e2fee9a828894b0ae77618f5",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_939aa3e010cd38": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a095e0-8cc2-7153-bc22-a0b633c99884",
+        "model": "gpt-5.6-luna"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_9e8de381916bf8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a095c1-905d-7d42-b07e-7fbda7fcb991",
+        "model": "gpt-5.6-luna"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_a00fd130a12e79": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a095f2-c53d-74a3-9f19-929896161938",
+        "model": "gpt-5.6-luna"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
