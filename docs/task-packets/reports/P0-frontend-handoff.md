@@ -65,6 +65,13 @@ Open issues:
 
 ## Review
 
+### 2026-09-12 闸门闭合（lead 转录）
+
+- 本段闭合上方 "Lead Repair Verification (2026-09-11)" 列出的全部 outstanding 项；既有记录按协议原样保留，其 "current P0/P1 dispatch is not approved" 一句自此失效。
+- Original Review 的三项 findings 均已修复并验证：backend `SentenceOut.anchor_payload` 改为必填并重新生成 OpenAPI/fixture（`test_sentence_schema.py` 先复现缺陷后通过）；EPUB `spine_index` 在 API 边界校验并显式展示不可用位置，两组件共享 `parseEpubSpineIndex`，回归覆盖缺失、负数、小数、字符串、合法零与非 EPUB 输入；重复的不可信 anchor 解析由共享 helper 收敛（[P2] 项）。
+- 后端开发库重建（`rebuild-development-db`）与不变量 #20 的 P0 首次验证由 P0-backend 补齐轮交付；跨边界闸门由 P0-integration 独立复审关闭（2026-09-11，`VERDICT: approve`，证据含 backend `89 passed, 23 xfailed`、frontend `22 passed`、lint/build 与 `git diff --check`）。
+- 本包闸门闭合，Review 段无 open findings。P1-backend 已据此派遣并交付（`reports/P1-backend-handoff.md`，STATUS: done，待其 CR 与提交收尾）。
+
 ### Lead Repair Verification (2026-09-11)
 
 - The original review below remains the recorded verdict pending independent re-review; current P0/P1 dispatch is not approved.
