@@ -404,16 +404,24 @@ def recompute_scope_summary(
 
 def rebuild_summaries(session: Session, *, lexeme_ids: list[str] | None = None) -> int:
     """从事实表重建摘要投影（缺 scope 行补建），返回作用域行数（§2.5）。"""
-    evidence_scopes = session.execute(
-        select(KnownEvidence.lexeme_id, KnownEvidence.scope_form_key).distinct()
-    ).all()
-    decision_scopes = session.execute(
-        select(LexemeKnowledgeDecision.lexeme_id, LexemeKnowledgeDecision.scope_form_key).distinct()
-    ).all()
-    scopes = sorted(set(evidence_scopes) | set(decision_scopes))
+    evidence_scope_query = select(
+        KnownEvidence.lexeme_id, KnownEvidence.scope_form_key
+    )
+    decision_scope_query = select(
+        LexemeKnowledgeDecision.lexeme_id,
+        LexemeKnowledgeDecision.scope_form_key,
+    )
     if lexeme_ids is not None:
+        # Keep target scoping in SQL.  Filtering the DISTINCT results in Python
+        # would still scan unrelated historical facts (11a structural gate).
         wanted = set(lexeme_ids)
-        scopes = [scope for scope in scopes if scope[0] in wanted]
+        evidence_scope_query = evidence_scope_query.where(KnownEvidence.lexeme_id.in_(wanted))
+        decision_scope_query = decision_scope_query.where(
+            LexemeKnowledgeDecision.lexeme_id.in_(wanted)
+        )
+    evidence_scopes = session.execute(evidence_scope_query.distinct()).all()
+    decision_scopes = session.execute(decision_scope_query.distinct()).all()
+    scopes = sorted(set(evidence_scopes) | set(decision_scopes))
     revision = bump_projection_revision(session)
     for lexeme_id, scope_form_key in scopes:
         recompute_scope_summary(session, lexeme_id, scope_form_key, revision)
@@ -450,6 +458,23 @@ def _summary_map(session: Session, lexeme_id: str) -> dict[str, LexemeEvidenceSu
     return {summary.scope_form_key: summary for summary in scope_summaries(session, lexeme_id)}
 
 
+def _summary_maps(
+    session: Session, lexeme_ids: list[str]
+) -> dict[str, dict[str, LexemeEvidenceSummary]]:
+    """批量读取目标词的摘要，避免 known-view batch 的 N+1 查询。"""
+    if not lexeme_ids:
+        return {}
+    rows = session.scalars(
+        select(LexemeEvidenceSummary)
+        .where(LexemeEvidenceSummary.lexeme_id.in_(set(lexeme_ids)))
+        .order_by(LexemeEvidenceSummary.lexeme_id, LexemeEvidenceSummary.scope_form_key)
+    ).all()
+    grouped: dict[str, dict[str, LexemeEvidenceSummary]] = {}
+    for summary in rows:
+        grouped.setdefault(summary.lexeme_id, {})[summary.scope_form_key] = summary
+    return grouped
+
+
 def _valid_user_evidence_ids(session: Session, evidence_ids: list[uuid.UUID]) -> set[uuid.UUID]:
     """被引用 KE 的有效性核对（防御直写事实表的场景；服务路径恒有效）。"""
     if not evidence_ids:
@@ -472,6 +497,71 @@ def compose_known_view(
     支持 → known（basis=import_evidence）；SRS 分量 P5 落地后并入，本版缺席。
     """
     summaries = _summary_map(session, lexeme_id)
+    candidates = _known_view_candidates(summaries, form)
+    evidence_ids = [summary.known_evidence_id for summary, _ in candidates if summary.known_evidence_id]
+    valid_evidence = _valid_user_evidence_ids(session, evidence_ids)
+    return _compose_known_view_payload(
+        lexeme_id=lexeme_id,
+        form=form,
+        summaries=summaries,
+        valid_evidence=valid_evidence,
+    )
+
+
+def compose_known_views_batch(
+    session: Session, targets: list[tuple[str, str | None]]
+) -> list[dict[str, Any]]:
+    """批量组合 known views，保留输入顺序与重复目标语义。
+
+    摘要按目标 Lexeme 一次性读取；所有被候选决定引用的 user_asserted
+    evidence 也在一次查询中校验，避免目标数线性增加 SQL 次数。
+    """
+    lexeme_ids = list(dict.fromkeys(lexeme_id for lexeme_id, _ in targets))
+    summary_maps = _summary_maps(session, lexeme_ids)
+    candidate_rows = [
+        candidate
+        for lexeme_id, form in targets
+        for candidate in _known_view_candidates(summary_maps.get(lexeme_id, {}), form)
+    ]
+    evidence_ids = list(
+        dict.fromkeys(
+            summary.known_evidence_id
+            for summary, _ in candidate_rows
+            if summary.known_evidence_id is not None
+        )
+    )
+    valid_evidence = _valid_user_evidence_ids(session, evidence_ids)
+    return [
+        _compose_known_view_payload(
+            lexeme_id=lexeme_id,
+            form=form,
+            summaries=summary_maps.get(lexeme_id, {}),
+            valid_evidence=valid_evidence,
+        )
+        for lexeme_id, form in targets
+    ]
+
+
+def _known_view_candidates(
+    summaries: dict[str, LexemeEvidenceSummary], form: str | None
+) -> list[tuple[LexemeEvidenceSummary, str]]:
+    lexeme_scope = summaries.get(LEXEME_SCOPE_KEY)
+    form_scope = summaries.get(derive_scope_form_key(form)) if form is not None else None
+    candidates: list[tuple[LexemeEvidenceSummary, str]] = []
+    if form_scope is not None and form_scope.current_decision is not None:
+        candidates.append((form_scope, "form_decision"))
+    if lexeme_scope is not None and lexeme_scope.current_decision is not None:
+        candidates.append((lexeme_scope, "lexeme_decision"))
+    return candidates
+
+
+def _compose_known_view_payload(
+    *,
+    lexeme_id: str,
+    form: str | None,
+    summaries: dict[str, LexemeEvidenceSummary],
+    valid_evidence: set[uuid.UUID],
+) -> dict[str, Any]:
     lexeme_scope = summaries.get(LEXEME_SCOPE_KEY)
     form_scope = summaries.get(derive_scope_form_key(form)) if form is not None else None
 
@@ -480,12 +570,7 @@ def compose_known_view(
     effective_decision_id: uuid.UUID | None = None
     effective_evidence_id: uuid.UUID | None = None
 
-    candidates: list[tuple[LexemeEvidenceSummary, str]] = []
-    if form_scope is not None and form_scope.current_decision is not None:
-        candidates.append((form_scope, "form_decision"))
-    if lexeme_scope is not None and lexeme_scope.current_decision is not None:
-        candidates.append((lexeme_scope, "lexeme_decision"))
-    valid_evidence: set[uuid.UUID] = set()
+    candidates = _known_view_candidates(summaries, form)
     for scope_summary, basis in candidates:
         if scope_summary.current_decision == LexemeDecision.CLEAR:
             continue
@@ -493,10 +578,6 @@ def compose_known_view(
             continue
         referenced = scope_summary.known_evidence_id
         if scope_summary.current_decision == LexemeDecision.KNOWN:
-            if not valid_evidence:
-                valid_evidence = _valid_user_evidence_ids(
-                    session, [c[0].known_evidence_id for c in candidates if c[0].known_evidence_id]
-                )
             if referenced not in valid_evidence:
                 continue  # 引用的 KE 已失效：该 known 不贡献
         effective_state = scope_summary.current_decision.value

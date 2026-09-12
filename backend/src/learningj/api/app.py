@@ -555,10 +555,10 @@ def create_app(
         for item in payload.items:
             if item.form is not None and not item.form:
                 raise HTTPException(status_code=422, detail="空具体词形不能派生词形作用域键")
-        items = [
-            evidence_service.compose_known_view(session, lexeme_id=item.lexeme_id, form=item.form)
-            for item in payload.items
-        ]
+        items = evidence_service.compose_known_views_batch(
+            session,
+            [(item.lexeme_id, item.form) for item in payload.items],
+        )
         return KnownViewsBatchOut(
             known_rule_version=evidence_service.KNOWN_RULE_VERSION,
             items=[
