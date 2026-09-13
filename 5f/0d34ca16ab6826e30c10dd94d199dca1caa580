@@ -1,0 +1,58 @@
+docs/task-packets/reports/P2.6-frontend-type-sync-handoff.md
+  s_d575df176334d5::t_1f21c1773c4a76 1-18,20-30,32-34,36-55,72
+  s_d575df176334d5::t_d9c08c748e8cdc 19,31
+  s_d575df176334d5::t_b0b2ada729fed7 35
+  s_d575df176334d5::t_bb1f011acfb7d0 56-58,69-71
+  s_d575df176334d5::t_8c360b593fdb82 73-75
+frontend/src/lib/annotations.ts
+  s_d575df176334d5::t_011d55ddd6039a 1-3
+frontend/package.json
+  s_d575df176334d5::t_bd8df86127879c 44
+  s_d575df176334d5::t_299f2401615c47 14-16
+  s_d575df176334d5::t_b0b2ada729fed7 11
+frontend/src/lib/materials.ts
+  s_d575df176334d5::t_6816b3b3daf37d 1-13
+frontend/src/lib/api-types.d.ts
+  s_d575df176334d5::t_c312537bf8af8f 1-1554
+frontend/src/lib/tokens.ts
+  s_d575df176334d5::t_81fde1b6fd8d05 1-3
+frontend/scripts/sync-api-types.mjs
+  s_d575df176334d5::t_0e0abe4b424eeb 1-41
+frontend/src/lib/api-contracts.ts
+  s_d575df176334d5::t_a1366a9609961c 35,38,43,47,51,57,63,67,72
+  s_d575df176334d5::t_b0b2ada729fed7 68
+  s_d575df176334d5::t_0e0abe4b424eeb 1-34,36-37,39-42,44-46,48-50,52-56,58-62,64-66,69-71,73-77
+frontend/src/lib/dictionary.ts
+  s_d575df176334d5::t_7b8073777e07e2 1-15
+frontend/README.md
+  s_d575df176334d5::t_669bdaf2baef56 38
+  s_d575df176334d5::t_bf5e181cb7594a 13-14,39-47
+frontend/src/lib/lexemes.ts
+  s_d575df176334d5::t_6a82a451132854 170
+  s_d575df176334d5::t_084158541a1263 1-12
+frontend/src/lib/fixture-composition.ts
+  s_d575df176334d5::t_0483ea4a7818cb 29,333
+frontend/pnpm-lock.yaml
+  s_d575df176334d5::t_ac9f73c212acdb 81-83,342-351,840-843,847-850,859-861,919-921,953-955,960-962,1361-1364,1381-1384,1505-1508,1512-1515,1533-1535,1751-1754,1814-1819,1836-1839,1861-1864,2055-2058,2119-2122,2171-2173,2321-2327,2381,2453,2528,2606-2628,2842,2852,2871,2886,3003-3004,3012-3013,3018-3019,3097-3100,3142-3143,3146-3147,3198,3201-3202,3362,3455,3639-3645,3654-3655,3784-3785,3788-3791,3822-3823,3981-3984,4046-4055,4080-4085,4100-4101,4343-4344,4396-4397,4488-4489,4610-4613
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "5f0d34ca16ab6826e30c10dd94d199dca1caa580",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_d575df176334d5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a099b7-db73-7d40-8024-01a5c9001efd",
+        "model": "gpt-5.6-luna"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
