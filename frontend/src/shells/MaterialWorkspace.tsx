@@ -8,31 +8,24 @@ import { SentenceList } from '@/components/SentenceList'
 import { SentenceContext } from '@/components/SentenceContext'
 import { libraryModeForKind, type LibraryMode } from '@/lib/library'
 import {
-  fetchLexemeCounts,
-  fetchMaterials,
-  fetchSentences,
-  fetchSidecar,
   type Material,
   type MaterialLexemeCounts,
   type Sentence,
   type Sidecar,
 } from '@/lib/materials'
-import { fetchSentenceTokens, type AlgorithmToken, type SentenceTokens } from '@/lib/tokens'
+import type { AlgorithmToken, SentenceTokens } from '@/lib/tokens'
 import {
   DictionaryRequestError,
-  fetchDictionaries,
-  lookupDictionary,
-  searchDictionary,
   type DictionaryEntry,
 } from '@/lib/dictionary'
 import {
   DecisionConflictError,
-  fetchEvidenceSummary,
-  postLexemeDecision,
   type EvidenceSummary,
   type EvidenceSummaryScope,
   type LexemeDecisionValue,
 } from '@/lib/lexemes'
+import { createMaterialApiAdapter, type MaterialRepository } from '@/lib/material-repository'
+import { createReaderApiAdapter, type ReaderRepository } from '@/lib/reader-repository'
 import { useLookupVariant } from '@/lib/viewport'
 
 type LoadStatus = 'loading' | 'error' | 'ready'
@@ -47,6 +40,8 @@ function isAbortError(cause: unknown): boolean {
 
 /** Lexeme 级作用域键（scope_form_key 的 Lexeme 级取值，data-model §2.2）。 */
 const LEXEME_SCOPE_KEY = 'lexeme:'
+const DEFAULT_MATERIAL_REPOSITORY = createMaterialApiAdapter()
+const DEFAULT_READER_REPOSITORY = createReaderApiAdapter()
 
 /**
  * 素材浏览/阅读 shell（P1 素材浏览 + P2 算法阅读器装配）。
@@ -57,7 +52,21 @@ const LEXEME_SCOPE_KEY = 'lexeme:'
  * 查词、阅读、播放都是只读路径——只有用户点击裁定控件才写入 Lexeme
  * 证据（不产生 KE 之外的任何写入，也不创建 KP/ReviewItem）。
  */
-export function MaterialWorkspace() {
+export function MaterialWorkspace({
+  initialMaterialId,
+  initialSentenceId,
+  hideLibrary = false,
+  materialRepository = DEFAULT_MATERIAL_REPOSITORY,
+  readerRepository = DEFAULT_READER_REPOSITORY,
+}: {
+  initialMaterialId?: string
+  /** Reader routes may preserve an exact source Sentence in the query. */
+  initialSentenceId?: string
+  /** Reader route can reuse the P2 reader area without nesting the library rail. */
+  hideLibrary?: boolean
+  materialRepository?: MaterialRepository
+  readerRepository?: ReaderRepository
+} = {}) {
   const [materials, setMaterials] = useState<Material[]>([])
   const [materialsStatus, setMaterialsStatus] = useState<LoadStatus>('loading')
   const [materialsError, setMaterialsError] = useState<string | null>(null)
@@ -128,10 +137,12 @@ export function MaterialWorkspace() {
     const controller = new AbortController()
     setMaterialsStatus('loading')
     setMaterialsError(null)
-    fetchMaterials(controller.signal)
+    materialRepository.listMaterials({ signal: controller.signal })
       .then((items) => {
         setMaterials(items)
-        setSelected((current) => current ?? items[0] ?? null)
+        setSelected((current) => initialMaterialId
+          ? items.find((item) => item.id === initialMaterialId) ?? null
+          : current ?? items[0] ?? null)
         setMaterialsStatus('ready')
       })
       .catch((cause: unknown) => {
@@ -140,7 +151,7 @@ export function MaterialWorkspace() {
         setMaterialsStatus('error')
       })
     return () => controller.abort()
-  }, [materialsAttempt])
+  }, [initialMaterialId, materialRepository, materialsAttempt])
 
   useEffect(() => {
     if (!selected) {
@@ -154,9 +165,13 @@ export function MaterialWorkspace() {
     const controller = new AbortController()
     setSentenceStatus('loading')
     setSentenceError(null)
-    fetchSentences(selected.id, controller.signal)
+    materialRepository.listSentences(selected.id, { signal: controller.signal })
       .then((items) => {
         setSentences(items)
+        setSelectedSentence((current) => {
+          if (initialSentenceId) return items.find((item) => item.id === initialSentenceId) ?? null
+          return current
+        })
         setSentenceStatus('ready')
       })
       .catch((cause: unknown) => {
@@ -165,7 +180,7 @@ export function MaterialWorkspace() {
         setSentenceStatus('error')
       })
     return () => controller.abort()
-  }, [selected, sentenceAttempt])
+  }, [initialSentenceId, materialRepository, selected, sentenceAttempt])
 
   useEffect(() => {
     if (!selected || selected.current_sidecar_id === null) {
@@ -181,8 +196,8 @@ export function MaterialWorkspace() {
     setSidecar(null)
     setCounts(null)
     Promise.all([
-      fetchSidecar(selected.id, controller.signal),
-      fetchLexemeCounts(selected.id, controller.signal),
+      materialRepository.getSidecar(selected.id, { signal: controller.signal }),
+      materialRepository.getLexemeCounts(selected.id, { signal: controller.signal }),
     ])
       .then(([loadedSidecar, loadedCounts]) => {
         setSidecar(loadedSidecar)
@@ -195,7 +210,7 @@ export function MaterialWorkspace() {
         setIndexStatus('error')
       })
     return () => controller.abort()
-  }, [selected, indexAttempt])
+  }, [indexAttempt, materialRepository, selected])
 
   useEffect(() => {
     // 查词面板与当前句子绑定：换句（含切素材导致的换句）即关闭并清空。
@@ -210,7 +225,7 @@ export function MaterialWorkspace() {
     setTokensStatus('loading')
     setTokensError(null)
     setSentenceTokens(null)
-    fetchSentenceTokens(selectedSentence.id, controller.signal)
+    readerRepository.getSentenceTokens(selectedSentence.id, { signal: controller.signal })
       .then((tokens) => {
         setSentenceTokens(tokens)
         setTokensStatus('ready')
@@ -221,7 +236,7 @@ export function MaterialWorkspace() {
         setTokensStatus('error')
       })
     return () => controller.abort()
-  }, [selectedSentence, tokensAttempt, resetLookup])
+  }, [readerRepository, resetLookup, selectedSentence, tokensAttempt])
 
   const openLookup = useCallback((token: AlgorithmToken, trigger: HTMLElement) => {
     // 每次重新打开都使旧裁定请求失效，即使重新打开的是同一 lexeme。
@@ -250,7 +265,7 @@ export function MaterialWorkspace() {
     const controller = new AbortController()
     const isCurrent = () => lookupRequestId.current === requestId
 
-    fetchEvidenceSummary(lexemeId, controller.signal)
+    readerRepository.getEvidenceSummary(lexemeId, { signal: controller.signal })
       .then((summary) => {
         if (!isCurrent()) return
         setDecisionSummary(summary)
@@ -265,14 +280,14 @@ export function MaterialWorkspace() {
       let entries: DictionaryEntry[] = []
       try {
         if (lookupSearchQuery) {
-          const result = await searchDictionary(lookupSearchQuery, { signal: controller.signal })
+          const result = await readerRepository.searchDictionary(lookupSearchQuery, { signal: controller.signal })
           entries = result.entries
         } else {
           // 精确查找候选：先规范化形（词典形），无命中再试本次表层
           //（覆盖词典只收表层变体的导入）。
           const candidates = [...new Set([lookupToken.normalized_form, lookupToken.surface].filter((form) => form.length > 0))]
           for (const candidate of candidates) {
-            const result = await lookupDictionary(candidate, { signal: controller.signal })
+            const result = await readerRepository.lookupDictionary(candidate, { signal: controller.signal })
             entries = result.entries
             if (entries.length > 0) break
           }
@@ -280,7 +295,7 @@ export function MaterialWorkspace() {
         if (!isCurrent()) return
         if (entries.length === 0) {
           // 无命中时区分「无词典」与「有词典但无结果」（DESIGN.md 交互状态）。
-          const dictionaries = await fetchDictionaries(controller.signal)
+          const dictionaries = await readerRepository.listDictionaries({ signal: controller.signal })
           if (!isCurrent()) return
           setLookupStatus(dictionaries.length === 0 ? 'no_dictionary' : 'no_result')
           setLookupEntries([])
@@ -303,7 +318,7 @@ export function MaterialWorkspace() {
     void loadEntries()
     return () => controller.abort()
     // lookupToken 参与依赖：换词元时在原面板内更新（DESIGN.md 工具栏与查词边界）。
-  }, [lookupOpen, lookupToken, lookupSearchQuery, lookupAttempt])
+  }, [lookupAttempt, lookupOpen, lookupSearchQuery, lookupToken, readerRepository])
 
   const closeLookup = useCallback(() => {
     // 关闭同样必须使在途裁定响应失效；保留 trigger 引用供 LookupSurface
@@ -347,19 +362,23 @@ export function MaterialWorkspace() {
     setPendingDecision(decision)
     setDecisionError(null)
     const refreshSummaryIfCurrent = async () => {
-      const summary = await fetchEvidenceSummary(lexemeId)
+      const summary = await readerRepository.getEvidenceSummary(lexemeId)
       if (!isCurrent()) return
       applyDecisionSummary(lexemeId, summary)
     }
     try {
-      await postLexemeDecision({
+      await readerRepository.recordLexemeDecision({
         lexemeId,
         decision,
         inputSurface: token.surface,
         expectedDecisionSeq: expectedSeq,
         operationKey: `lexeme-decision:${decision}:${lexemeId}:${expectedSeq}`,
         inputReading: token.reading_form || null,
-        materialId: sentenceTokens?.material_id ?? null,
+        // The decision records the currently selected material scope. Token
+        // provenance is an immutable response field and must not be treated
+        // as the caller's material identity (fixture composition makes this
+        // distinction observable).
+        materialId: selected?.id ?? null,
       })
       if (!isCurrent()) return
       await refreshSummaryIfCurrent()
@@ -378,7 +397,7 @@ export function MaterialWorkspace() {
     } finally {
       if (isCurrent()) setPendingDecision(null)
     }
-  }, [lookupToken, pendingDecision, decisionSummary, decisionScope, sentenceTokens, applyDecisionSummary])
+  }, [applyDecisionSummary, decisionScope, decisionSummary, lookupToken, pendingDecision, readerRepository, selected?.id])
 
   const selectMaterial = useCallback((material: Material) => {
     resetLookup()
@@ -485,8 +504,8 @@ export function MaterialWorkspace() {
   ) : null
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(240px,0.32fr)_minmax(0,1fr)]">
-      <aside className="rounded-md border border-border bg-card p-4">
+    <div className={hideLibrary ? 'space-y-6' : 'grid gap-6 lg:grid-cols-[minmax(240px,0.32fr)_minmax(0,1fr)]'}>
+      {!hideLibrary && <aside className="rounded-md border border-border bg-card p-4">
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Library</h2>
         <MaterialLibrary
           status="ready"
@@ -498,7 +517,7 @@ export function MaterialWorkspace() {
           onSelect={selectMaterial}
           onRetry={retryMaterials}
         />
-      </aside>
+      </aside>}
       <section className="min-w-0 space-y-6">
         {sentenceStatus === 'loading' ? (
           <div role="status" className="flex min-h-48 items-center justify-center text-sm text-muted-foreground">

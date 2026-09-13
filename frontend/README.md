@@ -31,6 +31,6 @@ pnpm build          # tsc -b && vite build
 
 `src/index.css` 定义了 DESIGN.md 的语义色（study=朱、lexical=青、syntax=琥珀）、日文衬线 `font-serif-jp`、圆角 ≤ 6px、`prefers-reduced-motion` 降级。颜色具体值是占位，落地组件时按 WCAG 2.2 AA 校准。
 
-## 尚未接入（按阶段计划引入，不在 P0）
+## 尚未接入（按阶段计划引入）
 
-TanStack Query、Zustand、React Router、react-markdown、openapi-typescript 类型同步、真实 API 调用。
+TanStack Query、Zustand、react-markdown、openapi-typescript 类型同步。P2.5 已接入 React Router、repository 边界与 P1/P2 真实 API；P3+ Study／知识库／复习 API 仍按 handoff 报告中的 fixture/unstable 边界等待后续阶段。

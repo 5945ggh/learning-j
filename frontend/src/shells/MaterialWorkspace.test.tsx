@@ -285,6 +285,9 @@ describe('MaterialWorkspace（P2 算法阅读器与查词装配）', () => {
       decision: 'known',
       input_surface: '君',
       expected_decision_seq: 1,
+      // Scope the explicit decision to the selected P1 material, not the
+      // opaque material_id echoed by a separately generated reader fixture.
+      material_id: 'fixture-id-001',
     })
     expect(typeof body.operation_key).toBe('string')
   })

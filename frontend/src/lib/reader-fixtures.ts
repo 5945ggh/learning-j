@@ -124,6 +124,25 @@ export const fixtureSentenceTokens: SentenceTokens = {
   ],
 }
 
+/** The generated P2 subtitle token fixture, retained separately from txt. */
+export const fixtureSubtitleSentenceTokens: SentenceTokens = {
+  sentence_id: 'fixture-id-006', material_id: 'fixture-id-007', sidecar_generation_id: 'fixture-id-008',
+  segmenter_version: 'learningj-segmenter-v1', tokenizer_version: '0.6.11', analyzer_dict_version: '20260723', dictionary_sources: [],
+  tokens: [
+    { surface: asSentenceText('また'), normalized_form: '又', pos: '接続詞,*,*,*,*,*', reading_form: 'マタ', reading_source: 'sudachi', lexeme_id: 'lx_daf6c367c1bea91f9e4fbc38d1de093ae0a5b24e64576ae256ae71f03590b4a9', char_start: 0, char_end: 2, dictionary_source_ids: [] },
+    { surface: asSentenceText('寄っ'), normalized_form: '寄る', pos: '動詞,一般,*,*,五段-ラ行,連用形-促音便', reading_form: 'ヨッ', reading_source: 'sudachi', lexeme_id: 'lx_a3c51c40815583e5077e5305bbc5d96cec57f67871acff63bd6575f8ca31ccda', char_start: 2, char_end: 4, dictionary_source_ids: [] },
+    { surface: asSentenceText('て'), normalized_form: 'て', pos: '助詞,接続助詞,*,*,*,*', reading_form: 'テ', reading_source: 'sudachi', lexeme_id: 'lx_e8b3f906c9981bbfd22163cd4777dc5daff759f0b696551005320c3528edbe1d', char_start: 4, char_end: 5, dictionary_source_ids: [] },
+    { surface: asSentenceText('しまっ'), normalized_form: '仕舞う', pos: '動詞,非自立可能,*,*,五段-ワア行,連用形-促音便', reading_form: 'シマッ', reading_source: 'sudachi', lexeme_id: 'lx_0c649983d58b41e9d3513bbd9a28b0b586b2d0d735dbc5d045604acfd510ea45', char_start: 5, char_end: 8, dictionary_source_ids: [] },
+    { surface: asSentenceText('た'), normalized_form: 'た', pos: '助動詞,*,*,*,助動詞-タ,終止形-一般', reading_form: 'タ', reading_source: 'sudachi', lexeme_id: 'lx_621560ee20f258b69e3d35cda37560af3002dded248372c5ec3ec2c9cdaa6624', char_start: 8, char_end: 9, dictionary_source_ids: [] },
+    { surface: asSentenceText('。'), normalized_form: '。', pos: '補助記号,句点,*,*,*,*', reading_form: '。', reading_source: 'sudachi', lexeme_id: 'lx_9ca0779be06cdd19bcb8577014b30bdcf35ed0aae61773d3f3e62641deaf0bac', char_start: 9, char_end: 10, dictionary_source_ids: [] },
+  ],
+}
+
+export const fixtureAnnotations = [{
+  id: 'fixture-id-009', material_id: 'fixture-id-004', created_at: 'fixture-timestamp', note: 'fixture-annotation', color: 'yellow' as const,
+  spans: [{ span_id: 'fixture-id-010', sentence_id: 'fixture-id-011', surface: asSentenceText('𠮟られた'), char_start: 0, char_end: 4, alignment_sidecar_id: 'fixture-id-005', token_start: 0, token_end: 3, alignment_status: 'aligned' as const }],
+}]
+
 export const fixtureLookupResult: DictionaryLookupResult = {
   expression: '君',
   reading: null,

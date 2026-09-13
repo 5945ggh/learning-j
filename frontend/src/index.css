@@ -37,6 +37,8 @@
   --lexical-foreground: oklch(1 0 0);
   --syntax: oklch(0.6 0.12 75);             /* 琥珀：句法 */
   --syntax-foreground: oklch(0.245 0.008 60);
+  --ai: oklch(0.48 0.13 300);               /* 紫：AI 学习 */
+  --ai-soft: oklch(0.96 0.035 300);
 }
 
 .dark {
@@ -66,6 +68,8 @@
   --lexical-foreground: oklch(0.17 0 0);
   --syntax: oklch(0.75 0.12 80);
   --syntax-foreground: oklch(0.17 0 0);
+  --ai: oklch(0.75 0.13 300);
+  --ai-soft: oklch(0.28 0.04 300);
 }
 
 @theme inline {
@@ -93,6 +97,8 @@
   --color-lexical-foreground: var(--lexical-foreground);
   --color-syntax: var(--syntax);
   --color-syntax-foreground: var(--syntax-foreground);
+  --color-ai: var(--ai);
+  --color-ai-soft: var(--ai-soft);
 
   --radius-sm: calc(var(--radius) - 2px);
   --radius-md: var(--radius);
