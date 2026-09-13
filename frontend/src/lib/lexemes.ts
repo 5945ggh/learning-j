@@ -1,3 +1,15 @@
+export type {
+  EvidenceSummary,
+  EvidenceSummaryScope,
+  LexemeDecisionResult,
+} from '@/lib/api-contracts'
+import type {
+  DecisionCreateBody,
+  EvidenceSummary,
+  EvidenceSummaryScope,
+  LexemeDecisionResult,
+} from '@/lib/api-contracts'
+
 /**
  * Lexeme 证据客户端（`POST /lexemes/{lexeme_id}/decisions`、
  * `GET /lexemes/{lexeme_id}/evidence-summary`）。
@@ -22,37 +34,6 @@ export type LexemeDecisionRequest = {
   inputReading?: string | null
   conjugatedForm?: string | null
   materialId?: string | null
-}
-
-export type LexemeDecisionResult = {
-  decision_id: string
-  lexeme_id: string
-  scope_form_key: string
-  decision: LexemeDecisionValue
-  decision_seq: number
-  operation_key: string
-  created_at: string
-  /** false 表示同 operation_key 同输入的幂等重放（HTTP 200）。 */
-  created: boolean
-  evidence_id: string | null
-  conjugated_form: string | null
-}
-
-export type EvidenceSummaryScope = {
-  scope_form_key: string
-  current_decision: LexemeDecisionValue | null
-  current_decision_id: string | null
-  current_decision_seq: number | null
-  valid_source_counts: Record<string, number>
-  known_rule_version: string
-  resolver_version: string
-  input_revision: number
-}
-
-export type EvidenceSummary = {
-  lexeme_id: string
-  projection_revision: number
-  scopes: EvidenceSummaryScope[]
 }
 
 /** 裁定缺少必填版本令牌：在请求发出前拒绝（契约要求的 canonical 字段）。 */
@@ -186,7 +167,7 @@ export async function postLexemeDecision(request: LexemeDecisionRequest): Promis
   if (!Number.isInteger(request.expectedDecisionSeq) || request.expectedDecisionSeq < 0) {
     throw new MissingExpectedDecisionSeqError()
   }
-  const body = {
+  const body: DecisionCreateBody = {
     decision: request.decision,
     input_surface: request.inputSurface,
     operation_key: request.operationKey,

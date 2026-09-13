@@ -26,6 +26,7 @@ import {
   type KnowledgeFixtureSeed,
 } from '@/lib/knowledge-repository'
 import { fixtureAnnotations, fixtureSentenceTokens, fixtureSubtitleSentenceTokens } from '@/lib/reader-fixtures'
+import { asSentenceText } from '@/lib/text'
 import { ReaderApiAdapter, type ReaderFixtureSeed, type ReaderRepository } from '@/lib/reader-repository'
 import type { Annotation, AnnotationListOptions } from '@/lib/annotations'
 import type { LexemeDecisionRequest, LexemeDecisionResult } from '@/lib/lexemes'
@@ -329,6 +330,7 @@ export class FixtureResolvingReaderRepository implements ReaderRepository {
       material_id: materialIdValue,
       spans: annotation.spans.map((span) => ({
         ...span,
+        surface: asSentenceText(span.surface),
         sentence_id: annotationSentenceId(span.sentence_id),
         alignment_sidecar_id: materialIdValue === fixtureCompositionIds.subtitleMaterial
           ? 'fixture-ui-subtitle-sidecar'

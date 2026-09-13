@@ -1,4 +1,6 @@
-import { asSentenceText, type SentenceText } from '@/lib/text'
+import { asSentenceText } from '@/lib/text'
+export type { AlgorithmToken, SentenceTokens, TokenProvenance } from '@/lib/api-contracts'
+import type { AlgorithmToken, SentenceTokens, TokenProvenance } from '@/lib/api-contracts'
 
 /**
  * 算法 token 客户端（`GET /sentences/{sentence_id}/tokens`）。
@@ -8,36 +10,6 @@ import { asSentenceText, type SentenceText } from '@/lib/text'
  * 区间（data-model §0），与句子文本（同样来自后端）可直接换算；本客户端
  * 不改写偏移语义，token 表层是原文切片而不是前端拼接结果。
  */
-
-export type TokenProvenance = {
-  source_id: string
-  display_name: string
-  source_version: string
-}
-
-export type AlgorithmToken = {
-  /** 后端句子文本的 code point 切片；品牌类型保证它按 code point 契约消费。 */
-  surface: SentenceText
-  normalized_form: string
-  pos: string
-  reading_form: string
-  reading_source: string
-  lexeme_id: string
-  char_start: number
-  char_end: number
-  dictionary_source_ids: string[]
-}
-
-export type SentenceTokens = {
-  sentence_id: string
-  material_id: string
-  sidecar_generation_id: string
-  segmenter_version: string
-  tokenizer_version: string
-  analyzer_dict_version: string
-  dictionary_sources: TokenProvenance[]
-  tokens: AlgorithmToken[]
-}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)

@@ -1,3 +1,18 @@
+export type {
+  DictionaryDefinition,
+  DictionaryEntry,
+  DictionaryLookupResult,
+  DictionarySearchResult,
+  DictionarySource,
+} from '@/lib/api-contracts'
+import type {
+  DictionaryDefinition,
+  DictionaryEntry,
+  DictionaryLookupResult,
+  DictionarySearchResult,
+  DictionarySource,
+} from '@/lib/api-contracts'
+
 /**
  * 词典客户端（`GET /dictionaries`、`GET /dictionaries/lookup`、
  * `GET /dictionaries/search`）。
@@ -7,46 +22,6 @@
  * FTS5 派生索引损坏/缺失时后端返回 503，客户端把它映射为显式的
  * `fts_unavailable` 错误，让界面能区分「无结果」与「搜索索引不可用」。
  */
-
-export type DictionarySource = {
-  id: string
-  format: string
-  display_name: string
-  source_version: string
-  schema_version: string
-  archive_hash: string
-  imported_at: string
-}
-
-export type DictionaryDefinition = {
-  ordinal: number
-  plain_text: string
-  structured_content: Record<string, unknown> | null
-}
-
-export type DictionaryEntry = {
-  source_id: string
-  display_name: string
-  source_version: string
-  source_local_id: string
-  expression: string
-  reading: string | null
-  tags: string[]
-  score: number
-  sequence: number | null
-  definitions: DictionaryDefinition[]
-}
-
-export type DictionaryLookupResult = {
-  expression: string
-  reading: string | null
-  entries: DictionaryEntry[]
-}
-
-export type DictionarySearchResult = {
-  query: string
-  entries: DictionaryEntry[]
-}
 
 /** 查词典错误分类：`fts_unavailable` 对应后端 503（FTS 派生索引缺失/损坏）。 */
 export type DictionaryRequestErrorKind = 'http' | 'fts_unavailable'

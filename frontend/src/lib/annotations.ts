@@ -1,26 +1,6 @@
-import { asSentenceText, type SentenceText } from '@/lib/text'
-
-/** P2 Annotation read projection (data-model §5 / OpenAPI AnnotationOut). */
-export type AnnotationSpan = {
-  span_id: string
-  sentence_id: string
-  surface: SentenceText
-  char_start: number
-  char_end: number
-  alignment_sidecar_id: string | null
-  token_start: number | null
-  token_end: number | null
-  alignment_status: 'aligned' | 'partial' | 'ambiguous' | 'unaligned'
-}
-
-export type Annotation = {
-  id: string
-  material_id: string
-  created_at: string
-  spans: AnnotationSpan[]
-  note: string | null
-  color: string | null
-}
+import { asSentenceText } from '@/lib/text'
+export type { Annotation, AnnotationSpan } from '@/lib/api-contracts'
+import type { Annotation, AnnotationSpan } from '@/lib/api-contracts'
 
 export type AnnotationListOptions = {
   q?: string | null
@@ -114,4 +94,3 @@ export async function fetchAnnotations(materialId: string, options: AnnotationLi
   if (!Array.isArray(body)) throw new Error('批注响应格式无效')
   return body.map(parseAnnotation)
 }
-

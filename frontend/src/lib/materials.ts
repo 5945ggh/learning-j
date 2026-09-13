@@ -1,57 +1,16 @@
-export type MaterialKind = 'subtitle_video' | 'subtitle_audio' | 'text' | 'epub'
+export type {
+  Material,
+  MaterialLexemeCount,
+  MaterialLexemeCounts,
+  Sentence,
+  Sidecar,
+} from '@/lib/api-contracts'
+import type { Material, MaterialLexemeCounts, Sentence, Sidecar } from '@/lib/api-contracts'
+import type { components } from '@/lib/api-types'
 
-export type MaterialStorageMode = 'external_reference' | 'managed_copy'
-
-export type Material = {
-  id: string
-  title: string
-  content_hash: string
-  locator: string
-  kind: MaterialKind
-  copy_stored: boolean
-  storage_mode: MaterialStorageMode
-  source_sha256: string | null
-  current_sidecar_id: string | null
-  sentence_count: number
-}
-
-export type Sentence = {
-  id: string
-  material_id: string
-  index: number
-  text: string
-  time_start: number | null
-  time_end: number | null
-  translation: string | null
-  anchor_type: 'subtitle' | 'plain_text' | 'epub'
-  anchor_payload: Record<string, unknown>
-}
-
-export type Sidecar = {
-  material_id: string
-  sidecar_generation_id: string
-  content_hash: string
-  segmenter_version: string
-  tokenizer_version: string
-  analyzer_dict_version: string
-  payload: Record<string, unknown>
-}
-
-/** 单条稀疏词频（OpenAPI `MaterialLexemeCountOut`）。 */
-export type MaterialLexemeCount = {
-  lexeme_id: string
-  token_count: number
-}
-
-/**
- * 单代次材料词频（OpenAPI `MaterialLexemeCountsOut`，data-model §2.5/§11）。
- * 契约保证一个响应只携带一个 sidecar 代次的词频。
- */
-export type MaterialLexemeCounts = {
-  material_id: string
-  sidecar_generation_id: string
-  counts: MaterialLexemeCount[]
-}
+/** Stable aliases retained for existing component/repository imports. */
+export type MaterialKind = components['schemas']['MaterialOut']['kind']
+export type MaterialStorageMode = components['schemas']['MaterialOut']['storage_mode']
 
 /** Return an EPUB spine index only when the anchor contract carries a valid location. */
 export function parseEpubSpineIndex(
