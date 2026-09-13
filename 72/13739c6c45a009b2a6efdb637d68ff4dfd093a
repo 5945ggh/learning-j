@@ -1,0 +1,316 @@
+frontend/src/shells/MaterialWorkspace.tsx
+  s_b3f45d3ce126bc::t_5f09660e873c74 55-56,58,61-62,65-66,69,507-508,520
+  s_b3f45d3ce126bc::t_fcede97c3299bd 16,27-28,43-44,59-60,67-68
+  s_925b37d096f464::t_ef9579abb76d96 400
+  s_925b37d096f464::t_b5e2379ef11af5 377-381
+  s_b3f45d3ce126bc::t_26e12f84f7bc75 140,154,168,199-200,213,228,239,268,283,290,298,321,365,370
+  s_b3f45d3ce126bc::t_c487ce28e227e8 57,63-64,171-174,183
+  s_b3f45d3ce126bc::t_42d25eef21259d 144
+  s_b3f45d3ce126bc::t_9c65c023a0edc6 143,145
+frontend/src/shells/ReaderShell.tsx
+  s_b3f45d3ce126bc::t_2ac105494455be 12,124,221-225,229-240,242-245
+  s_925b37d096f464::t_88cc85008d134d 14,34
+  s_b3f45d3ce126bc::t_4f0422ba9c7102 1-11,13,15-33,35-123,125-195,197-220,226-228,246-248
+  s_b3f45d3ce126bc::t_1ace7c92a6788e 196
+  s_b3f45d3ce126bc::t_46df533c37ab2c 241
+frontend/src/screens/QueueScreen.tsx
+  s_b3f45d3ce126bc::t_91b76373f7e788 77,104,111
+  s_b3f45d3ce126bc::t_b130580799d018 19,26-28,37,44,51-53,55-59,66,76
+  s_b3f45d3ce126bc::t_952586d7e1f26c 54
+  s_b3f45d3ce126bc::t_e24b498b7a4363 69-70
+  s_b3f45d3ce126bc::t_124f2c30921b36 2,35
+  s_b3f45d3ce126bc::t_80866cece55ea7 105
+  s_b3f45d3ce126bc::t_270205de244ecb 1,3-18,20-25,29-34,36,38-43,45-50,60-65,67-68,71-75,78-103,106-110,112-124
+frontend/src/app/routes.ts
+  s_b3f45d3ce126bc::t_7a735b789b8ad7 1-8,21-43
+  s_b3f45d3ce126bc::t_e5e8a9d408da2d 9-20
+frontend/src/components/AnalysisDocument.tsx
+  s_b3f45d3ce126bc::t_abd0e8c313a9a0 92-93
+  s_b3f45d3ce126bc::t_c135ce20df7dfd 70,74
+  s_b3f45d3ce126bc::t_5ddf06a5338f72 77,79,83
+  s_b3f45d3ce126bc::t_52d5cdf358e801 1-69,71-73,75-76,78,80-82,84-91
+frontend/src/screens/MaterialDetailScreen.tsx
+  s_b3f45d3ce126bc::t_4702512f7a54a1 113
+  s_b3f45d3ce126bc::t_d3474562c81fcb 1-4,6-64,68-80,82-112,114-117,119-128,130-144
+  s_b3f45d3ce126bc::t_7bc156014847e8 65-67
+  s_b3f45d3ce126bc::t_8f2e47bd88e3d7 81
+  s_b3f45d3ce126bc::t_1d895676c4bd6a 129
+  s_b3f45d3ce126bc::t_7be1cd1da69ee0 5,118
+frontend/src/app/theme.tsx
+  s_b3f45d3ce126bc::t_a4da8ba9e30229 1-52
+frontend/src/components/models.ts
+  s_b3f45d3ce126bc::t_4139c13add69f1 9-18
+  s_b3f45d3ce126bc::t_5ddf06a5338f72 47-49,52-53,67-68
+  s_b3f45d3ce126bc::t_8f19827290b4cf 1-8,19-46,50-51,54-66,69-108
+frontend/src/App.tsx
+  s_b3f45d3ce126bc::t_df957cbd1b845f 2,4,6,9,15
+  s_b3f45d3ce126bc::t_b16749d25aee2a 3,10,12,14
+  s_b3f45d3ce126bc::t_fdd46095adb1e4 1,11,13
+frontend/src/shells/AppShell.tsx
+  s_925b37d096f464::t_88cc85008d134d 77-78,121-135
+  s_b3f45d3ce126bc::t_fb05bee629c398 49,68,88
+  s_b3f45d3ce126bc::t_664d36102831ac 63
+  s_b3f45d3ce126bc::t_3f805c675e1cad 87
+  s_b3f45d3ce126bc::t_3771e7fa552ee1 1-48,50-62,64-67,69-76,79-86,89-120,136-138
+frontend/src/lib/reader-fixtures.ts
+  s_925b37d096f464::t_2a26fc646f076b 127-145
+frontend/src/screens/LibraryScreen.tsx
+  s_b3f45d3ce126bc::t_67867a35d6a40c 1-118,124-132
+  s_b3f45d3ce126bc::t_110ee2e4b3d344 119-122
+  s_b3f45d3ce126bc::t_6e5ae2d9b14904 123
+frontend/src/screens/HomeScreen.tsx
+  s_b3f45d3ce126bc::t_b065fbdd80ec9b 1-44
+frontend/src/lib/repository-utils.ts
+  s_b3f45d3ce126bc::t_a3009138920507 35
+  s_b3f45d3ce126bc::t_fd1512d4b907b7 1-34,36-52
+frontend/src/components/ChapterList.tsx
+  s_b3f45d3ce126bc::t_7a50d68d3c7eee 1-6,8-10,12-22,24,26-93
+  s_b3f45d3ce126bc::t_8eabe5f8da719c 7,11,23,25
+frontend/src/screens/CenterScreen.tsx
+  s_b3f45d3ce126bc::t_952586d7e1f26c 84
+  s_b3f45d3ce126bc::t_07f5bbebe8b0d6 26
+  s_b3f45d3ce126bc::t_f458a760b2a522 96
+  s_b3f45d3ce126bc::t_18b98a45e33d57 19,25,34-35,55,61,77,83,85-87,112,130
+  s_b3f45d3ce126bc::t_ae26f310234fb7 60,75,82,100
+  s_b3f45d3ce126bc::t_9313f16dcbe711 1-18,20-24,27-33,36-54,56-59,62-74,76,78-81,88-95,97-99,101-111,113-129,131-139
+frontend/src/lib/study-repository.ts
+  s_b3f45d3ce126bc::t_7c7280bebc530a 117,314-316,380,385-388
+  s_b3f45d3ce126bc::t_d0123c91b4f1c9 3,364-368,371-372,377-378,381-384
+  s_b3f45d3ce126bc::t_9c85ac3650353c 335,345,350,356
+  s_b3f45d3ce126bc::t_d2a5b2d1820b00 369-370,373-376
+  s_b3f45d3ce126bc::t_91c6016d0a3c53 1-2,4-116,118-313,317-334,336-344,346-349,351-355,357-363,379,389-390
+frontend/src/screens/ReaderScreen.tsx
+  s_b3f45d3ce126bc::t_5c7988a6db5727 7
+  s_b3f45d3ce126bc::t_b95c6914a6c683 1,20,24-31,77
+  s_b3f45d3ce126bc::t_224c6715162f91 100
+  s_b3f45d3ce126bc::t_064705e081e896 2-6,8-17,19,22-23,40-76,78-80,84,86-89,91-99,101-104
+  s_b3f45d3ce126bc::t_a8843de2c69bd0 81-82
+  s_b3f45d3ce126bc::t_edf8fff146dcaa 18,21,32-39,83,85,90
+frontend/src/lib/repository-adapters.test.ts
+  s_925b37d096f464::t_399878d6e8cbaf 261,279,283
+  s_925b37d096f464::t_f51d06ec23ded7 3,253-260,273-274,282
+  s_b3f45d3ce126bc::t_ca577ccfd538b6 8,192-200
+  s_b3f45d3ce126bc::t_1e1efb171a2322 6-7
+  s_925b37d096f464::t_287539dade981e 70,91,245-252,281
+  s_b3f45d3ce126bc::t_a3355f130eaf72 123
+  s_b3f45d3ce126bc::t_194c48a7e14305 109-112
+  s_b3f45d3ce126bc::t_07f5bbebe8b0d6 178
+  s_925b37d096f464::t_ff1db8bd9430b2 2,226
+  s_925b37d096f464::t_c55c4fb2ceb475 262-263
+  s_b3f45d3ce126bc::t_b642d98e76cb51 1,4-5,15-22,29-33,35-44,46-68,71-89,92-108,113-122,124-177,179-191,286-287
+  s_925b37d096f464::t_cb1debff3e8bfe 201-225,227-239
+  s_925b37d096f464::t_842db7a0b2d6c9 9-14,240-244,264-272,275-278,280,284-285
+  s_b3f45d3ce126bc::t_aac0a0efba2099 45,90
+  s_b3f45d3ce126bc::t_17098913979b4d 23-28,34,69
+frontend/src/components/ConfirmationPanel.tsx
+  s_b3f45d3ce126bc::t_ad1709b43b95f9 4
+  s_b3f45d3ce126bc::t_c133035d56d013 1-3,5-42
+frontend/src/app/AppRouter.tsx
+  s_b3f45d3ce126bc::t_7a735b789b8ad7 2-13,15-37
+  s_b3f45d3ce126bc::t_5580e8117a768e 1,14
+frontend/src/lib/reader-repository.ts
+  s_b3f45d3ce126bc::t_f90a51b499d480 24
+  s_b3f45d3ce126bc::t_555b165cb00c2c 171
+  s_b3f45d3ce126bc::t_4a6102f15012e1 152,154,160,162-163,166,168,177,179,184,186
+  s_925b37d096f464::t_2a26fc646f076b 16-17,110,116
+  s_b3f45d3ce126bc::t_7c7280bebc530a 35,262-269
+  s_b3f45d3ce126bc::t_17098913979b4d 70,74,78,82,86,90
+  s_b3f45d3ce126bc::t_7a554de1044136 1-15,18-19,21-23,25-29,31-34,36-57,59-69,71-73,75-77,79-81,83-85,87-89,91-92,97-105,107-109,111-115,117-134,142-151,153,155-159,161,164-165,167,169-170,172-176,178,180-183,185,187-191,198-200,202-205,215-261,270
+  s_b3f45d3ce126bc::t_c63946a9b348d0 206-214
+  s_b3f45d3ce126bc::t_c8f3abfcbd9480 201
+  s_b3f45d3ce126bc::t_1bcd4c608910ed 135-140
+  s_b3f45d3ce126bc::t_f22673dd3f663a 20
+  s_b3f45d3ce126bc::t_c3a890a8e8a144 30,58,93-96,106,141,192-197
+frontend/src/lib/annotations.ts
+  s_b3f45d3ce126bc::t_f52732fb5fad76 1-117
+frontend/src/shells/MaterialWorkspace.test.tsx
+  s_925b37d096f464::t_6baa7e02451a75 288-290
+frontend/src/app/AppRouter.test.tsx
+  s_925b37d096f464::t_2535fbb9c41976 147
+  s_925b37d096f464::t_915c1aca268419 11
+  s_925b37d096f464::t_0cf1c744906f71 8,98-117
+  s_925b37d096f464::t_7556396cc16d23 78
+  s_925b37d096f464::t_b4c9edcae9e7c9 69
+  s_925b37d096f464::t_15d9c97233c56a 126-132,150
+  s_b3f45d3ce126bc::t_e3d82582eefadd 59-64
+  s_925b37d096f464::t_230496cd99c5c5 3,23-32,70-77,79-83
+  s_925b37d096f464::t_a6a4075c9f4bd3 119-125,133,142-146,148-149,158
+  s_b3f45d3ce126bc::t_2eb49600b3f6b0 1-2,4-6,10,12-22,33,43-55,57-58,65-68,118,159
+  s_925b37d096f464::t_77c577a7303410 96
+  s_925b37d096f464::t_9de8fb6dde5db6 9,134-141,151-157
+  s_b3f45d3ce126bc::t_c87506ca1d5cc6 56
+  s_925b37d096f464::t_564b12e877f2e0 84-87,92-95,97
+  s_925b37d096f464::t_b21388cea72c8b 7,34-42
+  s_925b37d096f464::t_b6b7fe7bc17d72 88-91
+frontend/src/screens/SettingsScreen.tsx
+  s_b3f45d3ce126bc::t_a4da8ba9e30229 1-40
+frontend/src/components/KnowledgeAggregate.tsx
+  s_b3f45d3ce126bc::t_c3212fbc408414 75-76
+  s_b3f45d3ce126bc::t_3bc64c471fe865 93,95,98-99
+  s_b3f45d3ce126bc::t_09cd2885617491 44,56,104
+  s_b3f45d3ce126bc::t_785234e1f7903a 4,7-9,11-15,78,80-82,84,88,92,100,114-130,132-159,161-186
+  s_b3f45d3ce126bc::t_98072d118634a3 1-3,5-6,10,16-43,45-55,57-74,77,79,83,85-87,89-91,94,96-97,101-103,105-113,131
+  s_b3f45d3ce126bc::t_07f5bbebe8b0d6 160
+frontend/src/lib/review-repository.ts
+  s_b3f45d3ce126bc::t_1b9b18b6dc88b6 132-133,136-139
+  s_b3f45d3ce126bc::t_d2d0720a253ff8 3,127-131,134-135,140-141,144-147
+  s_b3f45d3ce126bc::t_d33f4e2c13b765 1-2,4-84,87-92,94-100,102-110,112-121,123-126,142,152-153
+  s_b3f45d3ce126bc::t_1bcd4c608910ed 93
+  s_b3f45d3ce126bc::t_9c85ac3650353c 101,111,122
+  s_b3f45d3ce126bc::t_7c7280bebc530a 85-86,143,148-151
+frontend/src/components/PageHeader.tsx
+  s_b3f45d3ce126bc::t_d7013bbb6e225f 1-10,12-21,23-25,27-42
+  s_b3f45d3ce126bc::t_dcff8a19bd373f 11,22,26
+frontend/src/index.css
+  s_b3f45d3ce126bc::t_c48f5afaa764e3 40-41,71-72,100-101
+frontend/src/components/MaterialCard.tsx
+  s_b3f45d3ce126bc::t_8a8bcbfbe34c53 1-10,15-16,24,26-29,33-62,65-67,70,73-101,103-136,142-148
+  s_b3f45d3ce126bc::t_604f469b81ea18 30-31,63,137-140
+  s_b3f45d3ce126bc::t_7f3738bac15d19 11-14,69
+  s_b3f45d3ce126bc::t_bf13065d2c1583 32,64,141
+  s_b3f45d3ce126bc::t_3a1c2804dfe356 17-23,25,68,71-72,102
+frontend/src/lib/material-repository.ts
+  s_b3f45d3ce126bc::t_7c7280bebc530a 25,168-175
+  s_b3f45d3ce126bc::t_4a6102f15012e1 126
+  s_b3f45d3ce126bc::t_1bcd4c608910ed 116-119
+  s_b3f45d3ce126bc::t_f9e21301ff1de1 82-101
+  s_b3f45d3ce126bc::t_9c85ac3650353c 125,131,138,144,155
+  s_b3f45d3ce126bc::t_a7574a714f7666 1-24,26-46,48-55,57-59,61-63,65-81,102-115,120-124,127-130,132-137,139-143,145-154,156-167,176
+  s_b3f45d3ce126bc::t_17098913979b4d 47,56,60,64
+frontend/src/app/repository-context.tsx
+  s_925b37d096f464::t_ec01ca2afc549f 5
+  s_b3f45d3ce126bc::t_d98cf2fd49c2e4 1-3,8,10,12-18,24-25,29-38,40,49-51,75-94
+  s_925b37d096f464::t_496d007cb4652c 26-28,39,41,46-48,54,56-60
+  s_b3f45d3ce126bc::t_05a2222e24ff52 4,6-7,9,11,52-53,55,61-74
+  s_925b37d096f464::t_848daa9edf0791 19-23,42-45
+frontend/src/lib/repositories.ts
+  s_b3f45d3ce126bc::t_de88c25795e4f8 1-8
+frontend/src/components/HighlightedText.tsx
+  s_b3f45d3ce126bc::t_4139c13add69f1 8-13,27-30
+  s_b3f45d3ce126bc::t_9b5ec1b10d84b1 1-7,14-26,31-72
+frontend/src/screens/KnowledgeScreen.tsx
+  s_b3f45d3ce126bc::t_ba81a00d6aaaa5 25-28
+  s_b3f45d3ce126bc::t_52e8a6e489c40a 1-24,29-33,35-64,66-89,91-95
+  s_b3f45d3ce126bc::t_31f266e370b1ea 90
+  s_b3f45d3ce126bc::t_07f5bbebe8b0d6 34
+  s_b3f45d3ce126bc::t_952586d7e1f26c 65
+frontend/src/components/ui/button.tsx
+  s_b3f45d3ce126bc::t_18cee10a53e042 1-45
+frontend/src/screens/Page.tsx
+  s_b3f45d3ce126bc::t_01942630a8dc40 3
+  s_b3f45d3ce126bc::t_bbe7e243e96f9a 1-2,4-68
+frontend/src/components/MigratedComponents.test.tsx
+  s_b3f45d3ce126bc::t_7f69f90221d88d 1-110
+frontend/src/screens/StudyScreen.tsx
+  s_b3f45d3ce126bc::t_585d936bf1a09e 8
+  s_b3f45d3ce126bc::t_15473372baf8c4 107
+  s_b3f45d3ce126bc::t_0989a8be793f7e 21-23
+  s_b3f45d3ce126bc::t_d2e3135a15e404 1-7,9-20,24-106,108-136
+frontend/src/shells/ReaderShell.test.tsx
+  s_b3f45d3ce126bc::t_59afbbe9eae518 1-44
+  s_925b37d096f464::t_88cc85008d134d 45-49
+frontend/src/components/SessionList.tsx
+  s_b3f45d3ce126bc::t_a3d3cea373a14b 1-82
+frontend/src/components/AgentConversation.tsx
+  s_b3f45d3ce126bc::t_094957aa71f97a 94,97
+  s_b3f45d3ce126bc::t_45ce5f6715815b 1-93,95-96,98-119
+frontend/src/shells/AppShell.test.tsx
+  s_925b37d096f464::t_88cc85008d134d 1-3,5-23,25-26
+  s_925b37d096f464::t_52cb8a68a8650d 4,24
+docs/task-packets/reports/P2.5-frontend-baseline-handoff.md
+  s_b3f45d3ce126bc::t_7e3b2360f70eca 11-12
+  s_b3f45d3ce126bc::t_72277528afb3bb 58
+  s_b3f45d3ce126bc::t_b6ee574d13a62c 1-2,4-10,13-15,17,19-20,22,25-27,30-47,53,55-57,59-70,72-81
+  s_8fdf8bc814a38d::t_87e8af82455883 82-95,97-110,114-115,118,127,129
+  s_8fdf8bc814a38d::t_855b6f361a712a 96
+  s_b3f45d3ce126bc::t_a5a127feea1a86 49
+  s_b3f45d3ce126bc::t_2c4b60963811b1 48,50-52
+  s_b3f45d3ce126bc::t_e8385ba10b794d 23
+  s_b3f45d3ce126bc::t_e29758e76718af 3
+  s_b3f45d3ce126bc::t_c5fc0bb2d6090b 16
+  s_b3f45d3ce126bc::t_fc8b7441db0e41 18
+  s_b3f45d3ce126bc::t_5967fccaf3ef16 21
+  s_b3f45d3ce126bc::t_42452b95f20299 24
+  s_b3f45d3ce126bc::t_2d2b6cdcba4ff0 28-29
+  s_b3f45d3ce126bc::t_43d9e923bfeff2 54
+  s_b3f45d3ce126bc::t_df7656aef70576 71
+  s_8fdf8bc814a38d::t_cb1af56c8e62f0 111-113
+  s_8fdf8bc814a38d::t_86e512d55a2449 116-117
+  s_8fdf8bc814a38d::t_48ecb4ec4f9d91 119-121,124-126
+  s_8fdf8bc814a38d::t_ca20b0745ddef2 128
+  s_8fdf8bc814a38d::t_f04e1e2367bb75 130-132
+frontend/src/components/ReviewCard.tsx
+  s_b3f45d3ce126bc::t_24d889e7ff6921 40
+  s_b3f45d3ce126bc::t_c00eaf68494559 1-39,41-52
+frontend/README.md
+  s_b3f45d3ce126bc::t_8aaed9d3843e18 34,36
+frontend/src/components/ui/badge.tsx
+  s_b3f45d3ce126bc::t_18cee10a53e042 1-26
+frontend/src/lib/fixture-composition.ts
+  s_925b37d096f464::t_33b730d81a749a 58-60,62,67-73,94-95,121,155,178,183
+  s_925b37d096f464::t_535b4c452932c3 85,282
+  s_925b37d096f464::t_099b5921ccbe74 135-142,204,212,220-231,234-235,242-243,250-251,258-259
+  s_925b37d096f464::t_b4944adb2c04cc 288-292
+  s_925b37d096f464::t_6ff62e2918dd2f 77,319,324
+  s_925b37d096f464::t_7a94d14cc54b4d 96-99,332
+  s_925b37d096f464::t_ec01ca2afc549f 28
+  s_925b37d096f464::t_630e019762a25c 333-335
+  s_925b37d096f464::t_70c0157289ae31 76
+  s_925b37d096f464::t_584f713e2d1e24 1-27,34-57,61,63-66,74-75,93,100-120,122-134,143-150,152-154,156-177,179-182,184-203,218-219,232-233,238-241,246-249,254-257,262-267,343
+  s_925b37d096f464::t_3029b04f3750ad 86-90
+  s_925b37d096f464::t_00159f64b94e33 29-33,83-84,91-92,268-281,283-287,293-318,320-323,325-331,336-342
+  s_925b37d096f464::t_116f09f1b94bf6 78-82
+  s_925b37d096f464::t_b5a9652e0ae906 205-211,213-217,236-237,244-245,252-253,260-261
+  s_925b37d096f464::t_62b189d89ebbe4 151
+frontend/src/lib/knowledge-repository.ts
+  s_b3f45d3ce126bc::t_cada94cf98ee48 40-41,139,158,177
+  s_b3f45d3ce126bc::t_3f535740db52a7 271-272,275-279
+  s_b3f45d3ce126bc::t_4065616dedadce 3,266-270,273-274,280-281,284-287
+  s_b3f45d3ce126bc::t_4a6102f15012e1 214
+  s_b3f45d3ce126bc::t_d3a28af1c29063 1-2,4-39,42-123,128,130-138,140-144,146-157,159-163,165-176,178-179,183-184,186-195,199-205,208-212,215-218,220-228,230-237,239-248,250-256,260-265,282,292-293
+  s_b3f45d3ce126bc::t_ad41a4e7090215 257-259
+  s_b3f45d3ce126bc::t_f2939e7a5dc2d7 129
+  s_b3f45d3ce126bc::t_1bcd4c608910ed 206-207
+  s_b3f45d3ce126bc::t_60e840fd904134 124-127
+  s_b3f45d3ce126bc::t_7c7280bebc530a 196-198,283,288-291
+  s_b3f45d3ce126bc::t_9c85ac3650353c 213,219,229,238,249
+  s_b3f45d3ce126bc::t_a40811849615a5 145,164,185
+  s_b3f45d3ce126bc::t_315ce94b01d070 180-182
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "7213739c6c45a009b2a6efdb637d68ff4dfd093a",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_8fdf8bc814a38d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a098cb-b3d7-7421-8d74-e82a4e9d5a58",
+        "model": "gpt-5.6-luna"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_925b37d096f464": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a098fe-0f73-7f32-a023-fa7f5f10def7",
+        "model": "gpt-5.6-luna"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_b3f45d3ce126bc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0960d-7688-7c32-8390-97ef67db113c",
+        "model": "gpt-5.6-luna"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
