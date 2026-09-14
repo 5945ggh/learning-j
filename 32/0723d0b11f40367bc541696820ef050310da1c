@@ -1,0 +1,39 @@
+backend/tests/test_dictionary_import.py
+  s_80abd3fc8039ea::t_e02594cb086791 264
+  s_80abd3fc8039ea::t_4a25dd205d73c6 188-213,245-263,267-285
+  s_80abd3fc8039ea::t_f297b2d8791e8b 221-243
+  s_80abd3fc8039ea::t_02ffbd86486900 186-187
+  s_80abd3fc8039ea::t_af117077693d8f 214-216,218-220
+  s_80abd3fc8039ea::t_688d02c3668b85 244
+  s_80abd3fc8039ea::t_d20db374c3eb83 265-266
+  s_80abd3fc8039ea::t_d014e85f244bf4 286-288
+  s_80abd3fc8039ea::t_1e6c0014900698 172-173,179,217
+backend/src/learningj/dictionary/importer.py
+  s_80abd3fc8039ea::t_a94768ca950637 139-141,145-148,157-175,189-191,197,202-210,221-239,255
+  s_80abd3fc8039ea::t_e02594cb086791 43-44,360-362
+  s_80abd3fc8039ea::t_7e730edf7f8d45 42
+  s_80abd3fc8039ea::t_9554ee59fc3f38 45-47
+  s_80abd3fc8039ea::t_1adbdd79f179ee 137-138
+  s_80abd3fc8039ea::t_3a79985b32f147 335-336
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "320723d0b11f40367bc541696820ef050310da1c",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_80abd3fc8039ea": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a09e11-adbe-7ca1-8b3b-e270848d5ba1",
+        "model": "gpt-5.6-luna"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
