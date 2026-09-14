@@ -1,0 +1,37 @@
+DESIGN.md
+  s_9d0fb4dc98525c::t_150dfd4ac9b584 128-131
+  s_9d0fb4dc98525c::t_4d81268bab445a 119,121
+  s_9d0fb4dc98525c::t_1e99add77004cf 107,109
+  h_c735ec7f46d14b 8,27-29
+  s_9d0fb4dc98525c::t_2a5237e025aa90 18,110
+  s_9d0fb4dc98525c::t_a6bf0743ca1e50 5,144
+  s_9d0fb4dc98525c::t_637adae1dfb0b0 7,12,106,113,120,122,126-127,132-134,211
+  s_9d0fb4dc98525c::t_21f2e38a5526c6 155
+  s_9d0fb4dc98525c::t_63b89744440ca7 164
+  s_9d0fb4dc98525c::t_2542c4d1d87650 207
+  s_9d0fb4dc98525c::t_1ff2bac53192d9 123
+  s_9d0fb4dc98525c::t_cf6e9c1a82cc6c 19
+  s_9d0fb4dc98525c::t_f2a97e761ba6fe 212
+  s_9d0fb4dc98525c::t_85969f3aeebe68 10,24,38,136,147,152,157,161,176-177,184-193,203-204
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "817a73da60676e1631229eebdb867f070b4ed043",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_9d0fb4dc98525c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a09e47-32da-7640-9258-77274a1f995a",
+        "model": "gpt-5.6-luna"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
