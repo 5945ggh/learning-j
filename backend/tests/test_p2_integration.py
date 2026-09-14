@@ -115,7 +115,8 @@ def test_zip_safety_and_archive_import_idempotency_at_api_boundary(
         ("duplicate.zip", _make_duplicate_member_zip(), "重复"),
         ("missing-index.zip", build_yomitan_zip(omit={"index.json"}), "index.json"),
         ("missing-bank.zip", build_yomitan_zip(omit={"term_bank_1.json"}), "term bank"),
-        ("unknown-format.zip", build_yomitan_zip(index={"title": "x", "revision": "1", "format": 3}), "format"),
+        ("unknown-format.zip", build_yomitan_zip(index={"title": "x", "revision": "1", "format": 99}), "format"),
+        ("legacy-format2.zip", build_yomitan_zip(index={"title": "x", "revision": "1", "format": 2}), "format"),
         ("invalid-row.zip", build_yomitan_zip(entries=[["走る", "はしる"]]), "term bank"),
         ("corrupt.zip", b"not-a-zip", "损坏"),
     )

@@ -39,10 +39,12 @@ _TERM_BANK_RE = re.compile(r"^term_bank_(\d+)\.json$")
 _TERM_META_BANK_RE = re.compile(r"^term_meta_bank_(\d+)\.json$")
 
 # index.json 的 format 声明（官方 schema：整数枚举 1–3，`version` 为别名）。
-# 本导入器解析 format 1（及无 format 声明的 term bank v1 旧布局）；
-# 2/3 的行结构未经本包验证，按 ADR-032「未知 schema 给出定位信息」拒绝，
-# 不猜测行语义。
-SUPPORTED_INDEX_FORMATS = frozenset({1})
+# 本导入器显式解析两种声明：format 1（及无 format 声明的 term bank v1 旧布局）
+# 与 format 3（当前 Yomitan 主流导出格式；term bank v3 为八列行，释义数组
+# 中的项可为 structured-content 对象，由逐行/逐释义项校验严格解析）。
+# format 2 是历史遗留版本，不做显式适配，继续拒绝；未知声明一律按
+# ADR-032「未知 schema 给出定位信息」拒绝，不猜测行语义。
+SUPPORTED_INDEX_FORMATS = frozenset({1, 3})
 DEFAULT_SCHEMA_VERSION = "term_bank_v1"
 
 
@@ -132,23 +134,45 @@ def _definition_plain_text(gloss: object) -> tuple[str, dict | None]:
     """把一个 glossary 项投影为 (纯文本, 结构化内容)。
 
     字符串即纯文本释义；对象是 structured content（保留原始 payload，
-    收集其中全部 `text` 字段作降级显示投影，资源缺失时定义仍可读）；
-    旧式数组按 legacy 项保留并拼接字符串分量。其他类型按未知 schema 拒绝。
+    收集其中全部 `text` 字段与 content 数组裸字符串作降级显示投影，资源
+    缺失时定义仍可读）；单元素字典数组是导出器对 structured-content 的
+    包裹，递归取其内容；整型是旧式 sequenced 词典的序列交叉引用，按
+    确定性投影保留指向信息；旧式异构数组按 legacy 项保留并拼接字符串
+    分量。其他类型按未知 schema 拒绝。
     """
     if isinstance(gloss, str):
         return gloss, None
+    if isinstance(gloss, int) and not isinstance(gloss, bool):
+        return f"→ sequence {gloss}", None
+    if isinstance(gloss, list) and len(gloss) == 1 and isinstance(gloss[0], dict):
+        return _definition_plain_text(gloss[0])
     if isinstance(gloss, dict):
         texts: list[str] = []
 
         def collect(node: object) -> None:
-            if isinstance(node, str):
-                return
             if isinstance(node, dict):
                 value = node.get("text")
                 if isinstance(value, str):
                     texts.append(value)
-                for child in node.values():
-                    if isinstance(child, (dict, list)):
+                for key, child in node.items():
+                    if key == "content" and isinstance(child, str):
+                        texts.append(child)
+                    elif key == "content" and isinstance(child, list):
+                        # format 3 常见紧凑写法：content 数组里的裸字符串就是
+                        # 文本节点；相邻裸字符串合并为一个文本块，其余节点
+                        # 递归；data/style 等属性值不入投影。
+                        buffer: list[str] = []
+                        for item in child:
+                            if isinstance(item, str):
+                                buffer.append(item)
+                                continue
+                            if buffer:
+                                texts.append("".join(buffer))
+                                buffer = []
+                            collect(item)
+                        if buffer:
+                            texts.append("".join(buffer))
+                    elif isinstance(child, (dict, list)):
                         collect(child)
             elif isinstance(node, list):
                 for child in node:
@@ -162,18 +186,28 @@ def _definition_plain_text(gloss: object) -> tuple[str, dict | None]:
     _fail("glossary 项", f"不支持的释义类型 {type(gloss).__name__}")
 
 
-def _parse_term_bank(bank_name: str, raw: bytes, sequenced: bool) -> list[ParsedEntry]:
+def _parse_term_bank(
+    bank_name: str, raw: bytes, sequenced: bool, *, format3: bool
+) -> list[ParsedEntry]:
     try:
         rows = json.loads(raw.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise DictionaryImportError(f"{bank_name}: JSON 解析失败（{exc}）") from exc
     if not isinstance(rows, list):
-        _fail(bank_name, "term bank 顶层必须是数组（term bank v1）")
+        _fail(bank_name, "term bank 顶层必须是数组（term bank v1/v3）")
     entries: list[ParsedEntry] = []
     sequence_by_head: dict[tuple[str, str], int] = {}
     for row_index, row in enumerate(rows):
         location = f"{bank_name}[{row_index}]"
-        if not isinstance(row, list) or len(row) < 5:
+        if not isinstance(row, list):
+            _fail(location, "term bank 行必须是数组")
+        if format3 and len(row) != 8:
+            _fail(
+                location,
+                "term bank v3 行必须恰好 8 列 "
+                "（expression/reading/definitionTags/rules/score/definitions/sequence/termTags）",
+            )
+        if not format3 and len(row) < 5:
             _fail(location, "term bank v1 行至少 5 列（expression/reading/tags/rules/score）")
         expression, reading = row[0], row[1]
         if not isinstance(expression, str) or not expression:
@@ -183,11 +217,26 @@ def _parse_term_bank(bank_name: str, raw: bytes, sequenced: bool) -> list[Parsed
         # 官方约定：空读音表示与 expression 相同。
         reading = reading or expression
         head = (expression, reading)
-        sequence = None
-        if sequenced:
-            sequence = sequence_by_head.setdefault(head, len(sequence_by_head))
         tags: list[str] = []
-        for field_index, tag_field in ((2, row[2]), (3, row[3])):
+        tag_fields = ((2, row[2]), (3, row[3]))
+        if format3:
+            definition_values = row[5]
+            if not isinstance(definition_values, list):
+                _fail(location, "第 5 列（definitions）必须是数组")
+            sequence_value = row[6]
+            if isinstance(sequence_value, bool) or not isinstance(sequence_value, int):
+                _fail(location, "第 6 列（sequence）必须是整数")
+            term_tags = row[7]
+            if not isinstance(term_tags, str):
+                _fail(location, "第 7 列（termTags）必须是字符串")
+            tag_fields = (*tag_fields, (7, term_tags))
+            sequence = sequence_value if sequenced else None
+        else:
+            definition_values = row[5:]
+            sequence = None
+            if sequenced:
+                sequence = sequence_by_head.setdefault(head, len(sequence_by_head))
+        for field_index, tag_field in tag_fields:
             if tag_field is None and field_index == 2:
                 continue  # 官方 schema：definitionTags 允许 null，等同空串。
             if not isinstance(tag_field, str):
@@ -203,7 +252,7 @@ def _parse_term_bank(bank_name: str, raw: bytes, sequenced: bool) -> list[Parsed
                 _fail(location, f"score {score!r} 不是整数（canonical 模型的 score 为整数）")
             score = int(score)
         definitions: list[ParsedDefinition] = []
-        for ordinal, gloss in enumerate(row[5:]):
+        for ordinal, gloss in enumerate(definition_values):
             plain_text, structured = _definition_plain_text(gloss)
             definitions.append(
                 ParsedDefinition(ordinal=ordinal, plain_text=plain_text, structured_content=structured)
@@ -283,7 +332,8 @@ def parse_yomitan_archive(blob: bytes) -> ParsedDictionaryArchive:
         elif format_value not in SUPPORTED_INDEX_FORMATS:
             raise DictionaryImportError(
                 f"index.json: format={format_value} 不受支持（本导入器解析 format 1 / "
-                "无 format 声明的 term bank v1 布局；未知行结构按 ADR-032 拒绝而非猜测）"
+                "无 format 声明的 term bank v1 布局，以及 format 3；format 2 为历史遗留"
+                "版本，不做适配；未知行结构按 ADR-032 拒绝而非猜测）"
             )
         else:
             schema_version = f"yomitan_format_{format_value}"
@@ -307,7 +357,9 @@ def parse_yomitan_archive(blob: bytes) -> ParsedDictionaryArchive:
         for bank_name in bank_names:
             info = members[bank_name]
             raw = archive.read(info)
-            entries.extend(_parse_term_bank(bank_name, raw, sequenced))
+            entries.extend(
+                _parse_term_bank(bank_name, raw, sequenced, format3=format_value == 3)
+            )
 
         assets: list[ParsedAsset] = []
         for name in sorted(names):

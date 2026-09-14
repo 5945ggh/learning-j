@@ -169,18 +169,121 @@ def test_corrupt_and_unknown_schema_archives_are_rejected_with_location() -> Non
         parse_yomitan_archive(build_zip(index={"revision": "1"}))
     with pytest.raises(DictionaryImportError, match="revision"):
         parse_yomitan_archive(build_zip(index={"title": "t"}))
-    with pytest.raises(DictionaryImportError, match="format"):
-        parse_yomitan_archive(build_zip(index={"title": "t", "revision": "1", "format": 3}))
+    with pytest.raises(DictionaryImportError, match="format=2 不受支持"):
+        parse_yomitan_archive(build_zip(index={"title": "t", "revision": "1", "format": 2}))
     with pytest.raises(DictionaryImportError, match="term bank"):
         parse_yomitan_archive(build_zip(entries=[["only-two", "columns"]]))
     with pytest.raises(DictionaryImportError, match="score"):
         parse_yomitan_archive(build_zip(entries=[["走る", "はしる", "", "", "bad", "x"]]))
     with pytest.raises(DictionaryImportError, match="释义类型"):
-        parse_yomitan_archive(build_zip(entries=[["走る", "はしる", "", "", 1, 42]]))
+        parse_yomitan_archive(build_zip(entries=[["走る", "はしる", "", "", 1, 1.5]]))
     with pytest.raises(DictionaryImportError, match="JSON 解析失败"):
         parse_yomitan_archive(_corrupt_bank())
     with pytest.raises(DictionaryImportError, match="term_bank"):
         parse_yomitan_archive(build_zip(omit={"term_bank_1.json"}))
+
+
+def test_format3_index_accepted_with_structured_content() -> None:
+    """format 3（当前 Yomitan 主流导出）显式支持：schema 声明通过，
+    八列 term bank v3 行、显式 sequence/termTags 与 structured-content 释义
+    走严格校验路径。"""
+    structured = {
+        "type": "structured-content",
+        "content": {
+            "tag": "div",
+            "content": [
+                {"tag": "span", "content": ["あ"], "data": {"class": "word"}},
+                {
+                    "tag": "span",
+                    "lang": "zh",
+                    "content": ["/ ", "啊，噢。"],
+                    "data": {"class": "dfcn"},
+                },
+            ],
+        },
+    }
+    parsed = parse_yomitan_archive(
+        build_zip(
+            [["あ", "", "interj", "", 0, [structured], 42, "common"]],
+            index={"title": "s3", "revision": "r3", "format": 3, "sequenced": True},
+        )
+    )
+    assert parsed.schema_version == "yomitan_format_3"
+    assert parsed.entries[0].sequence == 42
+    assert parsed.entries[0].tags == ["interj", "common"]
+    definition = parsed.entries[0].definitions[0]
+    # content 数组裸字符串是文本节点；相邻裸字符串合并为一个文本块，
+    # data/style 等属性值不入纯文本投影；原始 payload 原样保留。
+    assert definition.plain_text == "あ\n/ 啊，噢。"
+    assert definition.structured_content == structured
+
+
+def test_format3_import_persists_explicit_sequence_and_term_tags(client: TestClient) -> None:
+    structured = {"type": "structured-content", "content": "definition"}
+    blob = build_zip(
+        [["あ", "", "interj", "", 3, [structured], 19, "common"]],
+        index={"title": "s3", "revision": "r3", "format": 3, "sequenced": True},
+    )
+    response = client.post("/dictionaries/import", files={"file": ("s3.zip", blob, "application/zip")})
+    assert response.status_code == 201
+    assert response.json()["source"]["schema_version"] == "yomitan_format_3"
+    with sqlite3.connect(client.app.state.db_path) as conn:  # type: ignore[attr-defined]
+        sequence, tags, definition_count = conn.execute(
+            """
+            SELECT e.sequence, e.tags, count(d.id)
+            FROM dictionary_entries AS e
+            JOIN dictionary_definitions AS d ON d.entry_id = e.id
+            GROUP BY e.id
+            """
+        ).fetchone()
+    assert sequence == 19
+    assert json.loads(tags) == ["interj", "common"]
+    assert definition_count == 1
+
+
+def test_format3_real_world_glossary_shapes_project_deterministically() -> None:
+    """真实 format 3 词典的释义三形态：structured-content、纯文本与空字符串，
+    均得到确定性投影；sequence 与 termTags 不会混入 definitions。"""
+    structured = {"type": "structured-content", "content": {"tag": "div", "content": "定義"}}
+    parsed = parse_yomitan_archive(
+        build_zip(
+            [["あ", "", None, "", 0, [structured, "plain", ""], 7, "term-tag"]],
+            index={"title": "s3", "revision": "r3", "format": 3, "sequenced": True},
+        )
+    )
+    definitions = parsed.entries[0].definitions
+    assert [d.ordinal for d in definitions] == [0, 1, 2]
+    assert definitions[0].plain_text == "定義"
+    assert definitions[0].structured_content == structured
+    assert definitions[1].plain_text == "plain"
+    assert definitions[1].structured_content is None
+    assert definitions[2].plain_text == ""
+    assert parsed.entries[0].sequence == 7
+    assert parsed.entries[0].tags == ["term-tag"]
+
+    # 布尔不是合法释义项，仍按未知 schema 拒绝。
+    with pytest.raises(DictionaryImportError, match="释义类型"):
+        parse_yomitan_archive(
+            build_zip(
+                [["あ", "", "", "", 0, [True], 0, ""]],
+                index={"title": "t", "revision": "1", "format": 3},
+            )
+        )
+
+
+def test_format3_malformed_rows_are_still_rejected_strictly() -> None:
+    """format 3 的接受不放宽校验：列数不足与未知 glossary 类型仍带定位拒绝。"""
+    with pytest.raises(DictionaryImportError, match="必须恰好 8 列"):
+        parse_yomitan_archive(
+            build_zip([["あ", ""]], index={"title": "t", "revision": "1", "format": 3})
+        )
+    with pytest.raises(DictionaryImportError, match="释义类型"):
+        parse_yomitan_archive(
+            build_zip(
+                [["あ", "", "", "", 0, [1.5], 0, ""]],
+                index={"title": "t", "revision": "1", "format": 3},
+            )
+        )
 
 
 def _corrupt_bank() -> bytes:
