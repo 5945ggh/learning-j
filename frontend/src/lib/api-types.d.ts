@@ -286,6 +286,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/materials/{material_id}/publication": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Publication */
+        get: operations["get_publication_materials__material_id__publication_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/materials/{material_id}/publication/resources/{resource_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Publication Resource */
+        get: operations["get_publication_resource_materials__material_id__publication_resources__resource_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/materials/{material_id}/publication/spine/{spine_index}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Publication Spine */
+        get: operations["get_publication_spine_materials__material_id__publication_spine__spine_index__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/materials/{material_id}/sentences": {
         parameters: {
             query?: never;
@@ -800,6 +851,26 @@ export interface components {
          * @enum {string}
          */
         MaterialStorageMode: "external_reference" | "managed_copy";
+        /** PublicationOut */
+        PublicationOut: {
+            /** Material Id */
+            material_id: string;
+            /** Projection Version */
+            projection_version: string;
+            /** Publication Version */
+            publication_version: string;
+            /** Spine */
+            spine: components["schemas"]["PublicationSpineOut"][];
+            /** Title */
+            title: string;
+        };
+        /** PublicationSpineOut */
+        PublicationSpineOut: {
+            /** Index */
+            index: number;
+            /** Label */
+            label: string;
+        };
         /** RetractionCreateIn */
         RetractionCreateIn: {
             /** Operation Key */
@@ -1414,6 +1485,101 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MaterialLexemeCountsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_publication_materials__material_id__publication_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                material_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicationOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_publication_resource_materials__material_id__publication_resources__resource_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                material_id: string;
+                resource_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_publication_spine_materials__material_id__publication_spine__spine_index__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                material_id: string;
+                spine_index: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/html": string;
                 };
             };
             /** @description Validation Error */

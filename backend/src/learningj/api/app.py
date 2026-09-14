@@ -11,11 +11,15 @@ from __future__ import annotations
 
 import os
 import uuid
+import hashlib
+import zipfile
+import html
 from datetime import datetime
 from pathlib import Path
 
 import msgpack
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Response, UploadFile
+from fastapi.responses import HTMLResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -44,6 +48,8 @@ from learningj.api.schemas import (
     MaterialLexemeCountOut,
     MaterialLexemeCountsOut,
     MaterialOut,
+    PublicationOut,
+    PublicationSpineOut,
     RetractionCreateIn,
     RetractionOut,
     SentenceOut,
@@ -63,10 +69,21 @@ from learningj.dictionary import service as dictionary_service
 from learningj.dictionary.importer import DictionaryImportError
 from learningj.domain.enums import MaterialStorageMode
 from learningj.evidence import service as evidence_service
+from learningj.ingest.epub import (
+    EPUB_PROJECTION_VERSION,
+    EpubPublicationError,
+    compile_epub,
+    replace_publication_placeholders,
+)
 from learningj.ingest.service import import_material, retokenize_material
 from learningj.tokens import service as token_service
 
 _DEFAULT_ASSETS_ROOT = "learningj-assets"
+_PUBLICATION_CSP = (
+    "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; script-src 'none'; "
+    "connect-src 'none'; font-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; "
+    "form-action 'none'; base-uri 'none'"
+)
 
 
 def create_app(
@@ -119,17 +136,47 @@ def create_app(
         if suffix not in {"txt", "srt", "vtt", "epub"}:
             raise HTTPException(status_code=415, detail="仅支持 .txt、.srt、.vtt、.epub")
         blob = await file.read()
+        managed_copy_created = False
+        managed_locator: str | None = None
+        publication = None
         try:
+            if suffix == "epub" and storage_mode is MaterialStorageMode.MANAGED_COPY:
+                publication = compile_epub(blob, filename)
+                source_sha256 = hashlib.sha256(blob).hexdigest()
+                managed_locator = f"materials/{source_sha256}.epub"
+                managed_copy_created = _store_managed_copy(
+                    resolved_assets_root, managed_locator, blob
+                )
             material = import_material(
                 session,
                 filename=filename,
                 blob=blob,
-                locator=locator or filename,
+                locator=managed_locator or locator or filename,
                 title=title,
                 storage_mode=storage_mode,
+                prepare_sidecar=not (
+                    suffix == "epub" and storage_mode is MaterialStorageMode.MANAGED_COPY
+                ),
+                publication=publication,
             )
-        except (ValueError, RuntimeError, KeyError, OSError) as exc:
+            # A content-hash replay can return an older external-reference
+            # material.  Do not leave an unreferenced managed copy behind.
+            if managed_copy_created and material.storage_mode is not MaterialStorageMode.MANAGED_COPY:
+                _remove_managed_copy(resolved_assets_root, managed_locator or "")
+                managed_copy_created = False
+        except (
+            ValueError,
+            RuntimeError,
+            KeyError,
+            OSError,
+            UnicodeError,
+            StopIteration,
+            EpubPublicationError,
+            zipfile.BadZipFile,
+        ) as exc:
             session.rollback()
+            if managed_copy_created and managed_locator is not None:
+                _remove_managed_copy(resolved_assets_root, managed_locator)
             raise HTTPException(status_code=422, detail=str(exc)) from exc
         return _material_response(session, material)
 
@@ -137,6 +184,87 @@ def create_app(
     def list_materials(session: Session = Depends(db_session)) -> list[MaterialOut]:
         materials = session.scalars(select(Material).order_by(Material.created_at, Material.id)).all()
         return [_material_response(session, material) for material in materials]
+
+    @app.get("/materials/{material_id}/publication", response_model=PublicationOut)
+    def get_publication(material_id: str, session: Session = Depends(db_session)) -> PublicationOut:
+        material = _material_by_id(session, material_id)
+        manifest = _publication_manifest(material)
+        _verify_managed_publication(material, resolved_assets_root)
+        return PublicationOut(
+            material_id=str(material.id),
+            title=str(manifest.get("title") or material.title),
+            publication_version=material.publication_version or str(manifest["publication_version"]),
+            projection_version=str(manifest["projection_version"]),
+            spine=[
+                PublicationSpineOut(index=int(item["index"]), label=str(item["label"]))
+                for item in manifest["spine"]
+            ],
+        )
+
+    @app.get("/materials/{material_id}/publication/spine/{spine_index}", response_class=HTMLResponse)
+    def get_publication_spine(
+        material_id: str, spine_index: int, session: Session = Depends(db_session)
+    ) -> Response:
+        material = _material_by_id(session, material_id)
+        manifest = _publication_manifest(material)
+        item = _publication_spine_item(manifest, spine_index)
+        _verify_managed_publication(material, resolved_assets_root)
+        html_text = replace_publication_placeholders(
+            str(item["controlled_html"]), material_id=str(material.id)
+        )
+        document = (
+            '<!doctype html><html lang="ja" data-learningj-publication="1" '
+            f'data-projection-version="{_html_attr(str(manifest["projection_version"]))}" '
+            f'data-publication-version="{_html_attr(str(manifest["publication_version"]))}" '
+            f'data-spine-index="{spine_index}"><head><meta charset="utf-8">'
+            '<meta name="viewport" content="width=device-width,initial-scale=1">'
+            '<style>html,body{margin:0;padding:0;background:#fffcf5;color:#292929;}'
+            'body{font:18px/1.9 system-ui,-apple-system,"Hiragino Sans",sans-serif;padding:2rem 6vw;}'
+            'img{display:block;max-width:100%;height:auto;margin:1rem auto;}a{color:inherit;}'
+            'ruby rt{font-size:.55em;line-height:1;}</style></head><body>'
+            f'{html_text}</body></html>'
+        )
+        return HTMLResponse(
+            content=document,
+            media_type="text/html",
+            headers={
+                "Content-Security-Policy": _PUBLICATION_CSP,
+                "X-Content-Type-Options": "nosniff",
+                "X-LearningJ-Publication": "controlled",
+            },
+        )
+
+    @app.get("/materials/{material_id}/publication/resources/{resource_id}")
+    def get_publication_resource(
+        material_id: str, resource_id: str, session: Session = Depends(db_session)
+    ) -> Response:
+        material = _material_by_id(session, material_id)
+        manifest = _publication_manifest(material)
+        resource = next(
+            (item for item in manifest["resources"] if item.get("resource_id") == resource_id),
+            None,
+        )
+        if resource is None:
+            raise HTTPException(status_code=404, detail="publication 资源不存在")
+        _verify_managed_publication(material, resolved_assets_root)
+        member = str(resource["member_path"])
+        try:
+            with zipfile.ZipFile(_managed_copy_path(resolved_assets_root, material.locator)) as archive:
+                blob = archive.read(member)
+        except (OSError, KeyError, zipfile.BadZipFile) as exc:
+            raise HTTPException(status_code=422, detail="publication 资源读取失败") from exc
+        media_type = str(resource.get("media_type") or "application/octet-stream")
+        if not media_type.startswith("image/") or media_type == "image/svg+xml":
+            raise HTTPException(status_code=404, detail="publication 资源类型不受支持")
+        return Response(
+            content=blob,
+            media_type=media_type,
+            headers={
+                "Content-Security-Policy": _PUBLICATION_CSP,
+                "X-Content-Type-Options": "nosniff",
+                "Cache-Control": "no-store",
+            },
+        )
 
     @app.get(
         "/materials/{material_id}/sentences",
@@ -586,6 +714,107 @@ def _sidecar_response(sidecar: Sidecar) -> SidecarOut:
         analyzer_dict_version=sidecar.analyzer_dict_version,
         payload=msgpack.unpackb(sidecar.payload, raw=False),
     )
+
+
+def _store_managed_copy(root: Path, locator: str, blob: bytes) -> bool:
+    """Atomically store one immutable managed copy below the configured root."""
+
+    root_resolved = root.resolve()
+    destination = (root_resolved / locator).resolve()
+    if root_resolved not in destination.parents:
+        raise ValueError("managed copy 路径越界")
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    if destination.exists():
+        if destination.is_file() and destination.read_bytes() == blob:
+            return False
+        raise ValueError("managed copy 目标已存在且内容不同")
+    temporary = destination.with_name(f".{destination.name}.{uuid.uuid4().hex}.tmp")
+    try:
+        temporary.write_bytes(blob)
+        os.replace(temporary, destination)
+    except OSError:
+        temporary.unlink(missing_ok=True)
+        raise
+    return True
+
+
+def _remove_managed_copy(root: Path, locator: str) -> None:
+    root_resolved = root.resolve()
+    destination = (root_resolved / locator).resolve()
+    if root_resolved in destination.parents and destination.is_file():
+        destination.unlink()
+
+
+def _managed_copy_path(root: Path, locator: str) -> Path:
+    root_resolved = root.resolve()
+    path = (root_resolved / locator).resolve()
+    if root_resolved not in path.parents or path == root_resolved:
+        raise HTTPException(status_code=422, detail="managed copy 路径无效")
+    return path
+
+
+def _material_by_id(session: Session, material_id: str) -> Material:
+    try:
+        material_uuid = uuid.UUID(material_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail="素材不存在") from exc
+    material = session.get(Material, material_uuid)
+    if material is None:
+        raise HTTPException(status_code=404, detail="素材不存在")
+    return material
+
+
+def _publication_manifest(material: Material) -> dict[str, object]:
+    if material.kind.value != "epub" or not isinstance(material.publication_manifest, dict):
+        raise HTTPException(status_code=404, detail="publication 不存在")
+    manifest = material.publication_manifest
+    if not isinstance(manifest.get("projection_version"), str) or not isinstance(
+        manifest.get("publication_version"), str
+    ):
+        raise HTTPException(status_code=409, detail="publication 版本信息无效")
+    if manifest["projection_version"] != EPUB_PROJECTION_VERSION:
+        raise HTTPException(status_code=409, detail="publication projection 已更新，请重新导入该 EPUB")
+    spine = manifest.get("spine")
+    resources = manifest.get("resources")
+    if not isinstance(spine, list) or not isinstance(resources, list):
+        raise HTTPException(status_code=409, detail="publication manifest 无效")
+    if material.publication_version and manifest["publication_version"] != material.publication_version:
+        raise HTTPException(status_code=409, detail="publication 版本校验失败")
+    return manifest
+
+
+def _publication_spine_item(manifest: dict[str, object], index: int) -> dict[str, object]:
+    spine = manifest["spine"]
+    assert isinstance(spine, list)
+    item = next((value for value in spine if isinstance(value, dict) and value.get("index") == index), None)
+    if item is None:
+        raise HTTPException(status_code=404, detail="publication 章节不存在")
+    if not isinstance(item.get("controlled_html"), str) or not isinstance(item.get("member_path"), str):
+        raise HTTPException(status_code=409, detail="publication 章节 manifest 无效")
+    return item
+
+
+def _verify_managed_publication(material: Material, root: Path) -> Path:
+    if material.storage_mode is not MaterialStorageMode.MANAGED_COPY or not material.copy_stored:
+        raise HTTPException(status_code=409, detail="publication 原始资源未保存为 managed copy")
+    path = _managed_copy_path(root, material.locator)
+    if not path.is_file():
+        raise HTTPException(status_code=409, detail="publication 原始资源不可用，请重新导入")
+    if material.source_sha256:
+        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        if digest != material.source_sha256:
+            raise HTTPException(status_code=409, detail="publication 原始资源校验失败")
+    try:
+        with zipfile.ZipFile(path) as archive:
+            if archive.testzip() is not None:
+                raise HTTPException(status_code=422, detail="publication ZIP 已损坏")
+    except zipfile.BadZipFile as exc:
+        raise HTTPException(status_code=422, detail="publication ZIP 已损坏") from exc
+    return path
+
+
+def _html_attr(value: str) -> str:
+    return html.escape(value, quote=True)
 
 
 def _material_response(session: Session, material: Material) -> MaterialOut:

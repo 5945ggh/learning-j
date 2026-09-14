@@ -35,7 +35,7 @@ class Material(UuidPk, Timestamped, Base):
     title: Mapped[str] = mapped_column(String(512), nullable=False)
     # 对规范化后的素材文本计算（§0）；不存媒体副本，只存 locator + hash（ADR-010）。
     content_hash: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
-    # 文件句柄或路径，不存媒体副本。
+    # 文件句柄、路径或受控 managed-copy locator。
     locator: Mapped[str] = mapped_column(String(1024), nullable=False)
     kind: Mapped[MaterialKind] = mapped_column(
         str_enum(MaterialKind, name="material_kind"), nullable=False
@@ -48,6 +48,10 @@ class Material(UuidPk, Timestamped, Base):
     )
     # Raw input identity is deliberately distinct from the normalized-text hash.
     source_sha256: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    # EPUB reader projection identity/manifest.  These are nullable for the
+    # existing text/subtitle paths and for historical external references.
+    publication_version: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    publication_manifest: Mapped[dict[str, Any] | None] = mapped_column(json_dict(), nullable=True)
     # Only a fully-built sidecar generation is published here.  The FK is
     # deliberately nullable while an import is being prepared.
     current_sidecar_id: Mapped[uuid.UUID | None] = mapped_column(

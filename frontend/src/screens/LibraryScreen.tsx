@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { ImportMaterialDialog } from '@/components/ImportMaterialDialog'
 import { MaterialCard } from '@/components/MaterialCard'
 import { CONTENT_BOTTOM, CONTENT_PAD, CONTENT_WIDTH, PageHeader, PlaceholderNote } from '@/components/PageHeader'
+import { Button } from '@/components/ui/button'
 import { materialPath, studyPath } from '@/app/routes'
 import { useRepositories } from '@/app/repository-context'
 import { materialsForMode, type LibraryMode } from '@/lib/library'
+import { createMaterial } from '@/lib/materials'
 import type { Material } from '@/lib/materials'
 import type { StudySessionRecord } from '@/lib/study-repository'
 
@@ -25,6 +28,7 @@ export function LibraryScreen() {
   const [error, setError] = useState<string | null>(null)
   const [attempt, setAttempt] = useState(0)
   const [mode, setMode] = useState<LibraryMode>('books')
+  const [importOpen, setImportOpen] = useState(false)
   const [activeSessions, setActiveSessions] = useState<StudySessionRecord[]>([])
 
   useEffect(() => {
@@ -65,14 +69,9 @@ export function LibraryScreen() {
         title="素材库"
         subtitle="原文与视听素材来自 P1/P2 API；学习会话入口会保留来源材料。"
         actions={(
-          <button
-            type="button"
-            disabled
-            title="导入素材待实现"
-            className="rounded-md border border-dashed border-border px-3 py-2 text-sm text-muted-foreground"
-          >
-            导入素材（待实现）
-          </button>
+          <Button type="button" variant="primary" onClick={() => setImportOpen(true)}>
+            导入素材
+          </Button>
         )}
       />
 
@@ -127,6 +126,18 @@ export function LibraryScreen() {
           </div>
         )}
       </div>
+
+      {importOpen ? (
+        <ImportMaterialDialog
+          onClose={() => setImportOpen(false)}
+          onImport={(draft) => createMaterial({ file: draft.file, title: draft.title })}
+          onImported={() => {
+            // 新素材还没有句子/sidecar，留在列表语境并刷新；详情跳转由用户在卡片上发起。
+            setImportOpen(false)
+            setAttempt((value) => value + 1)
+          }}
+        />
+      ) : null}
     </div>
   )
 }

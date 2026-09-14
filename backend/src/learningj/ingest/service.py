@@ -24,6 +24,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from learningj.db.models.material import Material, MaterialLexemeCount, Sentence, Sidecar
+from learningj.ingest.epub import EpubPublication, compile_epub
 from learningj.domain import versions as domain_versions
 from learningj.domain.enums import MaterialStorageMode
 from learningj.db.models.lexeme import Lexeme
@@ -167,11 +168,16 @@ class _TextExtractor(HTMLParser):
         super().__init__(convert_charrefs=True)
         self.parts: list[str] = []
         self._skip = 0
-        self._skip_tags = {"script", "style", "nav", "head", "rt", "rp"}
+        self._skip_tags = {
+            "script", "style", "nav", "head", "rt", "rp", "iframe", "object", "embed",
+            "form", "input", "button", "textarea", "select", "option", "video", "audio",
+            "canvas", "svg",
+        }
         self._block_tags = {"p", "div", "section", "blockquote", "li", "h1", "h2", "h3", "h4", "h5", "h6"}
         self._raw_offset = 0
         self._ruby_stack: list[dict[str, Any]] = []
         self._reading_depth = 0
+        self._hidden_tags: list[str] = []
         self.ruby_hints: list[dict[str, Any]] = []
 
     def _append(self, value: str) -> None:
@@ -182,12 +188,18 @@ class _TextExtractor(HTMLParser):
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         tag = tag.lower()
+        attr_map = {key.lower(): value for key, value in attrs}
         if tag == "ruby" and not self._skip:
             self._ruby_stack.append({"start": self._raw_offset, "base": [], "reading": []})
         if tag == "rt" and self._ruby_stack:
             self._reading_depth += 1
         if tag in self._skip_tags:
             self._skip += 1
+        elif not self._skip and (
+            "hidden" in attr_map or attr_map.get("aria-hidden", "").lower() == "true"
+        ):
+            self._skip += 1
+            self._hidden_tags.append(tag)
         elif not self._skip and tag in self._block_tags and self.parts and not self.parts[-1].endswith("\n"):
             self._append("\n")
         elif not self._skip and tag in {"br", "img", "image"}:
@@ -199,6 +211,9 @@ class _TextExtractor(HTMLParser):
             self._reading_depth -= 1
         if tag in self._skip_tags and self._skip:
             self._skip -= 1
+        elif self._hidden_tags and self._hidden_tags[-1] == tag:
+            self._skip -= 1
+            self._hidden_tags.pop()
         elif not self._skip and tag in self._block_tags:
             self._append("\n")
         if tag == "ruby" and self._ruby_stack:
@@ -233,6 +248,11 @@ class _TextExtractor(HTMLParser):
 
 
 def _epub_sentences(blob: bytes) -> tuple[list[ParsedSentence], str]:
+    # Validate the whole OCF package (entry limits, path confinement, OPF/spine
+    # references and XML policy) before the historical language projection
+    # reads any member.  The compiler result is persisted by reader-ready API
+    # callers; this call keeps direct/service imports on the same safety gate.
+    compile_epub(blob)
     with zipfile.ZipFile(io.BytesIO(blob)) as archive:
         container = ElementTree.fromstring(archive.read("META-INF/container.xml"))
         rootfile = next(
@@ -393,14 +413,56 @@ def _tokenize(sentences: list[Sentence], analyzer_dict_version: str | None = Non
     return payload, tokenizer_version, dict_version
 
 
-def import_material(session: Session, *, filename: str, blob: bytes, locator: str | None = None, title: str | None = None, kind: MaterialKind | None = None, storage_mode: MaterialStorageMode = MaterialStorageMode.EXTERNAL_REFERENCE) -> Material:
-    """Normalize, segment, tokenize, and persist one material idempotently."""
+def import_material(
+    session: Session,
+    *,
+    filename: str,
+    blob: bytes,
+    locator: str | None = None,
+    title: str | None = None,
+    kind: MaterialKind | None = None,
+    storage_mode: MaterialStorageMode = MaterialStorageMode.EXTERNAL_REFERENCE,
+    prepare_sidecar: bool = True,
+    publication: EpubPublication | None = None,
+) -> Material:
+    """Normalize and persist one material idempotently.
+
+    Existing callers keep the historical synchronous Sidecar behavior.  The
+    RF-01 managed-copy EPUB path passes ``prepare_sidecar=False`` so a reader
+    publication can be committed independently of language indexing.
+    """
 
     detected_kind, parsed, full_text = parse_source(filename, blob)
     material_kind = kind or detected_kind
+    if material_kind is MaterialKind.EPUB and publication is None:
+        publication = compile_epub(blob, filename)
     content_hash = _content_hash(full_text)
     existing = session.scalar(select(Material).where(Material.content_hash == content_hash, Material.kind == material_kind))
     if existing is not None:
+        # Re-importing the same EPUB is an explicit request to refresh its
+        # controlled publication compiler output.  Keep the existing Sentence
+        # and Sidecar history, but replace only the publication identity when
+        # the projection version changed (or when the caller now supplies a
+        # managed copy).  Opening a book never performs this refresh silently.
+        if (
+            material_kind is MaterialKind.EPUB
+            and publication is not None
+            and (
+                existing.publication_version != publication.publication_version
+                or existing.publication_manifest is None
+                or storage_mode is MaterialStorageMode.MANAGED_COPY
+            )
+        ):
+            source_sha256 = hashlib.sha256(blob).hexdigest()
+            existing.title = title or existing.title
+            existing.locator = locator or existing.locator
+            existing.copy_stored = storage_mode is MaterialStorageMode.MANAGED_COPY
+            existing.storage_mode = storage_mode
+            existing.source_sha256 = source_sha256
+            existing.publication_version = publication.publication_version
+            existing.publication_manifest = publication.as_manifest(source_sha256)
+            session.commit()
+            session.refresh(existing)
         return existing
 
     material = Material(
@@ -411,6 +473,10 @@ def import_material(session: Session, *, filename: str, blob: bytes, locator: st
         copy_stored=storage_mode is MaterialStorageMode.MANAGED_COPY,
         storage_mode=storage_mode,
         source_sha256=hashlib.sha256(blob).hexdigest(),
+        publication_version=publication.publication_version if publication else None,
+        publication_manifest=(
+            publication.as_manifest(hashlib.sha256(blob).hexdigest()) if publication else None
+        ),
     )
     session.add(material)
     session.flush()
@@ -429,26 +495,27 @@ def import_material(session: Session, *, filename: str, blob: bytes, locator: st
         sentence_rows.append(row)
         session.add(row)
     session.flush()
-    token_payload, tokenizer_version, dict_version = _tokenize(sentence_rows)
-    for token_group, parsed_sentence in zip(token_payload, parsed, strict=True):
-        token_group["ruby_hints"] = list(parsed_sentence.ruby_hints)
-    sidecar = Sidecar(
-        material_id=material.id,
-        content_hash=content_hash,
-        segmenter_version=SEGMENTER_VERSION,
-        tokenizer_version=tokenizer_version,
-        analyzer_dict_version=dict_version,
-        payload=msgpack.packb({"sentences": token_payload}, use_bin_type=True),
-    )
-    session.add(sidecar)
-    session.flush()
-    _publish_generation(
-        session,
-        material=material,
-        sidecar=sidecar,
-        token_payload=token_payload,
-        analyzer_dict_version=dict_version,
-    )
+    if prepare_sidecar:
+        token_payload, tokenizer_version, dict_version = _tokenize(sentence_rows)
+        for token_group, parsed_sentence in zip(token_payload, parsed, strict=True):
+            token_group["ruby_hints"] = list(parsed_sentence.ruby_hints)
+        sidecar = Sidecar(
+            material_id=material.id,
+            content_hash=content_hash,
+            segmenter_version=SEGMENTER_VERSION,
+            tokenizer_version=tokenizer_version,
+            analyzer_dict_version=dict_version,
+            payload=msgpack.packb({"sentences": token_payload}, use_bin_type=True),
+        )
+        session.add(sidecar)
+        session.flush()
+        _publish_generation(
+            session,
+            material=material,
+            sidecar=sidecar,
+            token_payload=token_payload,
+            analyzer_dict_version=dict_version,
+        )
     session.commit()
     session.refresh(material)
     return material
@@ -552,12 +619,45 @@ def retokenize_material(session: Session, *, material_id: uuid.UUID) -> Material
     # Ruby hints annotate positions in the normalized sentence text, which
     # re-tokenization does not change; carry the stored ones into the
     # candidate payload instead of dropping them.
-    hints_by_index = {
+    hints_by_sentence_index = {
         group.get("sentence_index"): list(group.get("ruby_hints", []))
         for group in (msgpack.unpackb(current.payload, raw=False).get("sentences", []) if current else [])
     }
+    # Reader-ready EPUBs intentionally have no Sidecar yet.  Their immutable
+    # publication manifest carries absolute spine ruby hints; project those
+    # into the sentence-local coordinates when the first Sidecar is prepared.
+    if not current and material.publication_manifest:
+        source_manifest = material.publication_manifest.get(
+            "source_spine", material.publication_manifest.get("spine", [])
+        )
+        spine_hints = {
+            int(item.get("index")): list(item.get("ruby_hints", []))
+            for item in source_manifest
+            if isinstance(item, dict) and isinstance(item.get("index"), int)
+        }
+        for sentence in sentences:
+            anchor = sentence.anchor_payload
+            if sentence.anchor_type is not SentenceAnchorType.EPUB:
+                continue
+            spine_index = anchor.get("spine_index")
+            start = anchor.get("char_start")
+            end = anchor.get("char_end")
+            if not all(isinstance(value, int) for value in (spine_index, start, end)):
+                continue
+            hints_by_sentence_index[sentence.index] = [
+                {
+                    **hint,
+                    "char_start": int(hint["char_start"]) - start,
+                    "char_end": int(hint["char_end"]) - start,
+                }
+                for hint in spine_hints.get(spine_index, [])
+                if isinstance(hint, dict)
+                and isinstance(hint.get("char_start"), int)
+                and isinstance(hint.get("char_end"), int)
+                and start <= int(hint["char_start"]) <= int(hint["char_end"]) <= end
+            ]
     for token_group in token_payload:
-        token_group["ruby_hints"] = hints_by_index.get(token_group["sentence_index"], [])
+        token_group["ruby_hints"] = hints_by_sentence_index.get(token_group["sentence_index"], [])
     candidate = msgpack.packb({"sentences": token_payload}, use_bin_type=True)
     if (
         current is not None

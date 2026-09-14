@@ -42,8 +42,8 @@ from pathlib import Path
 MANIFEST_SUFFIX = ".manifest.json"
 _SNAPSHOT_MANIFEST_TYPE = "learningj-library-snapshot"
 DEVELOPMENT_BASELINE_TABLE = "learningj_development_baseline"
-DEVELOPMENT_SCHEMA_ID = "learningj-development-schema-2026-09-12-p2"
-DEVELOPMENT_CONTRACT_ID = "learningj-contract-2026-09-12-p2"
+DEVELOPMENT_SCHEMA_ID = "learningj-development-schema-2026-09-14-rf01"
+DEVELOPMENT_CONTRACT_ID = "learningj-contract-2026-09-14-rf01"
 DEVELOPMENT_SUPPORTED_DATABASES = "designated-development-test-rebuild-only"
 # P0 delivered the material browsing chain; P1 owns the content index
 # (lexemes + MaterialLexemeCount); P2 owns the reader evidence layer: the

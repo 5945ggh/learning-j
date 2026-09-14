@@ -1245,6 +1245,60 @@
         "title": "MaterialStorageMode",
         "type": "string"
       },
+      "PublicationOut": {
+        "properties": {
+          "material_id": {
+            "title": "Material Id",
+            "type": "string"
+          },
+          "projection_version": {
+            "title": "Projection Version",
+            "type": "string"
+          },
+          "publication_version": {
+            "title": "Publication Version",
+            "type": "string"
+          },
+          "spine": {
+            "items": {
+              "$ref": "#/components/schemas/PublicationSpineOut"
+            },
+            "title": "Spine",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "material_id",
+          "title",
+          "publication_version",
+          "projection_version",
+          "spine"
+        ],
+        "title": "PublicationOut",
+        "type": "object"
+      },
+      "PublicationSpineOut": {
+        "properties": {
+          "index": {
+            "title": "Index",
+            "type": "integer"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "index",
+          "label"
+        ],
+        "title": "PublicationSpineOut",
+        "type": "object"
+      },
       "RetractionCreateIn": {
         "properties": {
           "operation_key": {
@@ -2297,6 +2351,139 @@
           }
         },
         "summary": "Get Material Lexeme Counts"
+      }
+    },
+    "/materials/{material_id}/publication": {
+      "get": {
+        "operationId": "get_publication_materials__material_id__publication_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "material_id",
+            "required": true,
+            "schema": {
+              "title": "Material Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicationOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Publication"
+      }
+    },
+    "/materials/{material_id}/publication/resources/{resource_id}": {
+      "get": {
+        "operationId": "get_publication_resource_materials__material_id__publication_resources__resource_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "material_id",
+            "required": true,
+            "schema": {
+              "title": "Material Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "resource_id",
+            "required": true,
+            "schema": {
+              "title": "Resource Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Publication Resource"
+      }
+    },
+    "/materials/{material_id}/publication/spine/{spine_index}": {
+      "get": {
+        "operationId": "get_publication_spine_materials__material_id__publication_spine__spine_index__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "material_id",
+            "required": true,
+            "schema": {
+              "title": "Material Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "spine_index",
+            "required": true,
+            "schema": {
+              "title": "Spine Index",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Publication Spine"
       }
     },
     "/materials/{material_id}/sentences": {

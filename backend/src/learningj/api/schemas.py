@@ -35,6 +35,19 @@ class MaterialOut(BaseModel):
     sentence_count: int
 
 
+class PublicationSpineOut(BaseModel):
+    index: int
+    label: str
+
+
+class PublicationOut(BaseModel):
+    material_id: str
+    title: str
+    publication_version: str
+    projection_version: str
+    spine: list[PublicationSpineOut]
+
+
 class SentenceOut(BaseModel):
     """`GET /materials/{material_id}/sentences` 的响应；`text` 与
     `anchor_payload` 的偏移均为 Unicode code point（data-model §0/§8.2）。"""

@@ -1,5 +1,16 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { fetchLexemeCounts, fetchMaterials, fetchSentences, fetchSidecar, parseEpubSpineIndex } from './materials'
+import {
+  MATERIAL_IMPORT_TYPE_DETAIL,
+  createMaterial,
+  fetchLexemeCounts,
+  fetchMaterials,
+  fetchSentences,
+  fetchSidecar,
+  isSupportedImportFilename,
+  materialDefaultTitle,
+  materialFilenameExtension,
+  parseEpubSpineIndex,
+} from './materials'
 
 afterEach(() => vi.unstubAllGlobals())
 
@@ -160,5 +171,121 @@ describe('lexeme-counts API contract', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response({ detail: 'missing' }, 404)))
 
     await expect(fetchLexemeCounts('fixture-id-404')).rejects.toThrow('词频加载失败（404）')
+  })
+})
+
+describe('material import filename helpers', () => {
+  it.each([
+    ['sample.txt', 'txt'],
+    ['字幕.SRT', 'srt'],
+    ['episode.ja.vtt', 'vtt'],
+    ['no-extension', ''],
+    ['plain', ''],
+  ])('extracts the lowercased last extension: %s -> %s', (filename, expected) => {
+    expect(materialFilenameExtension(filename)).toBe(expected)
+  })
+
+  it('accepts only the extensions the backend allows for POST /materials', () => {
+    expect(isSupportedImportFilename('sample.txt')).toBe(true)
+    expect(isSupportedImportFilename('sample.srt')).toBe(true)
+    expect(isSupportedImportFilename('sample.vtt')).toBe(true)
+    expect(isSupportedImportFilename('sample.epub')).toBe(true)
+    expect(isSupportedImportFilename('sample.doc')).toBe(false)
+    expect(isSupportedImportFilename('sample')).toBe(false)
+  })
+
+  it.each([
+    ['我的材料.txt', '我的材料'],
+    ['a.b.srt', 'a.b'],
+    ['no-extension', 'no-extension'],
+    ['.txt', '.txt'],
+  ])('derives the default title from the filename: %s -> %s', (filename, expected) => {
+    expect(materialDefaultTitle(filename)).toBe(expected)
+  })
+})
+
+describe('createMaterial API contract', () => {
+  const importedMaterial = {
+    id: 'fixture-id-010',
+    title: 'sample',
+    content_hash: 'hash',
+    locator: 'sample.txt',
+    kind: 'text',
+    copy_stored: false,
+    storage_mode: 'external_reference',
+    source_sha256: null,
+    current_sidecar_id: null,
+    sentence_count: 0,
+  }
+
+  function txtFile(name = 'sample.txt'): File {
+    return new File(['ファイルの中身'], name, { type: 'text/plain' })
+  }
+
+  function postedForm(request: ReturnType<typeof vi.fn>): FormData {
+    const init = request.mock.calls[0]?.[1] as RequestInit | undefined
+    if (!(init?.body instanceof FormData)) throw new Error('createMaterial 必须发送 multipart FormData')
+    return init.body
+  }
+
+  it('posts the multipart contract with file and title, leaving locator/storage_mode to the backend', async () => {
+    const request = vi.fn().mockResolvedValue(response(importedMaterial, 201))
+    vi.stubGlobal('fetch', request)
+
+    await expect(createMaterial({ file: txtFile(), title: '  我的材料  ' })).resolves.toMatchObject({
+      id: 'fixture-id-010',
+      kind: 'text',
+      storage_mode: 'external_reference',
+    })
+    expect(request).toHaveBeenCalledWith('/materials', expect.objectContaining({ method: 'POST' }))
+    const form = postedForm(request)
+    expect(form.get('file')).toBeInstanceOf(File)
+    expect((form.get('file') as File).name).toBe('sample.txt')
+    expect(form.get('title')).toBe('我的材料')
+    expect(form.get('locator')).toBeNull()
+    expect(form.get('storage_mode')).toBeNull()
+  })
+
+  it('omits the title field when it is blank instead of sending whitespace', async () => {
+    const request = vi.fn().mockResolvedValue(response(importedMaterial, 201))
+    vi.stubGlobal('fetch', request)
+
+    await createMaterial({ file: txtFile(), title: '   ' })
+    expect(postedForm(request).get('title')).toBeNull()
+  })
+
+  it('passes an abort signal through to the fetch call', async () => {
+    const request = vi.fn().mockResolvedValue(response(importedMaterial, 201))
+    vi.stubGlobal('fetch', request)
+    const controller = new AbortController()
+
+    await createMaterial({ file: txtFile() }, controller.signal)
+    expect(request).toHaveBeenCalledWith('/materials', expect.objectContaining({ signal: controller.signal }))
+  })
+
+  it('surfaces the backend 415 detail text for unsupported extensions', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response({ detail: MATERIAL_IMPORT_TYPE_DETAIL }, 415)))
+
+    await expect(createMaterial({ file: txtFile('bad.doc') })).rejects.toThrow(MATERIAL_IMPORT_TYPE_DETAIL)
+  })
+
+  it('surfaces the backend 422 detail text from import failures', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response({ detail: '字幕解析失败：无法读取文件内容' }, 422)))
+
+    await expect(createMaterial({ file: txtFile('broken.srt') })).rejects.toThrow('字幕解析失败：无法读取文件内容')
+  })
+
+  it('joins FastAPI validation messages when 422 detail is an array', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response({
+      detail: [{ loc: ['body', 'file'], msg: 'field required', type: 'missing' }],
+    }, 422)))
+
+    await expect(createMaterial({ file: txtFile() })).rejects.toThrow('field required')
+  })
+
+  it('falls back to a status-bearing message when the error body is not JSON', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('gateway timeout', { status: 502 })))
+
+    await expect(createMaterial({ file: txtFile() })).rejects.toThrow('素材导入失败（502）')
   })
 })

@@ -5,6 +5,7 @@ import { ReaderShell, ReaderSidebarHeader, type ReaderPanel } from '@/shells/Rea
 import { readerPath, studyPath } from '@/app/routes'
 import { FixtureBadge, PlaceholderNote, UnavailableBadge } from '@/screens/Page'
 import { useRepositories } from '@/app/repository-context'
+import { EpubPublication } from '@/features/reader/EpubPublication'
 
 /**
  * Full-screen reader route. MaterialWorkspace remains the P2 regression
@@ -18,14 +19,26 @@ export function ReaderScreen() {
   const { materials, reader, study } = useRepositories()
   const [panel, setPanel] = useState<ReaderPanel | null>(null)
   const [materialTitle, setMaterialTitle] = useState(`材料 ${materialId}`)
+  const [materialKind, setMaterialKind] = useState<'epub' | 'other' | null>(null)
+  const [materialLoadError, setMaterialLoadError] = useState<string | null>(null)
   const [studySessionId, setStudySessionId] = useState<string | null>(null)
   const sentenceId = searchParams.get('s') ?? undefined
 
   useEffect(() => {
     let disposed = false
     materials.getMaterial(materialId)
-      .then((material) => { if (!disposed && material) setMaterialTitle(material.title) })
-      .catch(() => { /* the reader body renders the API error boundary */ })
+      .then((material) => {
+        if (disposed) return
+        if (!material) {
+          setMaterialLoadError('找不到这部材料')
+          return
+        }
+        setMaterialTitle(material.title)
+        setMaterialKind(material.kind === 'epub' ? 'epub' : 'other')
+      })
+      .catch((cause: unknown) => {
+        if (!disposed) setMaterialLoadError(cause instanceof Error ? cause.message : '材料加载失败')
+      })
     return () => { disposed = true }
   }, [materialId, materials])
 
@@ -97,7 +110,15 @@ export function ReaderScreen() {
       sidebar={sidebar}
     >
       <div className="mx-auto w-full max-w-[1180px] p-4 min-[760px]:p-6">
+        {materialLoadError ? (
+          <div role="alert" className="rounded-lg border border-destructive/40 bg-destructive/5 p-5 text-sm">{materialLoadError}</div>
+        ) : materialKind === 'epub' ? (
+          <EpubPublication materialId={materialId} title={materialTitle} />
+        ) : materialKind === 'other' ? (
           <MaterialWorkspace initialMaterialId={materialId} initialSentenceId={sentenceId} hideLibrary materialRepository={materials} readerRepository={reader} />
+        ) : (
+          <p role="status" className="rounded-lg border border-border bg-card p-5 text-sm text-muted-foreground">正在加载材料…</p>
+        )}
       </div>
     </ReaderShell>
   )

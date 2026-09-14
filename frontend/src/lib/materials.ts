@@ -140,6 +140,89 @@ async function readJson(response: Response, resource: string): Promise<unknown> 
   return response.json() as Promise<unknown>
 }
 
+/** 后端 `POST /materials` 对不支持的扩展名返回 415；前端校验沿用同一句 detail 文案。 */
+export const MATERIAL_IMPORT_TYPE_DETAIL = '仅支持 .txt、.srt、.vtt、.epub'
+
+const SUPPORTED_IMPORT_EXTENSIONS = new Set(['txt', 'srt', 'vtt', 'epub'])
+
+/**
+ * 提取文件扩展名（小写、不含点）。与后端 `filename.rsplit('.', 1)[-1].lower()`
+ * 的语义一致；没有扩展名时返回空串。用 `split` 而非 `slice` 族，保持
+ * code point 硬约束下的实现一致性。
+ */
+export function materialFilenameExtension(filename: string): string {
+  const parts = filename.split('.')
+  const last = parts[parts.length - 1]
+  return parts.length < 2 || last === undefined ? '' : last.toLowerCase()
+}
+
+/** 是否为后端 `POST /materials` 接受的导入扩展名（.txt/.srt/.vtt/.epub）。 */
+export function isSupportedImportFilename(filename: string): boolean {
+  return SUPPORTED_IMPORT_EXTENSIONS.has(materialFilenameExtension(filename))
+}
+
+/** 默认标题：去掉最后一个扩展名；纯扩展名（如 `.txt`）或无扩展名时回退为原文件名。 */
+export function materialDefaultTitle(filename: string): string {
+  const parts = filename.split('.')
+  if (parts.length < 2) return filename
+  const stem = parts.slice(0, -1).join('.')
+  return stem === '' ? filename : stem
+}
+
+/** `POST /materials` 的 multipart 输入；locator 与 storage_mode 留给后端默认值，不进 UI。 */
+export type MaterialImportInput = {
+  /** 必填；仅接受 .txt/.srt/.vtt/.epub，其余扩展名后端返回 415。 */
+  file: File
+  /** 可选展示标题；空白字符串视为未提供。 */
+  title?: string
+}
+
+/** FastAPI 校验错误（detail 为数组）与其他非 JSON 错误体的兜底展示文本。 */
+function errorDetailText(response: Response, detail: unknown): string {
+  if (typeof detail === 'string' && detail.trim() !== '') return detail
+  if (Array.isArray(detail)) {
+    const messages = detail
+      .map((part) => (isRecord(part) && typeof part.msg === 'string' ? part.msg : null))
+      .filter((message): message is string => message !== null)
+    if (messages.length > 0) return messages.join('；')
+  }
+  return `素材导入失败（${response.status}）`
+}
+
+async function importError(response: Response): Promise<Error> {
+  try {
+    const body: unknown = await response.json()
+    if (isRecord(body)) return new Error(errorDetailText(response, body.detail))
+  } catch {
+    // 响应体不是 JSON（例如代理错误页）时走通用文案。
+  }
+  return new Error(`素材导入失败（${response.status}）`)
+}
+
+/**
+ * `POST /materials`：multipart 导入素材，成功返回 201 与 MaterialOut（复用
+ * `parseMaterial` 的字段校验）。locator 留给后端取默认值；EPUB 显式请求
+ * managed_copy，其他格式沿用 external_reference。415 与 422 的后端 detail
+ * 文本会作为 Error message 带给调用方，供 UI 直接展示。
+ */
+export async function createMaterial(
+  input: MaterialImportInput,
+  signal?: AbortSignal,
+): Promise<Material> {
+  const form = new FormData()
+  form.append('file', input.file, input.file.name)
+  const title = input.title?.trim() ?? ''
+  if (title !== '') form.append('title', title)
+  // RF-01 EPUB reader paths require an immutable server-managed copy.  Keep
+  // existing txt/srt/vtt imports on their historical external-reference path.
+  if (materialFilenameExtension(input.file.name) === 'epub') {
+    form.append('storage_mode', 'managed_copy')
+  }
+  const response = await fetch('/materials', { method: 'POST', body: form, signal })
+  if (!response.ok) throw await importError(response)
+  return parseMaterial(await readJson(response, '素材'))
+}
+
 export async function fetchMaterials(signal?: AbortSignal): Promise<Material[]> {
   const response = await fetch('/materials', { signal })
   const body = await readJson(response, '素材')

@@ -13,7 +13,7 @@
 
 - 所有实体带 `id`（UUIDv7 或等价的单调递增 ID）、`created_at`、`updated_at`。下文不再重复列出。
 - 所有时间为 UTC 时间戳。
-- **文本规范化**：进入 `Material` / `Sentence` 的文本统一采用 Unicode NFC；换行统一为 LF；不做全角／半角折叠、不删除原文空白。`Sentence.text` 是模型输入、`surface` 定位和前端展示共用的规范文本。`content_hash` 对规范化后的素材文本计算。
+- **文本规范化**：进入 `Material` / `Sentence` 的文本统一采用 Unicode NFC；换行统一为 LF；不做全角／半角折叠、不删除原文空白。`Sentence.text` 是语言处理、`surface` 校验和持久位置使用的 canonical text projection。具有结构化阅读内容的素材可以另外提供版本化、受控的 publication representation；publication DOM 不是领域坐标，前端展示不再被解释为必须等同于 `Sentence.text`。`content_hash` 对规范化后的素材文本计算。
 - **字符偏移**：所有持久化 `char_start` / `char_end` 均以 Unicode code point 计，使用半开区间 `[start, end)`。浏览器 DOM 的 UTF-16 偏移只能在渲染适配层转换，业务代码不得直接把持久化偏移交给 `String.slice` 或 `Range`。
 - **分级历史保护**：已被提取、Occurrence 或复习引用的解析版本与来源不得覆盖；KnownEvidence、Occurrence、完成的抽取结果与复习事件追加保存。工作流状态、当前文档指针、KP 当前意愿、笔记、批注与 SRS 当前状态允许更新。自动处理不得覆盖用户决定；这不限制用户主动修改自己的决定。详见 §0.1。
 - **修改的提交边界**：文档编辑、提取结果提交、知识点确认分别具有原子提交边界。客户端和工具修改携带预期版本；过期写入必须报告冲突，不得覆盖并发修改。参与并发更新的会话、KP、笔记、批注和排程投影使用单调 version 或等价的原子比较机制；文档使用 current_revision_id。
@@ -643,10 +643,12 @@ ReviewEvent 追加保存：`review_item_id`、该卡单调 `event_sequence`、�
 | `kind` | enum | `subtitle_video` / `subtitle_audio` / `text` / `epub` |
 | `copy_stored` | bool | 真实复制状态，不固定写 false |
 | `storage_mode` | enum | `external_reference` / `managed_copy` |
-| `current_sidecar_id` | FK? | 已完整发布的当前分句／分词及材料词频版本；准备前可空 |
+| `current_sidecar_id` | FK? | 已完整发布的当前分句／分词及材料词频版本；准备前可空。对 reader-ready EPUB，空值只表示语言索引尚未发布，不表示 publication 不可阅读 |
 | `source_sha256` | string? | 原始文件校验，与规范化文本 content_hash 分离 |
+| `publication_version` | string? | 受控 EPUB publication 的源内容 + projection 版本身份；非 EPUB 可空 |
+| `publication_manifest` | json? | 受控 spine、canonical projection、章节 representation 与 publication-local 资源 allowlist；不向客户端暴露任意 ZIP member 路径 |
 
-视频默认 external_reference；导入可明确选择 external_reference 或 managed_copy（音频、文本、EPUB 同样适用）。managed_copy 原始资源不可变；external_reference 源失效不删除已有 Sentence/sidecar。导入需说明文件大小与可用性影响。
+视频默认 external_reference；导入可明确选择 external_reference 或 managed_copy（音频、文本、EPUB 同样适用）。managed_copy 原始资源不可变；external_reference 源失效不删除已有 Sentence/sidecar。EPUB 的受控 publication 只有在源资源仍可读取或已保存 managed copy 时可服务。导入需说明文件大小与可用性影响。reader-ready 提交可以先发布 `Material`、`Sentence` 与 publication identity；Sidecar 仍在完整生成、校验后与 `current_sidecar_id` 原子发布，失败不得损坏已提交的 reader publication。
 
 ### 8.2 Sentence
 
@@ -667,15 +669,15 @@ ReviewEvent 追加保存：`review_item_id`、该卡单调 `event_sequence`、�
 |---|---|
 | `subtitle` | `{cue_index: int}` |
 | `plain_text` | `{char_start: int, char_end: int}`，偏移相对规范化后的整份文本 |
-| `epub` | `{spine_index: int, char_start: int, char_end: int}`，偏移相对该 spine item 抽出的规范化纯文本 |
+| `epub` | `{spine_index: int, char_start: int, char_end: int}`，偏移相对该 spine item 的 canonical text projection |
 
-EPUB 不使用 CFI。理由：CFI 绑定 DOM 结构，而本产品对 EPUB 的处理本就是「抽成纯文本再分句」，spine index + 纯文本偏移与这条处理链路一致，且重新解析同一文件时可复现。代价是重排版后偏移失效，但 `content_hash` 已能检出这种情况。
+EPUB 不使用 CFI。CFI 绑定 DOM 结构；`spine_index + canonical projection` 与语言处理链一致且可版本核验。受控 XHTML/DOM 通过 reader adapter 映射到这套坐标；publication 的结构、图片、ruby 和作者样式不改变领域坐标。代价是投影算法或源内容变化会使旧位置失效，必须由 `content_hash`、source identity 与 publication/projection version 检出，不能静默改写旧坐标。
 
 PDF **不在 MVP 内**，走「转纯文本」降级，落 `plain_text`。
 
 **约束**
 
-统一抽象：**素材 = 有序 Sentence 序列 + 可选时间戳 + 可选 locator。**视频、音频、文本的差异全部落在「时间戳有没有」与「locator 指向什么」上。上层的解析、抽取、复习、聚合**不得感知素材类型**。这是「音视频为一等公民」的可验证形式，应写成测试。
+统一语言处理抽象：**素材的学习层 = 有序 Sentence 序列 + 可选时间戳 + 可选 locator。**视频、音频、纯文本仍由该抽象消费；EPUB 等结构化素材的 reader presentation 可以在边界层提供 source-specific publication representation。上层的解析、抽取、复习、聚合**不得感知 DOM、iframe 或 publication 节点结构**。
 
 ### 8.3 Sidecar
 
