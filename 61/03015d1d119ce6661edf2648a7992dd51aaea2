@@ -1,0 +1,221 @@
+docs/reader-foundation/delivery-plan-draft.md
+  s_4c4db34fd5a82b::t_a180c2dd5927be 66-71
+  s_1b5ae2c45676a5::t_7cdb821e77050b 2,4-14,18-37,39-65,72-74
+  s_4c4db34fd5a82b::t_ed7e269f050289 3,15-17
+  s_9c26e4c4f4464b::t_f059926111492b 1,38,75-76
+backend/fixtures/openapi.json
+  s_0fbb9f6dd551bd::t_1a2acdf55d5e14 1161-1171
+  s_0fbb9f6dd551bd::t_cb29e9cc635076 2406-2443
+frontend/src/lib/material-fixtures.ts
+  s_0fbb9f6dd551bd::t_c0ab4dd335dafe 24,38,53
+backend/tests/test_epub_publication.py
+  s_0fbb9f6dd551bd::t_bb8abf640969bb 42-54,218-246
+  s_0fbb9f6dd551bd::t_e824fc97cbf527 95
+  s_0fbb9f6dd551bd::t_a554a0a5c411a9 20,79
+  s_0fbb9f6dd551bd::t_b77074e6e0b98d 55-67,248-255
+  s_4c4db34fd5a82b::t_f283afd3f9b713 22
+  s_0fbb9f6dd551bd::t_3619a74bd19830 78
+  s_4c4db34fd5a82b::t_fd940ae2936a22 15,108-128
+  s_0fbb9f6dd551bd::t_61b1831c3b583f 4,8,13,256-286
+  s_0fbb9f6dd551bd::t_c197168b13a44d 131-164
+  s_0fbb9f6dd551bd::t_abcda191cfcbad 96-97
+  s_0fbb9f6dd551bd::t_19e353e831c5b8 247
+  s_4c4db34fd5a82b::t_ca2921f7d9bce6 129-130
+backend/src/learningj/ingest/epub.py
+  s_0fbb9f6dd551bd::t_cc46ee5af5b549 869-872,875,884-885
+  s_4c4db34fd5a82b::t_b812710604d4df 1051-1056,1059-1063,1065-1066,1068-1069,1072,1074,1076-1081,1083-1113,1124
+  s_0fbb9f6dd551bd::t_522faab43fb30f 576,608,610,613-614,662-666,687
+  s_0fbb9f6dd551bd::t_bef8c7c4e41071 24-26,79,84
+  s_4c4db34fd5a82b::t_4a670124ca034d 421-429,451
+  s_0fbb9f6dd551bd::t_e6a128a9d700f5 195-209,230
+  s_0fbb9f6dd551bd::t_f122f55b837c67 763,824,888,902-904,907,997-1004
+  s_0fbb9f6dd551bd::t_2842f27ef71ad3 919-925
+  s_4c4db34fd5a82b::t_d4723c12f6c2f8 600-603,755
+  s_0fbb9f6dd551bd::t_c198136e2326ac 917-918
+  s_0fbb9f6dd551bd::t_251bbf2d4878c0 177,243-246,383,389-395
+  s_0fbb9f6dd551bd::t_3ae4a671a8339b 27
+  s_4c4db34fd5a82b::t_fd19157490d634 17,360-374,376
+  s_0fbb9f6dd551bd::t_6b465175b3b027 742-747
+  s_0fbb9f6dd551bd::t_c932df339e3537 505-512,519,641-642
+  s_4c4db34fd5a82b::t_3a881e8a8ee708 1050,1057-1058,1064,1067,1070-1071,1073,1075,1082,1125-1144
+  s_0fbb9f6dd551bd::t_3c68d3e874869a 4-6
+  s_0fbb9f6dd551bd::t_5d748ed73cf4e2 185-186,211
+  s_0fbb9f6dd551bd::t_8a6504569171c2 101-104
+  s_4c4db34fd5a82b::t_f92bce26fe1225 513-518
+  s_0fbb9f6dd551bd::t_38b6eaa61e9fad 830-854,939-947,1031-1043
+  s_4c4db34fd5a82b::t_0c8130173e09db 1114-1122,1146
+  s_4c4db34fd5a82b::t_2e86904f85b40f 138-141,156-159,162
+  s_0fbb9f6dd551bd::t_bfc890b3d787d9 629-640,643-652
+  s_0fbb9f6dd551bd::t_bf9265e6f923ca 452,465,467-468,520-524,553,560-575,578-599,604-607,609,611-612,615-617,620-628,653-654,657-661,667-672,675-686,688-691,694-710,713
+  s_0fbb9f6dd551bd::t_9627ff8ce3ad76 655-656,692-693
+  s_0fbb9f6dd551bd::t_977f38f0b537ce 78,88,979-985,1029-1030,1044-1045
+  s_0fbb9f6dd551bd::t_366771bbd6329d 191-194,210,212-213
+  s_0fbb9f6dd551bd::t_d07ee8ecd5688e 798-818,1046
+  s_0fbb9f6dd551bd::t_14a46956ba608c 178-184,187-190,214,216-229,231-241
+  s_0fbb9f6dd551bd::t_c0512aa317251b 387
+  s_0fbb9f6dd551bd::t_1e4be61b9919f6 577,618-619,673-674
+  s_0fbb9f6dd551bd::t_adf03159b9e25a 242
+  s_4c4db34fd5a82b::t_87c0700280010c 450
+frontend/src/lib/materials.ts
+  s_0fbb9f6dd551bd::t_b019020d672524 25-32
+  s_0fbb9f6dd551bd::t_0998e6c66fcf40 47-51,85
+frontend/src/components/MigratedComponents.test.tsx
+  s_0fbb9f6dd551bd::t_ca516213606a90 15,87-99
+frontend/src/features/reader/EpubPublication.test.tsx
+  s_0fbb9f6dd551bd::t_3ae4a671a8339b 17
+backend/fixtures/material-fixture.json
+  s_0fbb9f6dd551bd::t_5b31b2597ea0d0 111,124
+backend/tests/test_epub_projection_review.py
+  s_0fbb9f6dd551bd::t_16ad9a4154ebe6 1-13,15-45,47-53,55-57,59-66,69-94,96-97
+  s_0fbb9f6dd551bd::t_238b1b7b81b8ac 101-104
+  s_4c4db34fd5a82b::t_70ccd3d0c1376d 124-127
+  s_0fbb9f6dd551bd::t_f319035a9aff2c 95,98-100,105-106
+  s_4c4db34fd5a82b::t_09fbfa173359b3 107-123,128-139
+  s_0fbb9f6dd551bd::t_984d7f0b578309 14,46,54,67-68
+  s_0fbb9f6dd551bd::t_3ae4a671a8339b 58
+docs/data-model.md
+  s_4c4db34fd5a82b::t_0b2d67973f8aaa 641
+docs/work-guidance/RF-01.md
+  s_0fbb9f6dd551bd::t_b0e759d25d3cf4 115
+  s_9849437dfa46c9::t_0741bbea06fabc 83
+  s_9849437dfa46c9::t_44b9fe37d32d73 78
+  s_0fbb9f6dd551bd::t_d3b2a5b113bd19 105
+  s_9849437dfa46c9::t_f6a4dabc00740d 71-73,75-77,79-80,82
+  s_0fbb9f6dd551bd::t_76f68fbe2628a3 108-111,113-114
+  s_0fbb9f6dd551bd::t_acbb97c474b3fa 112
+  s_9849437dfa46c9::t_d0d6ef6566638b 64,66-70
+  s_4c4db34fd5a82b::t_2caa8c1683cf5a 123
+  s_4c4db34fd5a82b::t_6a93745a234586 57,63,65
+  s_0fbb9f6dd551bd::t_fae25dce755606 84-94
+  s_4c4db34fd5a82b::t_794d54dfda9ea6 3,116-122,124
+  s_9849437dfa46c9::t_aae92d5f1b63c6 81
+  s_0fbb9f6dd551bd::t_a97a51b2ce2771 95-100
+  s_0fbb9f6dd551bd::t_5263813cd9c926 101
+  s_9849437dfa46c9::t_b26b5e102abaf4 74
+  s_0fbb9f6dd551bd::t_65b1951fc52605 102-104,106-107
+  s_9c26e4c4f4464b::t_078f5610f81782 1-2,4-15,18-56,58-62
+  s_9c26e4c4f4464b::t_12efc6f4be2f68 16-17
+frontend/src/screens/ReaderScreen.tsx
+  s_0fbb9f6dd551bd::t_0c65a4a0591c77 29-33,62,64-66
+backend/tests/test_epub_identity_review.py
+  s_4c4db34fd5a82b::t_81d6952507d22c 11,77-105
+  s_0fbb9f6dd551bd::t_697b1208c3df44 1-10,12-76
+frontend/src/lib/api-types.d.ts
+  s_0fbb9f6dd551bd::t_2adbb907d98fdd 306-325,1554-1573,1576-1579,1581-1584
+  s_0fbb9f6dd551bd::t_9da45cfd71a21c 841-842
+  s_0fbb9f6dd551bd::t_45134390cce2f5 1574-1575,1580
+frontend/src/screens/ReaderScreen.test.tsx
+  s_0fbb9f6dd551bd::t_3ae4a671a8339b 21
+  s_0fbb9f6dd551bd::t_b06ce53f501d84 27,36
+  s_0fbb9f6dd551bd::t_40d9b682dae1d3 1-20,22-26,28-35,37-55
+backend/src/learningj/db/models/material.py
+  s_0fbb9f6dd551bd::t_13dc3173f9400c 36-39
+  s_0fbb9f6dd551bd::t_cac98953cbd11d 40-41,76-77
+frontend/src/components/MaterialCard.tsx
+  s_0fbb9f6dd551bd::t_2e62da96ead9c3 1,70-72,93,97
+docs/reader-foundation/testing-standard.md
+  s_1b5ae2c45676a5::t_7cdb821e77050b 1-63
+docs/reader-foundation/scope-draft.md
+  s_9c26e4c4f4464b::t_f059926111492b 1,3,9,13,38-39,41-42,46,48
+  s_1b5ae2c45676a5::t_7cdb821e77050b 2,4-8,10-12,14-37,40,43-45,47,49-59
+docs/work-guidance/README.md
+  s_9c26e4c4f4464b::t_078f5610f81782 1-36
+frontend/src/screens/MaterialDetailScreen.tsx
+  s_0fbb9f6dd551bd::t_fa1ef210bc3715 9,91,108-114
+  s_0fbb9f6dd551bd::t_0c65a4a0591c77 18-20,132,139-141
+frontend/src/screens/LibraryScreen.test.tsx
+  s_0fbb9f6dd551bd::t_8b3f75d1076684 56
+  s_0fbb9f6dd551bd::t_dc5b04efdf3862 9,44-55,57-59
+backend/src/learningj/api/app.py
+  s_0fbb9f6dd551bd::t_c852b46f28d5d5 103
+  s_0fbb9f6dd551bd::t_81ccda8a5d1d4e 891-897,899-913,919-921,925-940,942-945
+  s_0fbb9f6dd551bd::t_93c8afe209111a 270-292
+  s_0fbb9f6dd551bd::t_b241e453c11a4a 17-18,93-102,104-122,125-127,133-135
+  s_0fbb9f6dd551bd::t_c15827f7c980a3 941
+  s_0fbb9f6dd551bd::t_b02fa177747a3a 874-875
+  s_0fbb9f6dd551bd::t_147acb7bcffc24 123-124,128-132,890,898
+  s_0fbb9f6dd551bd::t_74b90bbf3192e1 959
+  s_0fbb9f6dd551bd::t_58f88f0c3784cf 26,77-78,244-251,347-348
+  s_0fbb9f6dd551bd::t_8c27380b19396d 162-163,218-225,258,300,304,314,340
+  s_0fbb9f6dd551bd::t_1ee177852c27d3 136-137
+  s_0fbb9f6dd551bd::t_95d745f8c6fc7b 946-947
+backend/src/learningj/api/schemas.py
+  s_0fbb9f6dd551bd::t_2a4fc4ded31a75 28
+frontend/src/lib/p1-integration.contract.test.ts
+  s_0fbb9f6dd551bd::t_b3c3afd7eab38f 172
+backend/src/learningj/ingest/service.py
+  s_0fbb9f6dd551bd::t_bf414cdf867639 451-456
+  s_0fbb9f6dd551bd::t_4b872fb8d5f5a6 246,254-258
+  s_0fbb9f6dd551bd::t_83b56f137aabc4 295-297
+  s_0fbb9f6dd551bd::t_c892e9dc47071f 247-253,259-285,287-288,291-293,406-407,409-410,412-421,463,466
+  s_0fbb9f6dd551bd::t_3a66f108e509d5 435,439,457
+frontend/src/screens/LibraryScreen.tsx
+  s_0fbb9f6dd551bd::t_b019020d672524 10,117-121
+frontend/src/lib/materials.test.ts
+  s_0fbb9f6dd551bd::t_ca516213606a90 10,26-37,87
+  s_0fbb9f6dd551bd::t_2eb0a1b80613be 67,71-86
+  s_0fbb9f6dd551bd::t_b2a74c1c606985 88
+docs/reader-foundation/RF-01-readable-epub.md
+  s_9c26e4c4f4464b::t_e71f6a116cbb35 1-2,4-56,58-62
+  s_4c4db34fd5a82b::t_f401872445fcbd 3,63
+  s_9c26e4c4f4464b::t_83ba5ab9511709 57
+docs/reader-foundation/epub-research-brief.md
+  s_1b5ae2c45676a5::t_7cdb821e77050b 1-58
+docs/reader-foundation/README.md
+  s_9c26e4c4f4464b::t_e71f6a116cbb35 1-2,4-10,12,15-21,23,26-42,44,46
+  s_4c4db34fd5a82b::t_3ab0c35cc66a5b 3,11,13-14,45
+  s_9c26e4c4f4464b::t_83ba5ab9511709 22,24-25,43,47
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "6103015d1d119ce6661edf2648a7992dd51aaea2",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_0fbb9f6dd551bd": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0a076-ce05-7013-8a99-68af60bd96e4",
+        "model": "gpt-5.6-luna"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_1b5ae2c45676a5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a09abc-5e8a-7c22-b6e8-06bdaa63440f",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_4c4db34fd5a82b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0a2b6-29e8-7422-981f-06c71013f872",
+        "model": "gpt-5.6-luna"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_9849437dfa46c9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a09f6b-2895-7483-ad05-46d312ad9edb",
+        "model": "gpt-5.6-luna"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_9c26e4c4f4464b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a09f31-ef18-7ba3-b4c0-cc21d32f8124",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
