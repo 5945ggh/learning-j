@@ -1,0 +1,54 @@
+docs/mvp-tech-and-phases.md
+  s_9c26e4c4f4464b::t_f059926111492b 3-4,91,93,315
+  s_9c26e4c4f4464b::t_95d77a1d1fb8ed 7,83,89
+docs/LearningJ-plan-v5.md
+  s_9c26e4c4f4464b::t_f059926111492b 6-7,179
+docs/work-guidance/README.md
+  h_c735ec7f46d14b 9
+docs/reader-foundation/scope-draft.md
+  s_9c26e4c4f4464b::t_b623186bca9600 38-39
+docs/reader-foundation/delivery-plan-draft.md
+  s_9c26e4c4f4464b::t_b623186bca9600 16-17
+AGENTS.md
+  s_9c26e4c4f4464b::t_1810311a06a182 8
+  s_9c26e4c4f4464b::t_83ba5ab9511709 44,117-118
+  s_1b5ae2c45676a5::t_7cdb821e77050b 9-15,25
+  s_9c26e4c4f4464b::t_7f53f870ec5152 3-7,16-24,30-32,37,79-81,116,119-126
+  s_9c26e4c4f4464b::t_07f57331e6ce51 127
+docs/reader-foundation/README.md
+  s_9c26e4c4f4464b::t_b623186bca9600 13,15,45-49
+docs/task-packets/README.md
+  s_9c26e4c4f4464b::t_1810311a06a182 3,23
+  s_9c26e4c4f4464b::t_e7a51b6fce6242 5,7-13
+docs/task-packets/CURRENT-PACKETS.md
+  s_9c26e4c4f4464b::t_e7a51b6fce6242 1-9,15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "d6c6e18d202dc1b2d10c8dcb889306bc7d017638",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_1b5ae2c45676a5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a09abc-5e8a-7c22-b6e8-06bdaa63440f",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_9c26e4c4f4464b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a09f31-ef18-7ba3-b4c0-cc21d32f8124",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
