@@ -18,15 +18,15 @@ export function SentenceContext({ sentence }: SentenceContextProps) {
     : formatTimeRange(sentence.time_start, sentence.time_end)
 
   return (
-    <article className="rounded-md border border-border bg-card p-5 shadow-sm" aria-labelledby="selected-sentence-heading">
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border pb-4">
+    <article className="rounded-[var(--radius-grouped)] border border-divider bg-opaque-surface p-5" aria-labelledby="selected-sentence-heading">
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-divider pb-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-lexical">当前句子</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-algorithm">当前句子</p>
           <h2 id="selected-sentence-heading" className="mt-2 font-serif-jp text-xl leading-8">{sentence.text}</h2>
         </div>
-        <span className="rounded-sm bg-muted px-2 py-1 text-xs text-muted-foreground">第 {sentence.index + 1} 句</span>
+        <span className="rounded-[var(--radius-control)] bg-grouped-surface px-2 py-1 text-xs text-secondary-text">第 {sentence.index + 1} 句</span>
       </div>
-      <div className="flex flex-wrap gap-x-4 gap-y-1 pt-4 text-sm text-muted-foreground">
+      <div className="flex flex-wrap gap-x-4 gap-y-1 pt-4 text-sm text-secondary-text">
         <span>来源定位：{location}</span>
         {timeRange ? <span>时间戳：{timeRange}</span> : null}
         {sentence.translation ? <span>译文：{sentence.translation}</span> : null}

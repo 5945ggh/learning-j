@@ -1,132 +1,135 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { MaterialWorkspace } from '@/shells/MaterialWorkspace'
-import { ReaderShell, ReaderSidebarHeader, type ReaderPanel } from '@/shells/ReaderShell'
-import { readerPath, studyPath } from '@/app/routes'
-import { FixtureBadge, PlaceholderNote, UnavailableBadge } from '@/screens/Page'
+import { readerPath, studyPath, materialPath } from '@/app/routes'
 import { useRepositories } from '@/app/repository-context'
-import { EpubPublication } from '@/features/reader/EpubPublication'
+import { FixtureBadge } from '@/screens/Page'
+import { EpubReaderWorkspace } from '@/features/reader/EpubReaderWorkspace'
+import { ReaderWorkspace } from '@/features/reader/ReaderWorkspace'
+import { useEpubPublicationController } from '@/features/reader/EpubPublication'
+import type { MaterialSessionState } from '@/features/reader/useMaterialReaderController'
+import type { Material } from '@/lib/materials'
+import type { StudySessionRecord } from '@/lib/study-repository'
+
+type MaterialKind = 'epub' | 'other'
+type LoadState = 'loading' | 'error' | 'ready'
 
 /**
- * Full-screen reader route. MaterialWorkspace remains the P2 regression
- * surface and owns the real P1/P2 API calls; this route only supplies the
- * surrounding ReaderShell and navigation affordances.
+ * Reader route assembly only: it resolves the route Material and its active
+ * learning sessions once, picks the content surface by material kind, and
+ * renders the top-level loading / material-not-found states.
+ *
+ * The resolved `Material` and session projection are passed down, so the
+ * workspaces neither re-list materials (which would repeat `GET /materials`)
+ * nor request sessions a second time.
  */
 export function ReaderScreen() {
   const { materialId = '' } = useParams<{ materialId: string }>()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const { materials, reader, study } = useRepositories()
-  const [panel, setPanel] = useState<ReaderPanel | null>(null)
-  const [materialTitle, setMaterialTitle] = useState(`材料 ${materialId}`)
-  const [materialKind, setMaterialKind] = useState<'epub' | 'other' | null>(null)
+  const [material, setMaterial] = useState<Material | null>(null)
+  const [materialKind, setMaterialKind] = useState<MaterialKind | null>(null)
+  const [materialLoadState, setMaterialLoadState] = useState<LoadState>('loading')
   const [materialLoadError, setMaterialLoadError] = useState<string | null>(null)
-  const [studySessionId, setStudySessionId] = useState<string | null>(null)
+  const [sessions, setSessions] = useState<StudySessionRecord[]>([])
+  const [sessionsState, setSessionsState] = useState<MaterialSessionState>('loading')
   const sentenceId = searchParams.get('s') ?? undefined
+  const publication = useEpubPublicationController(materialId, materialKind === 'epub')
 
   useEffect(() => {
     let disposed = false
-    // Route params can change without remounting this screen.  Do not let a
-    // failed/EPUB load from the previous material choose this material's UI.
-    setMaterialTitle(`材料 ${materialId}`)
+    setMaterial(null)
     setMaterialKind(null)
     setMaterialLoadError(null)
+    setMaterialLoadState('loading')
     materials.getMaterial(materialId)
-      .then((material) => {
+      .then((loaded) => {
         if (disposed) return
-        if (!material) {
+        if (!loaded) {
           setMaterialLoadError('找不到这部材料')
+          setMaterialLoadState('error')
           return
         }
-        setMaterialTitle(material.title)
-        setMaterialKind(material.kind === 'epub' ? 'epub' : 'other')
+        setMaterial(loaded)
+        setMaterialKind(loaded.kind === 'epub' ? 'epub' : 'other')
+        setMaterialLoadState('ready')
       })
       .catch((cause: unknown) => {
-        if (!disposed) setMaterialLoadError(cause instanceof Error ? cause.message : '材料加载失败')
+        if (disposed) return
+        setMaterialLoadError(cause instanceof Error ? cause.message : '材料加载失败')
+        setMaterialLoadState('error')
       })
     return () => { disposed = true }
   }, [materialId, materials])
 
+  // 材料会话的唯一请求方与状态来源：两个 workspace 通过 props 消费。
   useEffect(() => {
     let disposed = false
+    setSessions([])
+    setSessionsState('loading')
     study.listActiveSessions(materialId)
-      .then((sessions) => { if (!disposed) setStudySessionId(sessions[0]?.id ?? null) })
-      .catch(() => { if (!disposed) setStudySessionId(null) })
+      .then((loaded) => {
+        if (disposed) return
+        setSessions(loaded)
+        setSessionsState('ready')
+      })
+      .catch(() => {
+        if (disposed) return
+        setSessions([])
+        setSessionsState('unavailable')
+      })
     return () => { disposed = true }
   }, [materialId, study])
 
-  const sidebar = (() => {
-    if (panel === 'outline') {
-      return (
-        <>
-          <ReaderSidebarHeader title="目录" hint={materialKind === 'epub' ? 'EPUB 章节由受控阅读器加载' : '按原文顺序阅读'} onClose={() => setPanel(null)} />
-          <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4 text-sm text-muted-foreground">
-            <p>{materialKind === 'epub'
-              ? '使用上一章和下一章切换受控 EPUB 章节。书内跳转暂未接入，避免 iframe 导航与阅读器状态不同步。'
-              : '阅读器会保留原文顺序与来源定位。'}</p>
-            <UnavailableBadge />
-            <Link to={`/material/${encodeURIComponent(materialId)}`} className="rounded-md border border-border px-3 py-2 text-center text-sm text-foreground hover:bg-muted">查看材料详情</Link>
-          </div>
-        </>
-      )
-    }
-    if (panel === 'queue') {
-      return (
-        <>
-          <ReaderSidebarHeader title="解析队列" hint="同一材料的学习会话视图" onClose={() => setPanel(null)} />
-          <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4 text-sm text-muted-foreground">
-            <p>未完成会话与 Study 状态由 P3a repository 提供；当前基线展示 fixture 适配器。</p>
-            <Link to={`/queue?material=${encodeURIComponent(materialId)}`} className="rounded-md border border-border px-3 py-2 text-center text-sm text-foreground hover:bg-muted">在解析队列查看</Link>
-          </div>
-        </>
-      )
-    }
-    return (
-      <>
-        <ReaderSidebarHeader title="阅读设置" hint="只影响阅读器显示" onClose={() => setPanel(null)} />
-        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4 text-sm text-muted-foreground">
-          <p>字号、注音、书写方向与行距控件将在 reader display adapter 接入后提供。</p>
-          <UnavailableBadge />
-        </div>
-      </>
-    )
-  })()
+  if (materialLoadState === 'loading') {
+    return <div className="flex min-h-48 items-center justify-center bg-canvas px-6"><p role="status" className="text-sm text-secondary-text">正在加载材料…</p></div>
+  }
+  if (materialLoadState === 'error' || !material) {
+    return <div className="flex min-h-48 items-center justify-center bg-canvas px-6"><div role="alert" className="w-full max-w-md rounded-[var(--radius-action)] border border-destructive/40 bg-destructive/5 p-5 text-sm">{materialLoadError ?? '找不到这部材料'}</div></div>
+  }
 
-  return (
-    <ReaderShell
-      materialTitle={materialTitle}
-      materialMeta="P1/P2 API · Sentence / token 版本来自后端"
-      panel={panel}
-      onPanelChange={setPanel}
-      onBack={() => { void navigate(`/material/${encodeURIComponent(materialId)}`) }}
-      onHome={() => { void navigate('/library') }}
-      headerExtras={studySessionId ? (
-        <Link
-          to={studyPath(studySessionId, { source: 'material', materialId, sentenceId, returnPath: readerPath(materialId, sentenceId) })}
-          className="inline-flex items-center gap-2 rounded-md border border-ai/40 bg-ai/5 px-3 py-2 text-xs text-ai hover:bg-ai/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          打开 Study <FixtureBadge />
-        </Link>
-      ) : <UnavailableBadge />}
-      notice={(
-        <div className="flex flex-wrap items-center gap-2 border-b border-border bg-muted/40 px-4 py-2 text-xs text-muted-foreground">
-          <span>阅读器保持当前 Sentence 语境；查词与阅读不会创建 KP、ReviewItem 或 KnownEvidence。</span>
-          <PlaceholderNote>学习会话入口为 P3+ fixture</PlaceholderNote>
-        </div>
-      )}
-      sidebar={sidebar}
+  const onBack = () => { void navigate(materialPath(materialId)) }
+  const onHome = () => { void navigate('/library') }
+
+  const studySession = sessions[0]
+  const headerExtras = studySession ? (
+    <Link
+      to={studyPath(studySession.id, {
+        source: 'material',
+        materialId,
+        sentenceId: sentenceId ?? studySession.source_sentence_ids[0],
+        returnPath: readerPath(materialId, sentenceId),
+      })}
+      className="inline-flex min-h-10 items-center gap-1.5 rounded-[var(--radius-control)] border border-ai/40 bg-ai/5 px-3 text-xs text-ai hover:bg-ai/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
-      <div className="mx-auto w-full max-w-[1180px] p-4 min-[760px]:p-6">
-        {materialLoadError ? (
-          <div role="alert" className="rounded-lg border border-destructive/40 bg-destructive/5 p-5 text-sm">{materialLoadError}</div>
-        ) : materialKind === 'epub' ? (
-          <EpubPublication materialId={materialId} title={materialTitle} />
-        ) : materialKind === 'other' ? (
-          <MaterialWorkspace initialMaterialId={materialId} initialSentenceId={sentenceId} hideLibrary materialRepository={materials} readerRepository={reader} />
-        ) : (
-          <p role="status" className="rounded-lg border border-border bg-card p-5 text-sm text-muted-foreground">正在加载材料…</p>
-        )}
-      </div>
-    </ReaderShell>
+      打开 Study {study.source === 'fixture' ? <FixtureBadge /> : null}
+    </Link>
+  ) : null
+
+  if (materialKind === 'epub') {
+    return (
+      <EpubReaderWorkspace
+        material={material}
+        publication={publication}
+        sessions={sessions}
+        sessionsState={sessionsState}
+        onBack={onBack}
+        onHome={onHome}
+        headerExtras={headerExtras}
+      />
+    )
+  }
+  return (
+    <ReaderWorkspace
+      material={material}
+      sessions={sessions}
+      sessionsState={sessionsState}
+      initialSentenceId={sentenceId}
+      materialRepository={materials}
+      readerRepository={reader}
+      onBack={onBack}
+      onHome={onHome}
+      headerExtras={headerExtras}
+    />
   )
 }

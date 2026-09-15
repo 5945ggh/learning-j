@@ -17,8 +17,8 @@ type ContentIndexPanelProps = {
  */
 export function ContentIndexPanel({ status, sidecar, counts, error, onRetry }: ContentIndexPanelProps) {
   return (
-    <section className="rounded-md border border-border bg-card p-5" aria-labelledby="content-index-heading">
-      <h2 id="content-index-heading" className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">内容索引</h2>
+    <section className="rounded-[var(--radius-grouped)] border border-divider bg-opaque-surface p-5" aria-labelledby="content-index-heading">
+      <h2 id="content-index-heading" className="text-sm font-semibold uppercase tracking-wider text-secondary-text">内容索引</h2>
       {status === 'absent' ? (
         <p className="mt-3 text-sm text-muted-foreground">尚未生成内容索引；素材导入流程完成后，分句与材料词频会显示在这里。</p>
       ) : status === 'loading' ? (

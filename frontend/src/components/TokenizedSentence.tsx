@@ -26,9 +26,9 @@ export function tokenKey(token: AlgorithmToken): string {
  */
 export function TokenizedSentence({ sentence, tokens, loading, error, selectedKey, onTokenSelect, onRetry }: TokenizedSentenceProps) {
   return (
-    <section className="rounded-md border border-border bg-card p-5" aria-labelledby="algorithm-tokens-heading">
+    <section className="rounded-[var(--radius-grouped)] border border-divider bg-opaque-surface p-5" aria-labelledby="algorithm-tokens-heading">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 id="algorithm-tokens-heading" className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+        <h2 id="algorithm-tokens-heading" className="text-sm font-semibold uppercase tracking-wider text-secondary-text">
           算法解析
         </h2>
         <p className="text-xs text-muted-foreground">点击或按 Enter 选中词元，打开词典面板；这只是确定性分析，不是学习记录。</p>

@@ -21,8 +21,8 @@ export function Panel({
   className?: string
 }) {
   return (
-    <section className={cn('overflow-hidden rounded-lg border border-border bg-card shadow-sm', className)}>
-      <header className="flex flex-wrap items-baseline gap-2 border-b border-border px-4 py-3">
+    <section className={cn('overflow-hidden rounded-[var(--radius-grouped)] border border-divider bg-opaque-surface', className)}>
+      <header className="flex flex-wrap items-baseline gap-2 border-b border-divider px-4 py-3">
         <h2 className="text-sm font-medium">{title}</h2>
         {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
       </header>

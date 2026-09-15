@@ -104,7 +104,7 @@ export function MaterialDetailScreen() {
       />
 
       <div className={`${PAGE_PADDING} flex flex-col gap-4`}>
-        <section className="grid gap-4 rounded-lg border border-border bg-card p-5 shadow-sm min-[760px]:grid-cols-[160px_minmax(0,1fr)]">
+        <section className="grid gap-4 rounded-[var(--radius-grouped)] border border-divider bg-opaque-surface p-5 min-[760px]:grid-cols-[160px_minmax(0,1fr)]">
           <div className="grid min-h-48 place-items-center overflow-hidden rounded-md bg-muted text-center text-xs text-muted-foreground">
             {coverSrc ? (
               <img src={coverSrc} alt={`《${material.title}》封面`} loading="lazy" className="size-full object-cover" />

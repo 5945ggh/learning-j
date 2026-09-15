@@ -137,7 +137,7 @@ export function ImportMaterialDialog({ onImport, onImported, onClose }: ImportMa
 
   return (
     <div className="fixed inset-0 z-40 overflow-y-auto">
-      {/* 模态垫层：阻断背景指针交互；退出走 Escape/显式取消（与 LookupSurface sheet 一致）。 */}
+      {/* 模态垫层：阻断背景指针交互；退出走 Escape/显式取消（与 lib/useOverlaySurface.ts 的 sheet 模态行为一致）。 */}
       <div aria-hidden="true" data-import-backdrop="true" className="fixed inset-0 bg-foreground/40" />
       <div className="flex min-h-full items-end justify-center p-4 min-[760px]:items-center">
         <div

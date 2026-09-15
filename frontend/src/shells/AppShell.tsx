@@ -61,7 +61,7 @@ function NavigationLink({ item, pathname, mobile = false }: { item: NavItem; pat
         'text-muted-foreground hover:bg-muted hover:text-foreground',
         'max-[1179px]:justify-center max-[1179px]:px-0',
         mobile && 'w-auto shrink-0 px-2.5',
-        current && 'bg-muted font-medium text-foreground shadow-sm',
+        current && 'bg-grouped-surface font-medium text-text',
       )}
     >
       <Icon className="size-[18px] shrink-0" strokeWidth={current ? 2.1 : 1.8} aria-hidden="true" />
@@ -83,13 +83,13 @@ export function AppShell({ children }: { children: ReactNode }) {
   const settingsCurrent = pathname === '/settings'
 
   return (
-    <div className="flex min-h-dvh flex-col bg-background text-foreground min-[760px]:h-dvh">
-      <header aria-label="主导航" className="flex items-center gap-1 overflow-x-auto border-b border-border bg-card/90 px-2 py-1.5 backdrop-blur-xl min-[760px]:hidden">
+    <div className="flex min-h-dvh flex-col bg-canvas text-text min-[760px]:h-dvh">
+      <header aria-label="主导航" className="flex items-center gap-1 overflow-x-auto border-b border-divider bg-shell-surface px-2 py-1.5 min-[760px]:hidden">
         {NAV_ITEMS.map((item) => <NavigationLink key={item.path} item={item} pathname={pathname} mobile />)}
       </header>
 
       <div className="flex min-h-0 flex-1">
-        <aside className="hidden w-16 shrink-0 flex-col border-r border-border bg-card/75 px-2 py-3 backdrop-blur-xl min-[760px]:flex min-[1180px]:w-[216px] min-[1180px]:px-3">
+        <aside className="hidden w-16 shrink-0 flex-col border-r border-divider bg-shell-surface px-2 py-3 min-[760px]:flex min-[1180px]:w-[216px] min-[1180px]:px-3">
           <div className="px-2.5 pb-4 max-[1179px]:hidden">
             <div className="text-[15px] font-semibold tracking-tight">LearningJ</div>
             <div className="text-[11px] text-muted-foreground">源文优先的学习工作区</div>
@@ -99,7 +99,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             {NAV_ITEMS.map((item) => <NavigationLink key={item.path} item={item} pathname={pathname} />)}
           </nav>
 
-          <div className="mt-auto border-t border-border pt-2">
+          <div className="mt-auto border-t border-divider pt-2">
             <NavLink
               to="/settings"
               aria-current={settingsCurrent ? 'page' : undefined}
@@ -107,7 +107,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               className={cn(
                 'flex min-h-10 w-full items-center gap-3 rounded-md px-2.5 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground',
                 'max-[1179px]:justify-center max-[1179px]:px-0',
-                settingsCurrent && 'bg-muted font-medium text-foreground shadow-sm',
+                settingsCurrent && 'bg-grouped-surface font-medium text-text',
               )}
             >
               <Settings className="size-[18px] shrink-0" strokeWidth={settingsCurrent ? 2.1 : 1.8} aria-hidden="true" />
@@ -119,14 +119,14 @@ export function AppShell({ children }: { children: ReactNode }) {
         <main className="min-h-0 min-w-0 flex-1 overflow-y-auto">{children}</main>
       </div>
 
-      <nav aria-label="设置导航" className="border-t border-border bg-card/90 px-2 py-1.5 backdrop-blur-xl min-[760px]:hidden">
+      <nav aria-label="设置导航" className="border-t border-divider bg-shell-surface px-2 py-1.5 min-[760px]:hidden">
         <NavLink
           to="/settings"
           aria-current={settingsCurrent ? 'page' : undefined}
           title="设置"
           className={cn(
             'flex min-h-10 w-full items-center justify-center gap-2 rounded-md px-2.5 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground',
-            settingsCurrent && 'bg-muted font-medium text-foreground shadow-sm',
+            settingsCurrent && 'bg-grouped-surface font-medium text-text',
           )}
         >
           <Settings className="size-[18px]" aria-hidden="true" />

@@ -2,9 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ImportMaterialDialog } from '@/components/ImportMaterialDialog'
 import { MaterialCard } from '@/components/MaterialCard'
-import { CONTENT_BOTTOM, CONTENT_PAD, CONTENT_WIDTH, PageHeader, PlaceholderNote } from '@/components/PageHeader'
+import { CONTENT_BOTTOM, CONTENT_PAD, CONTENT_WIDTH, PageHeader } from '@/components/PageHeader'
 import { Button } from '@/components/ui/button'
-import { materialPath, studyPath } from '@/app/routes'
+import { materialPath, readerPath, studyPath } from '@/app/routes'
 import { useRepositories } from '@/app/repository-context'
 import { materialsForMode, type LibraryMode } from '@/lib/library'
 import { createMaterial, materialCoverUrl } from '@/lib/materials'
@@ -30,6 +30,7 @@ export function LibraryScreen() {
   const [mode, setMode] = useState<LibraryMode>('books')
   const [importOpen, setImportOpen] = useState(false)
   const [activeSessions, setActiveSessions] = useState<StudySessionRecord[]>([])
+  const [activeSessionsStatus, setActiveSessionsStatus] = useState<'loading' | 'ready' | 'unavailable'>('loading')
 
   useEffect(() => {
     const controller = new AbortController()
@@ -50,9 +51,19 @@ export function LibraryScreen() {
 
   useEffect(() => {
     let disposed = false
+    setActiveSessionsStatus('loading')
     study.listActiveSessions()
-      .then((sessions) => { if (!disposed) setActiveSessions(sessions) })
-      .catch(() => { if (!disposed) setActiveSessions([]) })
+      .then((sessions) => {
+        if (disposed) return
+        setActiveSessions(sessions)
+        setActiveSessionsStatus('ready')
+      })
+      .catch(() => {
+        if (disposed) return
+        // An unavailable P3+ projection is not the same fact as zero sessions.
+        setActiveSessions([])
+        setActiveSessionsStatus('unavailable')
+      })
     return () => { disposed = true }
   }, [study])
 
@@ -64,10 +75,10 @@ export function LibraryScreen() {
   }, [activeSessions])
 
   return (
-    <div className={`${CONTENT_WIDTH} ${CONTENT_BOTTOM}`}>
+    <div className={`${CONTENT_WIDTH} ${CONTENT_BOTTOM} bg-canvas`}>
       <PageHeader
         title="素材库"
-        subtitle="原文与视听素材来自 P1/P2 API；学习会话入口会保留来源材料。"
+        subtitle="导入并打开原文与视听素材；学习会话会保留来源材料。"
         actions={(
           <Button type="button" variant="primary" onClick={() => setImportOpen(true)}>
             导入素材
@@ -76,9 +87,9 @@ export function LibraryScreen() {
       />
 
       <div className={CONTENT_PAD}>
-        <PlaceholderNote>
-          素材文本、句子、token 与内容索引只从真实 API 读取；本页不会使用 demo 的近似分词器。P3+ 学习会话入口若显示 fixture，会带有明确标识。
-        </PlaceholderNote>
+        <p className="rounded-[var(--radius-action)] border border-divider bg-grouped-surface px-4 py-3 text-sm leading-relaxed text-secondary-text">
+          素材与句子直接读取本地后端。活动学习会话数量来自真实投影；暂时取不到时会标为“会话状态不可用”，不会按 0 显示。
+        </p>
 
         <div className="mt-5 flex flex-wrap items-center gap-1" role="group" aria-label="素材模式">
           {(Object.keys(MODE_LABELS) as LibraryMode[]).map((candidate) => (
@@ -87,7 +98,7 @@ export function LibraryScreen() {
               type="button"
               aria-pressed={mode === candidate}
               onClick={() => setMode(candidate)}
-              className={`rounded-md border px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${mode === candidate ? 'border-foreground bg-muted font-medium' : 'border-transparent text-muted-foreground hover:bg-muted'}`}
+              className={`rounded-[var(--radius-control)] border px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${mode === candidate ? 'border-divider bg-opaque-surface font-medium text-text' : 'border-transparent text-secondary-text hover:bg-secondary-grouped-surface'}`}
             >
               {MODE_LABELS[candidate]}（{materialsForMode(materials, candidate).length}）
             </button>
@@ -95,19 +106,19 @@ export function LibraryScreen() {
         </div>
 
         {status === 'loading' ? (
-          <p role="status" className="mt-5 rounded-md border border-border bg-card px-4 py-8 text-center text-sm text-muted-foreground">正在加载素材…</p>
+          <p role="status" className="mt-5 rounded-[var(--radius-action)] border border-divider bg-opaque-surface px-4 py-8 text-center text-sm text-secondary-text">正在加载素材…</p>
         ) : status === 'error' ? (
-          <div role="alert" className="mt-5 rounded-md border border-destructive/40 bg-destructive/5 px-4 py-4 text-sm">
+          <div role="alert" className="mt-5 rounded-[var(--radius-action)] border border-destructive/40 bg-destructive/5 px-4 py-4 text-sm">
             <p>{error ?? '素材加载失败'}</p>
-            <p className="mt-1 text-muted-foreground">素材浏览不依赖 BYOK；请确认本地后端已启动后重试。</p>
-            <button type="button" onClick={() => setAttempt((value) => value + 1)} className="mt-3 rounded-md border border-border bg-card px-3 py-1.5 font-medium hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">重试</button>
+            <p className="mt-1 text-secondary-text">素材浏览不需要 AI 密钥；请确认本地后端已启动后重试。</p>
+            <button type="button" onClick={() => setAttempt((value) => value + 1)} className="mt-3 rounded-[var(--radius-control)] border border-divider bg-opaque-surface px-3 py-1.5 font-medium text-text hover:bg-grouped-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">重试</button>
           </div>
         ) : visible.length === 0 ? (
-          <p className="mt-5 rounded-md border border-dashed border-border px-4 py-10 text-center text-sm text-muted-foreground">
+          <p className="mt-5 rounded-[var(--radius-action)] border border-dashed border-divider px-4 py-10 text-center text-sm text-secondary-text">
             {materials.length === 0 ? '还没有素材。导入 txt、srt、vtt 或 EPUB 后会显示在这里。' : mode === 'books' ? '书目里还没有文本或 EPUB 素材。' : '视听里还没有字幕素材。'}
           </p>
         ) : (
-          <div className="mt-5 grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-4 min-[760px]:grid-cols-[repeat(auto-fill,minmax(196px,1fr))]">
+          <div className="mt-6 grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-5 min-[760px]:grid-cols-[repeat(auto-fill,minmax(196px,1fr))]">
             {visible.map((material) => {
               const firstSession = activeSessions.find((session) => session.material_id === material.id)
               return (
@@ -115,15 +126,18 @@ export function LibraryScreen() {
                   key={material.id}
                   material={material}
                   metadata={{
-                    active_session_count: activeCountByMaterial.get(material.id) ?? 0,
+                    active_session_count: activeSessionsStatus === 'ready' ? activeCountByMaterial.get(material.id) ?? 0 : null,
+                    active_session_state: activeSessionsStatus,
+                    author: material.author,
                     meta_line: `${material.sentence_count} 句`,
                     cover_src: materialCoverUrl(material),
                   }}
-                  onOpen={(item) => { void navigate(materialPath(item.id)) }}
+                  onOpen={(item) => { void navigate(readerPath(item.id)) }}
                   onOpenQueue={(item) => { void navigate(`/queue?material=${encodeURIComponent(item.id)}`) }}
                   onOpenKnowledge={(item) => { void navigate(`/knowledge?material=${encodeURIComponent(item.id)}`) }}
                   onOpenStudy={firstSession ? (item) => { void navigate(studyPath(firstSession.id, { source: 'library', materialId: item.id, sentenceId: firstSession.source_sentence_ids[0], returnPath: '/library' })) } : undefined}
                   studyFixture={Boolean(firstSession)}
+                  onManage={(item) => { void navigate(materialPath(item.id)) }}
                 />
               )
             })}

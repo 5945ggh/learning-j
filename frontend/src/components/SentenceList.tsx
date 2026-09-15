@@ -37,14 +37,14 @@ export function SentenceList({ material, sentences, selectedId, onSelect }: Sent
           ? null
           : formatTimeRange(sentence.time_start, sentence.time_end)
         return (
-          <li key={sentence.id} className={`rounded-md border bg-card p-4 transition-colors ${selectedId === sentence.id ? 'border-study ring-1 ring-study/20' : 'border-border'}`}>
-            <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+          <li key={sentence.id} className={`rounded-[var(--radius-action)] border bg-opaque-surface p-4 transition-colors ${selectedId === sentence.id ? 'border-study ring-1 ring-study/20' : 'border-divider'}`}>
+            <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-secondary-text">
               <span>#{sentence.index + 1}</span>
               <span>{location}</span>
               {timeRange ? <span>{timeRange}</span> : null}
             </div>
             <p className="font-serif-jp text-lg leading-8">{sentence.text}</p>
-            {sentence.translation ? <p className="mt-2 border-l-2 border-lexical pl-3 text-sm text-muted-foreground">{sentence.translation}</p> : null}
+              {sentence.translation ? <p className="mt-2 border-l-2 border-algorithm pl-3 text-sm text-secondary-text">{sentence.translation}</p> : null}
             {onSelect ? (
               <button
                 type="button"

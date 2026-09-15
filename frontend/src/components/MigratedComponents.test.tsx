@@ -84,6 +84,98 @@ describe('migrated shell-independent components', () => {
     expect(onQueue).toHaveBeenCalledWith(fixtureTextMaterial)
   })
 
+  it('keeps exactly one primary open control and puts it in the title region', () => {
+    render(<MaterialCard material={fixtureTextMaterial} onOpen={() => {}} onManage={() => {}} onOpenKnowledge={() => {}} />)
+    const entries = screen.getAllByRole('button', { name: `打开《${fixtureTextMaterial.title}》` })
+    expect(entries).toHaveLength(1)
+    expect(entries[0]).toHaveTextContent(fixtureTextMaterial.title)
+    expect(screen.getByRole('heading', { level: 2 })).toContainElement(entries[0]!)
+  })
+
+  it('keeps management actions out of the primary Reader click', async () => {
+    const user = userEvent.setup()
+    const onOpen = vi.fn()
+    const onManage = vi.fn()
+    render(<MaterialCard material={fixtureTextMaterial} onOpen={onOpen} onManage={onManage} />)
+    const trigger = screen.getByRole('button', { name: `管理《${fixtureTextMaterial.title}》` })
+    await user.click(trigger)
+    await user.click(screen.getByRole('menuitem', { name: '材料信息' }))
+    expect(onManage).toHaveBeenCalledWith(fixtureTextMaterial)
+    expect(onOpen).not.toHaveBeenCalled()
+    expect(trigger).toHaveFocus()
+  })
+
+  it('moves focus into the overflow menu and walks it with the keyboard', async () => {
+    const user = userEvent.setup()
+    render(<MaterialCard material={fixtureTextMaterial} onManage={() => {}} onOpenKnowledge={() => {}} />)
+    await user.click(screen.getByRole('button', { name: `管理《${fixtureTextMaterial.title}》` }))
+
+    const first = screen.getByRole('menuitem', { name: '材料信息' })
+    const second = screen.getByRole('menuitem', { name: '查看知识库' })
+    expect(first).toHaveFocus()
+    await user.keyboard('{ArrowDown}')
+    expect(second).toHaveFocus()
+    await user.keyboard('{ArrowDown}')
+    expect(first).toHaveFocus()
+    await user.keyboard('{ArrowUp}')
+    expect(second).toHaveFocus()
+    await user.keyboard('{Home}')
+    expect(first).toHaveFocus()
+    await user.keyboard('{End}')
+    expect(second).toHaveFocus()
+  })
+
+  it('closes the overflow menu on Escape, on focus leaving, and returns focus to its trigger', async () => {
+    const user = userEvent.setup()
+    render(<MaterialCard material={fixtureTextMaterial} onManage={() => {}} onOpenKnowledge={() => {}} />)
+    const trigger = screen.getByRole('button', { name: `管理《${fixtureTextMaterial.title}》` })
+
+    await user.click(trigger)
+    expect(screen.getByRole('menu', { name: `管理《${fixtureTextMaterial.title}》` })).toBeInTheDocument()
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    expect(trigger).toHaveFocus()
+
+    await user.click(trigger)
+    expect(screen.getByRole('menuitem', { name: '材料信息' })).toHaveFocus()
+    await user.tab()
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+  })
+
+  it('exposes the material session entry once, as a real control', async () => {
+    const user = userEvent.setup()
+    const onStudy = vi.fn()
+    render(<MaterialCard material={fixtureTextMaterial} onOpenStudy={onStudy} onManage={() => {}} metadata={{ active_session_count: 3 }} studyFixture />)
+    const study = screen.getByRole('button', { name: /打开 Study/ })
+    expect(screen.getAllByText('打开 Study')).toHaveLength(1)
+    await user.click(study)
+    expect(onStudy).toHaveBeenCalledWith(fixtureTextMaterial)
+
+    await user.click(screen.getByRole('button', { name: `管理《${fixtureTextMaterial.title}》` }))
+    expect(screen.queryByRole('menuitem', { name: /打开 Study/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: '材料信息' })).toBeInTheDocument()
+  })
+
+  it('does not invent a session count or a session entry when the projection is unavailable', () => {
+    render(
+      <MaterialCard
+        material={fixtureTextMaterial}
+        onOpenStudy={() => {}}
+        onOpenQueue={() => {}}
+        metadata={{ active_session_count: null, active_session_state: 'unavailable' }}
+      />,
+    )
+    expect(screen.getByText('会话状态不可用')).toBeInTheDocument()
+    expect(screen.queryByText(/解析队列/)).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /打开 Study/ })).not.toBeInTheDocument()
+    expect(screen.queryByText('暂无活动会话')).not.toBeInTheDocument()
+  })
+
+  it('hides the overflow trigger when no material management action exists', () => {
+    render(<MaterialCard material={fixtureTextMaterial} onOpen={() => {}} />)
+    expect(screen.queryByRole('button', { name: `管理《${fixtureTextMaterial.title}》` })).not.toBeInTheDocument()
+  })
+
   it('renders the supplied EPUB cover resource inside the book card', () => {
     render(
       <MaterialCard
