@@ -1,10 +1,16 @@
 # LearningJ implementation handoff packets
 
-This directory is the dispatch layer between the current product contracts and implementation agents. A packet is deliberately not a second specification: it names the precise reading path, owned write surface, acceptance evidence, dependency, and handoff boundary for one bounded delivery slice. Dispatch from [CURRENT-PACKETS.md](CURRENT-PACKETS.md).
+This directory preserves the earlier phase-based dispatch layer. A packet names the reading path, owned write surface, acceptance evidence, dependency, and handoff boundary for one delivery slice; it is not a second specification. See [CURRENT-PACKETS.md](CURRENT-PACKETS.md) for the retained catalogue and explicit restoration rules; new work starts at [reader-foundation](../reader-foundation/README.md).
 
-## Dispatch procedure
+## Dispatch status (2026-09-14)
 
-The lead may dispatch an implementation agent with only: **“Read `docs/task-packets/CURRENT-PACKETS.md`, implement packet `<ID>`.”** The packet row requires the agent to locate and read the relevant contract sources itself.
+The current implementation entry point is [docs/reader-foundation/README.md](../reader-foundation/README.md). New work is dispatched from that reader-foundation plan; the packet catalogue below is retained as historical delivery evidence and as a restoration registry for explicitly resumed legacy packets. Unstarted packets, including `P2-known-import`, `P3`–`P5`, and future experiments, are paused and are not automatically dispatched. If one is resumed, re-scope it against the current reader-foundation plan and current contracts before dispatch.
+
+Existing handoff reports and review records remain historical evidence exactly as recorded. Their presence does not declare the old roadmap complete or require its continuation. The packet procedure, dependency graph, layered ownership, and universal gates below apply only when the lead explicitly restores a legacy packet.
+
+## Legacy packet dispatch procedure
+
+When a legacy packet is explicitly restored, the lead may dispatch an implementation agent with: **“Read `docs/task-packets/CURRENT-PACKETS.md`, implement packet `<ID>`.”** The packet row requires the agent to locate and read the relevant contract sources itself. Current reader-foundation work follows [its own dispatch guidance](../reader-foundation/README.md) and [the reader testing standard](../reader-foundation/testing-standard.md).
 
 1. Check the packet's **Start gate** and its predecessor's handoff report at `reports/<predecessor>-handoff.md`. `STATUS: done` alone is not a gate, and a missing report is an unmet gate — not permission to guess.
 2. Give one agent one packet. Parallel agents share only declared public contracts and never edit the same owned files.
@@ -14,7 +20,7 @@ The lead may dispatch an implementation agent with only: **“Read `docs/task-pa
 
 `partial` and `blocked` are useful outcomes: never dispatch past an unmet start gate. Implementers may not edit `docs/`, `prompts/`, or `DESIGN.md`, except their own report under [reports/](reports/README.md). A packet has one report file: the handoff body plus any reviewer-owned `## Review` section. Reports are committed gate evidence — the lead commits them, and they are deliberately not gitignored so the next agent and the reviewer can read them from a fresh checkout.
 
-## Current dependency graph
+## Legacy dependency graph
 
 ```text
 P0-contract → P0-backend + P0-frontend → P0-integration

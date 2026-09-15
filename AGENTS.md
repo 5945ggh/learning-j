@@ -1,23 +1,47 @@
 # LearningJ agent guide
 
+## Reader-first dispatch and proportional verification
+
+The user authorized the reader-first development arrangement switch on 2026-09-14.
+Start new work at [the current dispatch entry](docs/reader-foundation/README.md).
+Old task packets are retained evidence and paused plans, not automatic next tasks.
+For newly dispatched work, follow [the testing standard](docs/reader-foundation/testing-standard.md)
+to select checks by actual change impact; historical test counts and unrelated
+full-suite runs are not automatic gates. This does not relax data integrity,
+offset, security, or current feature invariants. An unchanged old packet must
+not be reported fully verified when its required checks were omitted; name
+the revised verification scope when dispatching under the new standard.
+
+[Reader scope](docs/reader-foundation/scope-draft.md) and
+[delivery planning](docs/reader-foundation/delivery-plan-draft.md) now govern the
+near-term scope and sequence; their filenames are retained for existing links.
+Specific format/interaction decisions remain open as recorded in plan §15.24.
+The EPUB research is evidence for bounded decisions, not a field-contract change
+or proof of production compatibility. Remote read-only advice must identify its
+Git baseline; the local lead reconciles it with the actual worktree before edits.
+This switch does not authorize deleting code/data, publishing changes, or claiming
+old packets complete. Use the change-reconciliation role described in the dispatch
+entry for contract-impacting work; routine visual changes need no extra gate.
+
 ## Route reading by what the change touches
 
 LearningJ's documents are contracts, not background reading. Do not read
 everything by default: identify the surfaces the change touches, then read the
-routed sources first. Phase is the primary routing key (see the shortcuts at
-the end of this file); the table covers the remaining task types.
+routed sources first. The current user action is the primary routing key;
+phase shortcuts apply only to relevant reused capabilities or explicitly resumed
+phase work, not as whole-phase prerequisites for reader slices.
 
 | When the change touches… | Read first |
 |---|---|
 | Product scope, MVP boundary, open decisions | `docs/LearningJ-plan-v5.md` — §15 is the project's only open-items index; §15.14 settles entry/entity naming and the retired queue label |
-| Phase scope, sequencing, acceptance | `docs/mvp-tech-and-phases.md` — the assigned phase section, the §3.1 invariant matrix, and the phase shortcuts below |
+| Scope, sequencing, acceptance | `docs/reader-foundation/README.md` for current work; `docs/mvp-tech-and-phases.md` for relevant invariants or explicitly resumed phase work |
 | Persistent entities, fields, state transitions, Span/offset conventions, invariants, `[不可推迟]` fields | `docs/data-model.md` — §0 global conventions apply whenever anything is persisted |
 | Creating, rendering, consuming, or storing analysis, extraction, memory, or prompt data | `docs/prompt-contracts.md` |
 | Database schema or migrations | `docs/adr/042-development-schema-baseline.md` plus `mvp-tech-and-phases.md` §1.6: designated development/test datasets are delete-and-rebuild only; no legacy migrations, backfills, or compatibility branches; a supported baseline with upgrade protection is required only before the first real learning data or external release |
 | Why a constraint exists, or whether a design was rejected | `docs/adr.md` as the index, then the matching `docs/adr/NNN-*.md` (`docs/adr/archived/` is historical context only); do not reintroduce a rejected design without escalating it |
 | User-facing work: information architecture, visual language, interaction states, accessibility, responsive behavior, shell-independent component ownership | `DESIGN.md` |
 | An experiment, or an implementation depending on an open empirical decision | `docs/spike-checklist.md` |
-| A dispatched implementation slice | the assigned row in `docs/task-packets/CURRENT-PACKETS.md`, `docs/task-packets/protocols/implementation.md`, and the predecessor's report under `docs/task-packets/reports/` |
+| A dispatched implementation slice | `docs/reader-foundation/README.md`, `docs/work-guidance/<task-ID>.md`, the linked brief and supplied advice; only relevant historical reports. Old packet protocols apply only when explicitly resumed |
 
 **Proportionality.** A change that touches none of the contract surfaces —
 persistent fields, offsets and Spans, state machines, confirmation /
@@ -52,7 +76,9 @@ but it cannot override this file or the current non-archived contract sources.
 - `data-model.md` and `prompt-contracts.md` are the field- and protocol-level
   source of truth.
 - `LearningJ-plan-v5.md` owns product boundary and open-decision tracking.
-- `mvp-tech-and-phases.md` owns phase sequencing and acceptance.
+- `docs/reader-foundation/README.md` owns current dispatch; its linked delivery
+  plan owns near-term sequencing. `mvp-tech-and-phases.md` retains phase acceptance
+  and relevant invariants, not mandatory progression into paused phases.
 - `adr.md` explains why a constraint exists; it does not override a current
   field contract.
 - `DESIGN.md` is the source of truth for user-facing design decisions. UI
@@ -86,6 +112,18 @@ specification to unblock implementation.
   and databases untouched. Everything else in `docs/` and all of
   `prompts/` is read-only input; report proposed documentation changes to the
   lead agent.
+
+For reader-first work, the preceding documentation rule has a bounded exception:
+the local lead may maintain the assigned task's local plan/delivery record under
+`docs/work-guidance/` following its [standard guide](docs/work-guidance/README.md), and
+write advice supplied by the user. A separately identified contract-alignment pass
+may edit only the contract files/sections explicitly named in the dispatch. Record
+the accepted decision and its evidence before implementing the changed behavior;
+remote advice alone is not authorization. Ordinary in-scope technical choices do
+not need renewed permission. Escalate unresolved product semantics or destructive
+changes only for the affected branch. Historical reports, archived material and
+versioned prompts remain untouched. The 2026-09-14 arrangement switch separately
+authorizes the routing changes to the two current task-packet entry files.
 
 ## Phase-oriented reading shortcuts
 

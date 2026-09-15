@@ -1,10 +1,18 @@
-# Current dispatch packets (2026-09-11 database policy update)
+# Legacy dispatch packet catalogue and restoration registry (2026-09-14)
+
+## Current development entry point
+
+Effective 2026-09-14, the only current dispatch entry point is [docs/reader-foundation/README.md](../reader-foundation/README.md). New implementation work must begin from that plan and its [testing standard](../reader-foundation/testing-standard.md), which define the current reader-foundation scope, sequencing, and proportional verification.
+
+The packet rows in this file are retained for historical delivery evidence and for explicit restoration of a legacy packet. Unstarted work, including `P2-known-import`, `P3`–`P5`, and future experiments, is paused. It may be re-dispatched only after being re-scoped against the current plan and contracts; this file does not declare those packets complete, retired, or otherwise resolved. Existing reports and review records are preserved as historical facts and are not rewritten by this routing change.
+
+The legacy dispatch examples, dependency graph, layered backend/frontend/integration ownership, and full packet gates below apply only when the lead explicitly restores a legacy packet. They are not automatic gates for reader-foundation work.
 
 ## Current Development Database Policy
 
 2026-09-11 user decision, authoritative for every row below: use explicit deletion and recreation of the designated development/test database against the current schema, with reproducible fixtures. Do not implement old-database migrations, legacy backfills, or compatibility branches for current development. Forward upgrades and pre-migration backups in older packet text or reports are historical evidence, not current dispatch gates. Validate the current schema, rebuild path boundaries, integrity and fixtures. Snapshot export/isolated restore remains a separate product requirement. Before real learning data or an external persistent release, establish the supported baseline and upgrade protection under [ADR-042](../adr/042-development-schema-baseline.md). This update synchronizes database policy only; it does not certify other packet contracts or phase completion.
 
-This is the sole current packet catalogue. Packet status is carried by reports, not by this catalogue: a packet's current state is the latest `reports/<ID>-handoff.md` and its `## Review` verdict, so rows only change when a packet's scope or gates change, not when work completes. A lead dispatches one row by saying: “Read `docs/task-packets/CURRENT-PACKETS.md`, implement packet `<ID>`.” The agent must also read `protocols/implementation.md`, then the listed source sections and the predecessor's handoff report.
+For explicitly restored legacy packets, status is carried by reports, not by this restoration registry: a packet's recorded state is the latest `reports/<ID>-handoff.md` and its `## Review` verdict. A lead restoring one may dispatch it by saying: “Read `docs/task-packets/CURRENT-PACKETS.md`, implement packet `<ID>`.” The agent must also read `protocols/implementation.md`, then the listed source sections and the predecessor's handoff report. This registry is not the current catalogue for new work.
 
 2026-09-10: catalogue re-synced to [ADR-041](../adr/041-occurrence-review-targets.md) — confirmation and ReviewItem creation are Occurrence-grained at P4b (status = queued), quota admission belongs to P5. The round that converted the three-state ReviewItem to four states with `admitted_at` is complete (`306bb3c`) and approved (`reports/P0-backend-handoff.md`, `VERDICT: approve`).
 
