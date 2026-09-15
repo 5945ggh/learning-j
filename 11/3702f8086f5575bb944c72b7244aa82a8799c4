@@ -1,0 +1,182 @@
+frontend/src/features/reader/ReaderWorkspace.tsx
+  s_845f0a86ea1d7a::t_10ecb68477c478 15
+  s_845f0a86ea1d7a::t_14d78644cd842f 214
+  s_845f0a86ea1d7a::t_dfc10d79f52150 79,87
+  s_845f0a86ea1d7a::t_69d694fba887c4 2-14,16-21,31-76,80-84,88-99,108-213
+  s_845f0a86ea1d7a::t_3f2be845a51205 22-28
+  s_845f0a86ea1d7a::t_0aebb6135df4f2 29-30
+  s_845f0a86ea1d7a::t_2368040768cd84 100-107
+  s_845f0a86ea1d7a::t_331f5c9062bd97 1,77-78,85-86
+frontend/src/features/reader/EpubPublication.tsx
+  s_845f0a86ea1d7a::t_5dbd33fd5e3932 2,5,16-22,24-42,44,50-56,60,73,79-120,133-134,138,142-143,168,170-172
+  h_c735ec7f46d14b 175
+docs/work-guidance/RF-02.md
+  s_9c26e4c4f4464b::t_b623186bca9600 7-8,18,90,92,171,180-181,201,203-204,282,386-389,391-392,395,423,438,536,594-595,597-604,613-615,675,677,711,716,718,721-724,778-780,812,830,837-838
+  s_845f0a86ea1d7a::t_6b010b0b669cd8 848
+  s_845f0a86ea1d7a::t_b4a2efe48f74c3 862,866
+  h_c735ec7f46d14b 1-2,4-6,9-17,19-89,91,93-170,172-179,182-200,202,205-281,283-385,390,393-394,396-422,424-437,439-535,537-593,596,605-612,616-674,676,678-710,712-715,717,719-720,725-777,781-811,813-829,831-836,839-847
+  s_845f0a86ea1d7a::t_883401fad2f46c 3,857-861,863-865,867-869
+  s_845f0a86ea1d7a::t_83a4ea1bbf840e 849-856
+  s_845f0a86ea1d7a::t_81b9d575878e99 870-872
+  h_c735ec7f46d14b 873-919
+frontend/src/components/SentenceContext.tsx
+  s_845f0a86ea1d7a::t_5c23f16a388acf 21-22,24,27,29
+frontend/src/screens/LibraryScreen.tsx
+  s_845f0a86ea1d7a::t_cc7ee125d729f2 129
+  s_845f0a86ea1d7a::t_de787a0e31a43b 56-66,78,81,90,130
+  s_845f0a86ea1d7a::t_3526b80664238e 91-92
+  s_845f0a86ea1d7a::t_24a4920ad92c23 131
+  h_c735ec7f46d14b 5,7,33,54,101,109,111,113-114,117,121,135,140
+frontend/src/screens/ReaderScreen.test.tsx
+  s_845f0a86ea1d7a::t_ef59885819b6dc 82-83
+  s_845f0a86ea1d7a::t_2ea625881c0552 10,56-76,79-81
+  s_845f0a86ea1d7a::t_d32c6a28dfe597 77-78
+  s_845f0a86ea1d7a::t_b6189fa8ea7407 84-86
+  h_c735ec7f46d14b 87-108
+frontend/src/components/SentenceList.tsx
+  s_845f0a86ea1d7a::t_5c23f16a388acf 40-41,47
+frontend/src/shells/AppShell.tsx
+  s_845f0a86ea1d7a::t_766db97cc74c26 64,86-87,92,102,110,122,129
+frontend/src/features/reader/ReaderWorkspace.test.tsx
+  s_845f0a86ea1d7a::t_b58b355b325842 46-62,66
+  s_845f0a86ea1d7a::t_5e63d9f87b3f05 29,44
+  s_845f0a86ea1d7a::t_7a7e102d746e60 4,6-16,20-24,26-28,30-38,41-43,45,63,67
+  s_845f0a86ea1d7a::t_01e2b6fb43d238 64-65
+  s_845f0a86ea1d7a::t_48150acc2a8a40 68-69
+  h_c735ec7f46d14b 72-100,103-105,108-111,113-116,119,121,123-135,138,140,142-145,147-155,158-161,164-167,169,171-173,175-177,179-181,183-185,188,190-195,198-200,202,204-207,209-211,214-216,218-223,227-229,232,234-237,239-240,244-246,248-259,261-263,265,268-270,272-277,279-282,285-286,288-293,295-298,300-301,304-305,307-314,316-317,320,325-326,329,332-333,335-342,344-346,349,351-352,354-355,360-361,363,365-375,377-379,381-382,384,388-389,393-437
+frontend/src/components/ContentIndexPanel.tsx
+  s_845f0a86ea1d7a::t_5c23f16a388acf 20-21
+frontend/src/components/MaterialCard.tsx
+  s_845f0a86ea1d7a::t_aa65d3037e80c9 114
+  s_845f0a86ea1d7a::t_dad92604b20f3b 224,228,231-233
+  s_845f0a86ea1d7a::t_d9e0f31308c186 104
+  s_845f0a86ea1d7a::t_337e2e7bcfd2d6 14,105,223
+  s_845f0a86ea1d7a::t_1d1786a91290dc 1-3,13,59-61,63-68,83-87,89,91-94,99-103,106-113,115-170,175,179-181,183,186-202,205-222,225-226,229
+  s_845f0a86ea1d7a::t_7200f8bda2d4c5 15
+  s_845f0a86ea1d7a::t_ea0ee3c18d393b 227
+  s_845f0a86ea1d7a::t_58f46abbaef324 230
+  s_845f0a86ea1d7a::t_fe6da15b5a6831 234-236
+  h_c735ec7f46d14b 19,32,34,36,40,237-254,260-261,263,267-273,275-276,278-287
+frontend/src/components/MigratedComponents.test.tsx
+  s_845f0a86ea1d7a::t_71ea477a981429 87-97,109,112,125,132
+  s_845f0a86ea1d7a::t_a2bf9603a2101e 98-100,106-108
+  s_845f0a86ea1d7a::t_d68e221b343019 110-111
+  s_845f0a86ea1d7a::t_9013156c77baea 113-115,122-124
+  s_845f0a86ea1d7a::t_98036866e3f480 126-131
+  s_845f0a86ea1d7a::t_e96c2d77251a6a 133-135
+  h_c735ec7f46d14b 101-105,116-121,136-178
+frontend/src/shells/ReaderShell.tsx
+  s_845f0a86ea1d7a::t_bac15b97894d06 326,328
+  s_845f0a86ea1d7a::t_696b5500484392 238-248
+  s_845f0a86ea1d7a::t_0abefbfcedf8e5 55
+  s_845f0a86ea1d7a::t_83b0e787449e1b 5-7,10-11,16,19-21,23-25,27-30,34,36,39-42,45-49,56,72,84-85,88-90,111,113-114,119-120,128-137,140-160,162-197,199-215,217-218,221,223-224,228-229,235-236,250,264-268,272-300,311-312,316-317,320-323,329,342,344,349,351,355-359,362-376,402
+  s_845f0a86ea1d7a::t_b6c8d9c692f3cd 1,65,74,220
+  s_845f0a86ea1d7a::t_b6c690a1debdbb 269,346,354
+  s_845f0a86ea1d7a::t_35c67c6c54afe6 270-271
+  s_845f0a86ea1d7a::t_d3b8964fe10df4 222,234,237,249
+  s_845f0a86ea1d7a::t_3da56f4d259b4e 66,75-76,80,83,303,306,350
+  s_845f0a86ea1d7a::t_8982e4bc4966ea 219
+  s_845f0a86ea1d7a::t_1813a3ceb60976 309,318-319,324
+  s_845f0a86ea1d7a::t_cf4d19fe7103c2 26,32
+  s_845f0a86ea1d7a::t_8e15ba1aca1c8c 301,304,307-308
+  s_845f0a86ea1d7a::t_33822a222d377a 338
+  s_845f0a86ea1d7a::t_53dd0b266b52d1 302,305
+  s_845f0a86ea1d7a::t_9beba6df8a1dda 138-139,198,332-337,339-340
+  s_845f0a86ea1d7a::t_deb165ea9ff017 327
+  s_845f0a86ea1d7a::t_d6436c05d136e4 94
+  s_845f0a86ea1d7a::t_f7847d4784b77f 251-256,258-263
+  s_845f0a86ea1d7a::t_b80033e7a6bec0 313-315
+  s_845f0a86ea1d7a::t_efd8f7b9389a8a 64,73
+  s_845f0a86ea1d7a::t_ff8b4e5315f47c 161
+  s_845f0a86ea1d7a::t_2357602c3e6726 343
+  s_845f0a86ea1d7a::t_096ce336c11d87 31
+  s_845f0a86ea1d7a::t_8fd07e235df5dd 52-54
+  s_845f0a86ea1d7a::t_46b1e850b2a20b 57
+  s_845f0a86ea1d7a::t_414dad12020a64 67
+  s_845f0a86ea1d7a::t_e57c5906912291 91
+  s_845f0a86ea1d7a::t_93a1818850d93f 95
+  s_845f0a86ea1d7a::t_36447c46f49dbf 325
+  s_845f0a86ea1d7a::t_5213b9b356eb7c 330-331
+  s_845f0a86ea1d7a::t_467c02c8a0e99d 341
+  s_845f0a86ea1d7a::t_3ddd83a13a75fc 352-353
+  s_845f0a86ea1d7a::t_7ccb0f7f0c6923 377-379
+  s_845f0a86ea1d7a::t_37487f71497adf 399-401
+  s_845f0a86ea1d7a::t_d7469edfffdd6b 403
+  h_c735ec7f46d14b 100-101,380-381,383-385,387-393,396-398,405-408,410,413-421,424
+frontend/src/components/TokenizedSentence.tsx
+  s_845f0a86ea1d7a::t_5c23f16a388acf 29,31
+frontend/src/index.css
+  s_845f0a86ea1d7a::t_477514afdf045c 6-9,14-17,19-45,48-53,55-56,71-96,99-104,106-107,122-138,164-167,171
+frontend/src/screens/Page.tsx
+  s_845f0a86ea1d7a::t_86dc742594cd03 24-25
+frontend/src/screens/MaterialDetailScreen.tsx
+  s_845f0a86ea1d7a::t_86dc742594cd03 107
+frontend/src/screens/ReaderScreen.tsx
+  s_845f0a86ea1d7a::t_2368040768cd84 31-32
+  s_845f0a86ea1d7a::t_70b34ab563bfaa 5-14,17-23,30,34-35,37,41,44,46,48,50,53-55,58-60,65,68-69,71-80,84-109,111-119,121,123-133
+  h_c735ec7f46d14b 3
+frontend/src/shells/ReaderShell.test.tsx
+  s_845f0a86ea1d7a::t_7edfda7b78474f 111-112
+  s_845f0a86ea1d7a::t_f64fc64b2f21f2 87
+  s_845f0a86ea1d7a::t_c10cb12709c26f 5-6,8,15-17,20-26,31,35-39,41,43-47,50,52-55,58,60-62,65-86,88-110,113-123
+  s_845f0a86ea1d7a::t_56556ca8813418 125-133
+  s_845f0a86ea1d7a::t_891c8a2577e982 124
+  s_845f0a86ea1d7a::t_0fadee86be4ffe 134-136
+  h_c735ec7f46d14b 137-191
+frontend/src/features/reader/useMaterialReaderController.ts
+  s_845f0a86ea1d7a::t_9a01d56175b02c 21
+  s_845f0a86ea1d7a::t_52bdc1b72314b0 13-20,22,24-25,39-43,45-46,48-49,51-52,54-56,58,63,69,77,92-95,116-119,126,141,144,157-158,171,175,196,214,304,321,332,340-363
+  s_845f0a86ea1d7a::t_798168bf2fdd60 364-366
+  h_c735ec7f46d14b 367-377
+frontend/src/screens/LibraryScreen.test.tsx
+  s_845f0a86ea1d7a::t_5a5d3d6e733e73 8-9,52,55,65
+  s_845f0a86ea1d7a::t_53103dde95365a 6,44-48,50-51,53-54,56-64,66-67,81-82,85
+  s_845f0a86ea1d7a::t_646f9e28a5dce0 10
+  s_845f0a86ea1d7a::t_471c0abfb3453b 68-70,78-80
+  s_845f0a86ea1d7a::t_8625fa4cf5c171 83-84
+  s_845f0a86ea1d7a::t_48583d24dc278c 86-88
+  h_c735ec7f46d14b 71-77,89-110,183-261
+frontend/.gitignore
+  h_c735ec7f46d14b 6
+frontend/src/components/ImportMaterialDialog.tsx
+  h_c735ec7f46d14b 140
+frontend/src/features/reader/EpubPublication.test.tsx
+  h_c735ec7f46d14b 6,21-37,42,44,52,55,63,68
+frontend/src/features/reader/EpubReaderWorkspace.tsx
+  h_c735ec7f46d14b 1-3,5-10,13-16,18-36,38-51,54-56,58,60-111,113
+frontend/src/features/reader/UnavailablePanel.tsx
+  h_c735ec7f46d14b 1,3-11,13-16
+frontend/src/features/reader/useReaderPanelState.ts
+  h_c735ec7f46d14b 1-67
+frontend/src/lib/useOverlaySurface.ts
+  h_c735ec7f46d14b 3-16,27-55,57-66,70-73,76-79,82,85-96,98,100-104,107-119,121,123-124,126,128
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "113702f8086f5575bb944c72b7244aa82a8799c4",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_845f0a86ea1d7a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0a308-f4be-7740-904f-b083e622f552",
+        "model": "gpt-5.6-luna"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_9c26e4c4f4464b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a09f31-ef18-7ba3-b4c0-cc21d32f8124",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
