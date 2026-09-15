@@ -1158,6 +1158,17 @@
       "MaterialOut": {
         "description": "`GET /materials` / `POST /materials` 的响应（data-model §8.1 +\n素材无关抽象 §8.2；`sentence_count` 是列表视图的读投影）。",
         "properties": {
+          "author": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Author"
+          },
           "content_hash": {
             "title": "Content Hash",
             "type": "string"
@@ -2390,6 +2401,44 @@
           }
         },
         "summary": "Get Publication"
+      }
+    },
+    "/materials/{material_id}/publication/cover": {
+      "get": {
+        "description": "Serve the compiler-selected cover through the same resource guard.",
+        "operationId": "get_publication_cover_materials__material_id__publication_cover_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "material_id",
+            "required": true,
+            "schema": {
+              "title": "Material Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Publication Cover"
       }
     },
     "/materials/{material_id}/publication/resources/{resource_id}": {

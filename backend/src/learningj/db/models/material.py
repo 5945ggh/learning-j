@@ -33,7 +33,12 @@ class Material(UuidPk, Timestamped, Base):
     __tablename__ = "materials"
 
     title: Mapped[str] = mapped_column(String(512), nullable=False)
-    # 对规范化后的素材文本计算（§0）；不存媒体副本，只存 locator + hash（ADR-010）。
+    # Optional source metadata.  EPUB ``dc:creator`` is copied here for
+    # library/detail presentation; language projection and content identity
+    # remain independent of this display field.
+    author: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    # 对规范化后的素材文本计算（§0）；原始文件由 locator + hash 标识，
+    # managed_copy 素材另在受控 assets 根下保存不可变副本。
     content_hash: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     # 文件句柄、路径或受控 managed-copy locator。
     locator: Mapped[str] = mapped_column(String(1024), nullable=False)
@@ -68,7 +73,8 @@ class Sentence(UuidPk, Timestamped, Base):
     )
     # 材料内序号。列名 `index` 在 SQLite 中为关键字，由 SQLAlchemy 负责加引号。
     index: Mapped[int] = mapped_column("index", Integer, nullable=False)
-    # 规范文本（NFC、LF）：模型输入、surface 定位与前端展示共用（§0）。
+    # 规范文本（NFC、LF）：模型输入、surface 校验与持久位置使用（§0）。
+    # 结构化素材（如 EPUB）可通过独立 publication representation 呈现正文。
     text: Mapped[str] = mapped_column(Text, nullable=False)
     # 毫秒；仅字幕类素材有值。
     time_start: Mapped[int | None] = mapped_column(Integer, nullable=True)

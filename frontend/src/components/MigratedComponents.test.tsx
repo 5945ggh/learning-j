@@ -12,7 +12,7 @@ import { KnowledgeAggregate } from './KnowledgeAggregate'
 import { MaterialCard } from './MaterialCard'
 import { ReviewCard } from './ReviewCard'
 import { SessionList } from './SessionList'
-import { fixtureTextMaterial } from '@/lib/material-fixtures'
+import { fixtureEpubMaterial, fixtureTextMaterial } from '@/lib/material-fixtures'
 
 afterEach(() => cleanup())
 
@@ -84,6 +84,19 @@ describe('migrated shell-independent components', () => {
     expect(onQueue).toHaveBeenCalledWith(fixtureTextMaterial)
   })
 
+  it('renders the supplied EPUB cover resource inside the book card', () => {
+    render(
+      <MaterialCard
+        material={fixtureEpubMaterial}
+        metadata={{ cover_src: '/materials/local-fixture-epub-001/publication/cover' }}
+      />,
+    )
+    expect(screen.getByRole('presentation')).toHaveAttribute(
+      'src',
+      '/materials/local-fixture-epub-001/publication/cover',
+    )
+  })
+
   it('keeps knowledge grouping display-only and emits occurrence identity', async () => {
     const user = userEvent.setup()
     const onRetentionChange = vi.fn()
@@ -107,4 +120,3 @@ describe('migrated shell-independent components', () => {
     expect(screen.queryByText(/倒计时|剩余/)).not.toBeInTheDocument()
   })
 })
-

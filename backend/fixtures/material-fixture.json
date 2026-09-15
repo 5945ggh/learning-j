@@ -108,6 +108,7 @@
     "sidecar_generation_id": "fixture-id-002"
   },
   "materials/srt": {
+    "author": null,
     "content_hash": "d4e8866e776f2c1011d7df72b7710f378af6b7f8cbcd5739f329bac56a819abb",
     "copy_stored": false,
     "current_sidecar_id": "fixture-id-007",
@@ -120,6 +121,7 @@
     "title": "fixture-sample"
   },
   "materials/txt": {
+    "author": null,
     "content_hash": "9a107a153000cfc6e454f6430708b9b4b7db8f3f76e81dde420ec1c3a3b44a40",
     "copy_stored": false,
     "current_sidecar_id": "fixture-id-002",

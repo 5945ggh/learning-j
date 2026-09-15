@@ -638,6 +638,7 @@ ReviewEvent 追加保存：`review_item_id`、该卡单调 `event_sequence`、�
 | 字段 | 类型 | 说明 |
 |---|---|---|
 | `title` | string | 导入时从文件名或 EPUB metadata 推导，用户可修改 |
+| `author` | string? | 可选展示元数据；EPUB 优先取 `dc:creator`，缺少声明时为空，不参与规范文本、内容身份或定位 |
 | `content_hash` | string | **[不可推迟]** |
 | `locator` | string | 原始资源的路径或句柄；存储策略见下 |
 | `kind` | enum | `subtitle_video` / `subtitle_audio` / `text` / `epub` |

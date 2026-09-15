@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { materialPath, studyPath } from '@/app/routes'
 import { useRepositories } from '@/app/repository-context'
 import { materialsForMode, type LibraryMode } from '@/lib/library'
-import { createMaterial } from '@/lib/materials'
+import { createMaterial, materialCoverUrl } from '@/lib/materials'
 import type { Material } from '@/lib/materials'
 import type { StudySessionRecord } from '@/lib/study-repository'
 
@@ -114,7 +114,11 @@ export function LibraryScreen() {
                 <MaterialCard
                   key={material.id}
                   material={material}
-                  metadata={{ active_session_count: activeCountByMaterial.get(material.id) ?? 0, meta_line: `${material.sentence_count} 句` }}
+                  metadata={{
+                    active_session_count: activeCountByMaterial.get(material.id) ?? 0,
+                    meta_line: `${material.sentence_count} 句`,
+                    cover_src: materialCoverUrl(material),
+                  }}
                   onOpen={(item) => { void navigate(materialPath(item.id)) }}
                   onOpenQueue={(item) => { void navigate(`/queue?material=${encodeURIComponent(item.id)}`) }}
                   onOpenKnowledge={(item) => { void navigate(`/knowledge?material=${encodeURIComponent(item.id)}`) }}

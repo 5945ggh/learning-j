@@ -303,6 +303,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/materials/{material_id}/publication/cover": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Publication Cover
+         * @description Serve the compiler-selected cover through the same resource guard.
+         */
+        get: operations["get_publication_cover_materials__material_id__publication_cover_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/materials/{material_id}/publication/resources/{resource_id}": {
         parameters: {
             query?: never;
@@ -818,6 +838,8 @@ export interface components {
          *     素材无关抽象 §8.2；`sentence_count` 是列表视图的读投影）。
          */
         MaterialOut: {
+            /** Author */
+            author?: string | null;
             /** Content Hash */
             content_hash: string;
             /** Copy Stored */
@@ -1516,6 +1538,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PublicationOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_publication_cover_materials__material_id__publication_cover_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                material_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

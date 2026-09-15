@@ -7,17 +7,13 @@ and anchor payloads, which keeps the rest of the application source agnostic.
 
 from __future__ import annotations
 
-import io
 import hashlib
-import posixpath
 import re
 import uuid
-import zipfile
 from dataclasses import dataclass
 from html.parser import HTMLParser
 from pathlib import PurePosixPath
 from typing import Any
-from xml.etree import ElementTree
 
 import msgpack
 from sqlalchemy import func, select
@@ -247,88 +243,63 @@ class _TextExtractor(HTMLParser):
         return
 
 
-def _epub_sentences(blob: bytes) -> tuple[list[ParsedSentence], str]:
-    # Validate the whole OCF package (entry limits, path confinement, OPF/spine
-    # references and XML policy) before the historical language projection
-    # reads any member.  The compiler result is persisted by reader-ready API
-    # callers; this call keeps direct/service imports on the same safety gate.
-    compile_epub(blob)
-    with zipfile.ZipFile(io.BytesIO(blob)) as archive:
-        container = ElementTree.fromstring(archive.read("META-INF/container.xml"))
-        rootfile = next(
-            element for element in container.iter() if element.tag.rsplit("}", 1)[-1] == "rootfile"
-        ).attrib["full-path"]
-        opf = ElementTree.fromstring(archive.read(rootfile))
-        manifest = {
-            item.attrib["id"]: item.attrib["href"]
-            for item in opf.iter()
-            if item.tag.rsplit("}", 1)[-1] == "item"
-        }
-        spine_ids = [
-            item.attrib["idref"]
-            for item in opf.iter()
-            if item.tag.rsplit("}", 1)[-1] == "itemref"
-        ]
-        base = posixpath.dirname(rootfile)
-        out: list[ParsedSentence] = []
-        full_text_parts: list[str] = []
-        for spine_index, item_id in enumerate(spine_ids):
-            href = manifest.get(item_id)
-            if not href:
-                continue
-            path = posixpath.normpath(posixpath.join(base, href.split("#", 1)[0]))
-            parser = _TextExtractor()
-            parser.feed(archive.read(path).decode("utf-8", errors="replace"))
-            raw_spine_text = "".join(parser.parts)
-            spine_text = normalize_text(raw_spine_text)
-            ruby_hints: list[dict[str, Any]] = []
-            for hint in parser.ruby_hints:
-                start = len(normalize_text(raw_spine_text[: hint["raw_start"]]))
-                end = len(normalize_text(raw_spine_text[: hint["raw_end"]]))
-                ruby_hints.append(
-                    {
-                        "char_start": start,
-                        "char_end": end,
-                        "base_text": spine_text[start:end],
-                        "reading": hint["reading"],
-                        "reading_source": hint["reading_source"],
-                    }
+def _epub_sentences(publication: EpubPublication | bytes) -> tuple[list[ParsedSentence], str]:
+    """Project sentences from the already-validated EPUB compiler result.
+
+    ``source_spine`` is deliberately used rather than reader-facing grouped
+    chapters: persisted anchors remain tied to the package spine, and the
+    compiler is the single authority for decoded/percent-encoded OPF hrefs.
+    """
+
+    # Keep the private helper tolerant of older direct callers while ensuring
+    # there is still only one package parser: bytes are compiled once here,
+    # never reopened through a second OPF/href implementation.
+    if isinstance(publication, bytes):
+        publication = compile_epub(publication)
+    out: list[ParsedSentence] = []
+    full_text_parts: list[str] = []
+    for source in publication.source_spine:
+        spine_text = source.canonical_text
+        ruby_hints = source.ruby_hints
+        full_text_parts.append(spine_text)
+        for text, start, end in split_plain_text(spine_text):
+            sentence_ruby = tuple(
+                {
+                    **hint,
+                    "char_start": int(hint["char_start"]) - start,
+                    "char_end": int(hint["char_end"]) - start,
+                }
+                for hint in ruby_hints
+                if isinstance(hint.get("char_start"), int)
+                and isinstance(hint.get("char_end"), int)
+                and start <= int(hint["char_start"]) <= int(hint["char_end"]) <= end
+            )
+            out.append(
+                ParsedSentence(
+                    text=text,
+                    time_start=None,
+                    time_end=None,
+                    translation=None,
+                    anchor_type=SentenceAnchorType.EPUB,
+                    anchor_payload={"spine_index": source.index, "char_start": start, "char_end": end},
+                    ruby_hints=sentence_ruby,
                 )
-            full_text_parts.append(spine_text)
-            for text, start, end in split_plain_text(spine_text):
-                sentence_ruby = tuple(
-                    {
-                        **hint,
-                        "char_start": hint["char_start"] - start,
-                        "char_end": hint["char_end"] - start,
-                    }
-                    for hint in ruby_hints
-                    if start <= hint["char_start"] and hint["char_end"] <= end
-                )
-                out.append(
-                    ParsedSentence(
-                        text=text,
-                        time_start=None,
-                        time_end=None,
-                        translation=None,
-                        anchor_type=SentenceAnchorType.EPUB,
-                        anchor_payload={"spine_index": spine_index, "char_start": start, "char_end": end},
-                        ruby_hints=sentence_ruby,
-                    )
-                )
-        return out, normalize_text("\n".join(full_text_parts))
+            )
+    return out, normalize_text("\n".join(full_text_parts))
 
 
-def parse_source(filename: str, blob: bytes) -> tuple[MaterialKind, list[ParsedSentence], str]:
+def parse_source(
+    filename: str, blob: bytes, *, publication: EpubPublication | None = None
+) -> tuple[MaterialKind, list[ParsedSentence], str]:
     suffix = PurePosixPath(filename).suffix.lower()
+    if suffix == ".epub":
+        sentences, full_text = _epub_sentences(publication or compile_epub(blob, filename))
+        return MaterialKind.EPUB, sentences, full_text
     decoded = blob.decode("utf-8-sig", errors="replace")
     if suffix == ".srt" or suffix == ".vtt":
         sentences = parse_subtitle(decoded)
         full_text = normalize_text("\n".join(s.text for s in sentences))
         return MaterialKind.SUBTITLE_VIDEO, sentences, full_text
-    if suffix == ".epub":
-        sentences, full_text = _epub_sentences(blob)
-        return MaterialKind.EPUB, sentences, full_text
     parts = split_plain_text(decoded)
     sentences = [
         ParsedSentence(
@@ -432,12 +403,22 @@ def import_material(
     publication can be committed independently of language indexing.
     """
 
-    detected_kind, parsed, full_text = parse_source(filename, blob)
-    material_kind = kind or detected_kind
-    if material_kind is MaterialKind.EPUB and publication is None:
+    suffix = PurePosixPath(filename).suffix.lower()
+    if suffix == ".epub" and publication is None:
         publication = compile_epub(blob, filename)
+    detected_kind, parsed, full_text = parse_source(filename, blob, publication=publication)
+    material_kind = kind or detected_kind
     content_hash = _content_hash(full_text)
-    existing = session.scalar(select(Material).where(Material.content_hash == content_hash, Material.kind == material_kind))
+    source_sha256 = hashlib.sha256(blob).hexdigest()
+    existing_query = select(Material).where(
+        Material.content_hash == content_hash, Material.kind == material_kind
+    )
+    # Canonical text identifies the language projection, not an EPUB package.
+    # A different package can carry different resources, spine order, and
+    # anchor identity even when its normalized text happens to be identical.
+    if material_kind is MaterialKind.EPUB:
+        existing_query = existing_query.where(Material.source_sha256 == source_sha256)
+    existing = session.scalar(existing_query)
     if existing is not None:
         # Re-importing the same EPUB is an explicit request to refresh its
         # controlled publication compiler output.  Keep the existing Sentence
@@ -451,10 +432,11 @@ def import_material(
                 existing.publication_version != publication.publication_version
                 or existing.publication_manifest is None
                 or storage_mode is MaterialStorageMode.MANAGED_COPY
+                or existing.author != publication.author
             )
         ):
-            source_sha256 = hashlib.sha256(blob).hexdigest()
             existing.title = title or existing.title
+            existing.author = publication.author
             existing.locator = locator or existing.locator
             existing.copy_stored = storage_mode is MaterialStorageMode.MANAGED_COPY
             existing.storage_mode = storage_mode
@@ -466,16 +448,22 @@ def import_material(
         return existing
 
     material = Material(
-        title=title or PurePosixPath(filename).stem or "Untitled",
+        title=(
+            title
+            or (publication.title if publication else None)
+            or PurePosixPath(filename).stem
+            or "Untitled"
+        ),
+        author=publication.author if publication else None,
         content_hash=content_hash,
         locator=locator or filename,
         kind=material_kind,
         copy_stored=storage_mode is MaterialStorageMode.MANAGED_COPY,
         storage_mode=storage_mode,
-        source_sha256=hashlib.sha256(blob).hexdigest(),
+        source_sha256=source_sha256,
         publication_version=publication.publication_version if publication else None,
         publication_manifest=(
-            publication.as_manifest(hashlib.sha256(blob).hexdigest()) if publication else None
+            publication.as_manifest(source_sha256) if publication else None
         ),
     )
     session.add(material)

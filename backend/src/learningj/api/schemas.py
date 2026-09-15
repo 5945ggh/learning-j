@@ -25,6 +25,7 @@ class MaterialOut(BaseModel):
 
     id: str
     title: str
+    author: str | None = None
     content_hash: str
     locator: str
     kind: MaterialKindLiteral

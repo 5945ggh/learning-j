@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import type { Material } from '@/lib/materials'
 import { cn } from '@/lib/utils'
 
@@ -66,6 +67,9 @@ export function MaterialCard({
   className,
 }: MaterialCardProps) {
   const cover = metadata?.cover_src ?? metadata?.coverSrc ?? material.coverSrc ?? null
+  const [coverFailed, setCoverFailed] = useState(false)
+  useEffect(() => setCoverFailed(false), [cover])
+  const showCover = Boolean(cover) && !coverFailed
   const queueCount = metadata?.active_session_count ?? metadata?.activeSessionCount ?? 0
   const progress = metadata?.progress ?? null
   const metaLine = metadata?.meta_line ?? metadata?.metaLine ?? material.metaLine ?? null
@@ -86,11 +90,11 @@ export function MaterialCard({
           aria-label={`打开《${material.title}》`}
           className={cn('relative block w-full overflow-hidden bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset', isBook ? 'aspect-[5/7]' : 'aspect-video')}
         >
-          {cover ? <img src={cover} alt="" loading="lazy" className="absolute inset-0 size-full object-cover transition-transform group-hover:scale-[1.03] motion-reduce:group-hover:scale-100" /> : <span className="absolute inset-0 grid place-items-center px-3 text-center font-serif-jp text-sm text-muted-foreground">{material.title}</span>}
+          {showCover ? <img src={cover ?? undefined} alt="" loading="lazy" onError={() => setCoverFailed(true)} className="absolute inset-0 size-full object-cover transition-transform group-hover:scale-[1.03] motion-reduce:group-hover:scale-100" /> : <span className="absolute inset-0 grid place-items-center px-3 text-center font-serif-jp text-sm text-muted-foreground">{material.title}</span>}
         </button>
       ) : (
         <div className={cn('relative block w-full overflow-hidden bg-muted', isBook ? 'aspect-[5/7]' : 'aspect-video')}>
-          {cover ? <img src={cover} alt="" loading="lazy" className="absolute inset-0 size-full object-cover" /> : <span className="absolute inset-0 grid place-items-center px-3 text-center font-serif-jp text-sm text-muted-foreground">{material.title}</span>}
+          {showCover ? <img src={cover ?? undefined} alt="" loading="lazy" onError={() => setCoverFailed(true)} className="absolute inset-0 size-full object-cover" /> : <span className="absolute inset-0 grid place-items-center px-3 text-center font-serif-jp text-sm text-muted-foreground">{material.title}</span>}
         </div>
       )}
 

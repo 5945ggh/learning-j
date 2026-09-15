@@ -6,7 +6,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { LibraryScreen } from './LibraryScreen'
 import { RepositoryProvider, createDefaultRepositories } from '@/app/repository-context'
-import { fixtureTextMaterial } from '@/lib/material-fixtures'
+import { fixtureEpubMaterial, fixtureTextMaterial } from '@/lib/material-fixtures'
 
 afterEach(() => {
   cleanup()
@@ -41,6 +41,22 @@ function renderLibrary() {
 }
 
 describe('LibraryScreen import entry', () => {
+  it('passes the managed EPUB cover endpoint to the material card', async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
+      if (url === '/materials') return Promise.resolve(jsonResponse([fixtureEpubMaterial]))
+      return Promise.reject(new Error(`unexpected API request: ${url}`))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    renderLibrary()
+
+    expect(await screen.findByRole('presentation')).toHaveAttribute(
+      'src',
+      '/materials/fixture-ui-epub-material/publication/cover',
+    )
+  })
+
   it('打开导入对话框，成功后关闭并刷新素材列表', async () => {
     const user = userEvent.setup()
     let materialCalls = 0

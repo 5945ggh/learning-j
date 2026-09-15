@@ -14,7 +14,7 @@ const publication = {
   material_id: 'material-1',
   title: '受控测试书',
   publication_version: 'publication-v1',
-  projection_version: 'learningj-epub-publication-v2',
+  projection_version: 'learningj-epub-publication-v4',
   spine: [{ index: 0, label: '第一章' }, { index: 1, label: '第二章' }],
 }
 

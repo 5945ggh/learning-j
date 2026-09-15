@@ -169,6 +169,7 @@ describe('P1 generated contract: type/API consumption face', () => {
     ])
     const materialProperties = record(materialOut.properties, 'MaterialOut properties')
     // 可空资源边界字段必须存在但不强制（§8.1：准备前可空）。
+    expect(materialProperties).toHaveProperty('author')
     expect(materialProperties).toHaveProperty('source_sha256')
     expect(materialProperties).toHaveProperty('current_sidecar_id')
 

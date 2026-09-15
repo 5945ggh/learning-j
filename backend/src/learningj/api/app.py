@@ -14,6 +14,8 @@ import uuid
 import hashlib
 import zipfile
 import html
+import re
+import threading
 from datetime import datetime
 from pathlib import Path
 
@@ -21,7 +23,7 @@ import msgpack
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Response, UploadFile
 from fastapi.responses import HTMLResponse
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, defer
 
 from learningj.annotations import service as annotation_service
 from learningj.api.schemas import (
@@ -72,6 +74,8 @@ from learningj.evidence import service as evidence_service
 from learningj.ingest.epub import (
     EPUB_PROJECTION_VERSION,
     EpubPublicationError,
+    _RASTER_MEDIA_TYPES,
+    _normalized_media_type,
     compile_epub,
     replace_publication_placeholders,
 )
@@ -84,6 +88,51 @@ _PUBLICATION_CSP = (
     "connect-src 'none'; font-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; "
     "form-action 'none'; base-uri 'none'"
 )
+
+
+class _PublicationVerificationCache:
+    """Avoid re-reading an immutable managed EPUB on every reader request.
+
+    The cache is deliberately keyed by both the recorded source identity and
+    the file's current identity.  A replacement, truncation, or even a simple
+    touch invalidates the entry and triggers the expensive checksum/CRC pass
+    once before that source is served again.
+    """
+
+    def __init__(self) -> None:
+        self._verified: set[tuple[str, int, int, int, int, int, str]] = set()
+        self._lock = threading.Lock()
+
+    def mark_verified(self, path: Path, source_sha256: str) -> None:
+        try:
+            key = _publication_file_identity(path, source_sha256)
+        except OSError:
+            return
+        with self._lock:
+            self._verified.add(key)
+
+    def verify(self, path: Path, source_sha256: str) -> None:
+        try:
+            key = _publication_file_identity(path, source_sha256)
+        except OSError as exc:
+            raise HTTPException(status_code=409, detail="publication 原始资源不可用，请重新导入") from exc
+        with self._lock:
+            if key in self._verified:
+                return
+            try:
+                if _sha256_file(path) != source_sha256:
+                    raise HTTPException(status_code=409, detail="publication 原始资源校验失败")
+                with zipfile.ZipFile(path) as archive:
+                    if archive.testzip() is not None:
+                        raise HTTPException(status_code=422, detail="publication ZIP 已损坏")
+            except HTTPException:
+                raise
+            except FileNotFoundError as exc:
+                raise HTTPException(status_code=409, detail="publication 原始资源不可用，请重新导入") from exc
+            except (OSError, RuntimeError, zipfile.BadZipFile) as exc:
+                raise HTTPException(status_code=422, detail="publication ZIP 已损坏") from exc
+            # The expensive pass completed against this exact stat identity.
+            self._verified.add(key)
 
 
 def create_app(
@@ -110,6 +159,8 @@ def create_app(
     app.state.engine = engine
     app.state.session_factory = session_factory
     app.state.assets_root = resolved_assets_root
+    publication_verification_cache = _PublicationVerificationCache()
+    app.state.publication_verification_cache = publication_verification_cache
 
     @app.get("/healthz")
     def healthz() -> dict[str, str]:
@@ -164,6 +215,14 @@ def create_app(
             if managed_copy_created and material.storage_mode is not MaterialStorageMode.MANAGED_COPY:
                 _remove_managed_copy(resolved_assets_root, managed_locator or "")
                 managed_copy_created = False
+            elif suffix == "epub" and material.storage_mode is MaterialStorageMode.MANAGED_COPY:
+                # Import validated the uploaded archive in full; the managed
+                # copy is either atomically written from it or byte-compared
+                # with the existing immutable copy.
+                publication_verification_cache.mark_verified(
+                    _managed_copy_path(resolved_assets_root, material.locator),
+                    material.source_sha256 or source_sha256,
+                )
         except (
             ValueError,
             RuntimeError,
@@ -182,14 +241,21 @@ def create_app(
 
     @app.get("/materials", response_model=list[MaterialOut])
     def list_materials(session: Session = Depends(db_session)) -> list[MaterialOut]:
-        materials = session.scalars(select(Material).order_by(Material.created_at, Material.id)).all()
+        # The publication manifest is a potentially large JSON document and is
+        # not part of MaterialOut.  Keep the library query from materializing
+        # every EPUB representation just to render title/kind/count fields.
+        materials = session.scalars(
+            select(Material)
+            .options(defer(Material.publication_manifest))
+            .order_by(Material.created_at, Material.id)
+        ).all()
         return [_material_response(session, material) for material in materials]
 
     @app.get("/materials/{material_id}/publication", response_model=PublicationOut)
     def get_publication(material_id: str, session: Session = Depends(db_session)) -> PublicationOut:
         material = _material_by_id(session, material_id)
         manifest = _publication_manifest(material)
-        _verify_managed_publication(material, resolved_assets_root)
+        _verify_managed_publication(material, resolved_assets_root, publication_verification_cache)
         return PublicationOut(
             material_id=str(material.id),
             title=str(manifest.get("title") or material.title),
@@ -201,6 +267,29 @@ def create_app(
             ],
         )
 
+    @app.get("/materials/{material_id}/publication/cover")
+    def get_publication_cover(material_id: str, session: Session = Depends(db_session)) -> Response:
+        """Serve the compiler-selected cover through the same resource guard."""
+
+        material = _material_by_id(session, material_id)
+        manifest = _publication_manifest(material)
+        cover_resource_id = manifest.get("cover_resource_id")
+        if not isinstance(cover_resource_id, str) or not cover_resource_id:
+            raise HTTPException(status_code=404, detail="publication 封面不存在")
+        resource = next(
+            (
+                item
+                for item in manifest["resources"]
+                if isinstance(item, dict) and item.get("resource_id") == cover_resource_id
+            ),
+            None,
+        )
+        if resource is None:
+            raise HTTPException(status_code=409, detail="publication 封面资源无效")
+        # Reuse the resource endpoint's managed-copy verification and positive
+        # MIME allowlist rather than introducing a second binary-serving path.
+        return get_publication_resource(material_id, cover_resource_id, session)
+
     @app.get("/materials/{material_id}/publication/spine/{spine_index}", response_class=HTMLResponse)
     def get_publication_spine(
         material_id: str, spine_index: int, session: Session = Depends(db_session)
@@ -208,10 +297,11 @@ def create_app(
         material = _material_by_id(session, material_id)
         manifest = _publication_manifest(material)
         item = _publication_spine_item(manifest, spine_index)
-        _verify_managed_publication(material, resolved_assets_root)
+        _verify_managed_publication(material, resolved_assets_root, publication_verification_cache)
         html_text = replace_publication_placeholders(
             str(item["controlled_html"]), material_id=str(material.id)
         )
+        html_text = _mark_unsupported_cross_chapter_links(html_text, str(material.id), spine_index)
         document = (
             '<!doctype html><html lang="ja" data-learningj-publication="1" '
             f'data-projection-version="{_html_attr(str(manifest["projection_version"]))}" '
@@ -221,6 +311,7 @@ def create_app(
             '<style>html,body{margin:0;padding:0;background:#fffcf5;color:#292929;}'
             'body{font:18px/1.9 system-ui,-apple-system,"Hiragino Sans",sans-serif;padding:2rem 6vw;}'
             'img{display:block;max-width:100%;height:auto;margin:1rem auto;}a{color:inherit;}'
+            'a[data-learningj-cross-chapter-link]{pointer-events:none;text-decoration:line-through;opacity:.7;}'
             'ruby rt{font-size:.55em;line-height:1;}</style></head><body>'
             f'{html_text}</body></html>'
         )
@@ -246,15 +337,15 @@ def create_app(
         )
         if resource is None:
             raise HTTPException(status_code=404, detail="publication 资源不存在")
-        _verify_managed_publication(material, resolved_assets_root)
+        _verify_managed_publication(material, resolved_assets_root, publication_verification_cache)
         member = str(resource["member_path"])
         try:
             with zipfile.ZipFile(_managed_copy_path(resolved_assets_root, material.locator)) as archive:
                 blob = archive.read(member)
         except (OSError, KeyError, zipfile.BadZipFile) as exc:
             raise HTTPException(status_code=422, detail="publication 资源读取失败") from exc
-        media_type = str(resource.get("media_type") or "application/octet-stream")
-        if not media_type.startswith("image/") or media_type == "image/svg+xml":
+        media_type = _normalized_media_type(str(resource.get("media_type") or ""))
+        if media_type not in _RASTER_MEDIA_TYPES:
             raise HTTPException(status_code=404, detail="publication 资源类型不受支持")
         return Response(
             content=blob,
@@ -780,6 +871,8 @@ def _publication_manifest(material: Material) -> dict[str, object]:
         raise HTTPException(status_code=409, detail="publication manifest 无效")
     if material.publication_version and manifest["publication_version"] != material.publication_version:
         raise HTTPException(status_code=409, detail="publication 版本校验失败")
+    if material.source_sha256 and manifest.get("source_sha256") != material.source_sha256:
+        raise HTTPException(status_code=409, detail="publication 原始资源身份校验失败")
     return manifest
 
 
@@ -794,23 +887,62 @@ def _publication_spine_item(manifest: dict[str, object], index: int) -> dict[str
     return item
 
 
-def _verify_managed_publication(material: Material, root: Path) -> Path:
+def _publication_file_identity(path: Path, source_sha256: str) -> tuple[str, int, int, int, int, int, str]:
+    stat = path.stat()
+    return (
+        str(path.resolve()),
+        stat.st_dev,
+        stat.st_ino,
+        stat.st_size,
+        stat.st_mtime_ns,
+        stat.st_ctime_ns,
+        source_sha256,
+    )
+
+
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as source:
+        while chunk := source.read(1024 * 1024):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _verify_managed_publication(
+    material: Material, root: Path, verification_cache: _PublicationVerificationCache
+) -> Path:
     if material.storage_mode is not MaterialStorageMode.MANAGED_COPY or not material.copy_stored:
         raise HTTPException(status_code=409, detail="publication 原始资源未保存为 managed copy")
     path = _managed_copy_path(root, material.locator)
     if not path.is_file():
         raise HTTPException(status_code=409, detail="publication 原始资源不可用，请重新导入")
-    if material.source_sha256:
-        digest = hashlib.sha256(path.read_bytes()).hexdigest()
-        if digest != material.source_sha256:
-            raise HTTPException(status_code=409, detail="publication 原始资源校验失败")
-    try:
-        with zipfile.ZipFile(path) as archive:
-            if archive.testzip() is not None:
-                raise HTTPException(status_code=422, detail="publication ZIP 已损坏")
-    except zipfile.BadZipFile as exc:
-        raise HTTPException(status_code=422, detail="publication ZIP 已损坏") from exc
+    if not material.source_sha256:
+        raise HTTPException(status_code=409, detail="publication 缺少原始资源身份")
+    verification_cache.verify(path, material.source_sha256)
     return path
+
+
+def _mark_unsupported_cross_chapter_links(html_text: str, material_id: str, spine_index: int) -> str:
+    """Keep unsupported iframe navigation from desynchronising reader state.
+
+    Same-chapter fragments remain useful.  Cross-chapter placeholders are
+    intentionally visible but inert until the reader owns link navigation.
+    """
+
+    chapter_prefix = f'/materials/{material_id}/publication/spine/'
+
+    def mark(match: re.Match[str]) -> str:
+        target = match.group(1)
+        target_index = target[len(chapter_prefix):].split("#", 1)[0]
+        if target_index == str(spine_index):
+            return match.group(0)
+        return (
+            f'<a href="{target}" data-learningj-cross-chapter-link="true" '
+            'aria-disabled="true" tabindex="-1" '
+            'title="书内跳转暂未接入，请使用上一章或下一章">'
+        )
+
+    return re.sub(r'<a href="([^"]+)">', mark, html_text)
 
 
 def _html_attr(value: str) -> str:
@@ -824,6 +956,7 @@ def _material_response(session: Session, material: Material) -> MaterialOut:
     return MaterialOut(
         id=str(material.id),
         title=material.title,
+        author=material.author,
         content_hash=material.content_hash,
         locator=material.locator,
         kind=material.kind.value,

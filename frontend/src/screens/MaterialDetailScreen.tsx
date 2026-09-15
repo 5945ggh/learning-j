@@ -6,7 +6,7 @@ import { FixtureBadge, PageFrame, PageHeader, PAGE_PADDING, Panel, PlaceholderNo
 import { materialPath, readerPath, studyPath } from '@/app/routes'
 import { useRepositories } from '@/app/repository-context'
 import type { ChapterRecord } from '@/components/models'
-import type { Material, Sentence } from '@/lib/materials'
+import { materialCoverUrl, type Material, type Sentence } from '@/lib/materials'
 import type { StudySessionRecord } from '@/lib/study-repository'
 
 type LoadState = 'loading' | 'error' | 'ready'
@@ -15,8 +15,9 @@ function isAbortError(cause: unknown): boolean {
   return cause instanceof DOMException && cause.name === 'AbortError'
 }
 
-/** Material detail remains an API-backed view; chapter metadata is a small
- * fixture-shaped projection until a chapter endpoint is published. */
+/** Material detail remains API-backed.  EPUB chapter navigation is served by
+ * the controlled publication reader; this compact list is only the existing
+ * sentence-based reading entry for other material kinds. */
 export function MaterialDetailScreen() {
   const { materialId = '' } = useParams<{ materialId: string }>()
   const navigate = useNavigate()
@@ -87,6 +88,7 @@ export function MaterialDetailScreen() {
   const firstSentence = sentences[0]
   const firstStudy = studySessions[0]
   const isBook = material.kind === 'text' || material.kind === 'epub'
+  const coverSrc = materialCoverUrl(material)
 
   return (
     <PageFrame>
@@ -103,7 +105,13 @@ export function MaterialDetailScreen() {
 
       <div className={`${PAGE_PADDING} flex flex-col gap-4`}>
         <section className="grid gap-4 rounded-lg border border-border bg-card p-5 shadow-sm min-[760px]:grid-cols-[160px_minmax(0,1fr)]">
-          <div className="grid min-h-48 place-items-center rounded-md bg-muted text-center text-xs text-muted-foreground">素材封面<br />由资源适配器提供</div>
+          <div className="grid min-h-48 place-items-center overflow-hidden rounded-md bg-muted text-center text-xs text-muted-foreground">
+            {coverSrc ? (
+              <img src={coverSrc} alt={`《${material.title}》封面`} loading="lazy" className="size-full object-cover" />
+            ) : (
+              <>素材封面<br />由资源适配器提供</>
+            )}
+          </div>
           <div className="flex min-w-0 flex-col">
             <div className="flex flex-wrap items-center gap-2">
               <span className="rounded-full border border-border bg-muted px-2 py-0.5 text-[11px]">{material.storage_mode}</span>
@@ -121,14 +129,16 @@ export function MaterialDetailScreen() {
           </div>
         </section>
 
-        <Panel title="章节列表" hint="章节记录在后端章节接口发布前使用明确的最小投影">
+        <Panel title={material.kind === 'epub' ? 'EPUB 阅读' : '章节列表'} hint={material.kind === 'epub' ? '受控 publication API 在阅读器中提供章节切换' : '按有序原文提供阅读入口'}>
           <div className="p-3">
             <ChapterList
               kind={material.kind}
               chapters={chapters}
               onSelect={(chapter) => { if (chapter.imported && firstSentence) void navigate(readerPath(material.id, firstSentence.id)) }}
             />
-            <PlaceholderNote>当前 API 只提供有序 Sentence；其余章节与精确章节定位待章节接口。不会凭导航位置推断阅读进度。</PlaceholderNote>
+            <PlaceholderNote>{material.kind === 'epub'
+              ? 'EPUB 的章节切换请在阅读器中使用；不会凭导航位置推断阅读进度。'
+              : '不会凭导航位置推断阅读进度。'}</PlaceholderNote>
           </div>
         </Panel>
 

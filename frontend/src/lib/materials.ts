@@ -22,6 +22,14 @@ export function parseEpubSpineIndex(
   return typeof value === 'number' && Number.isInteger(value) && value >= 0 ? value : null
 }
 
+/** Same-origin cover endpoint for managed EPUB cards; other materials have no cover. */
+export function materialCoverUrl(material: Material): string | null {
+  if (material.kind !== 'epub' || material.storage_mode !== 'managed_copy' || !material.copy_stored) {
+    return null
+  }
+  return `/materials/${encodeURIComponent(material.id)}/publication/cover`
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
@@ -34,6 +42,11 @@ function requireRecord(value: unknown, resource: string): Record<string, unknown
 function requireString(value: unknown, field: string, resource: string): string {
   if (typeof value !== 'string') throw new Error(`${resource}响应缺少有效的 ${field}`)
   return value
+}
+
+function nullableString(value: unknown, field: string, resource: string): string | null {
+  if (value === null || value === undefined) return null
+  return requireString(value, field, resource)
 }
 
 function requireInteger(value: unknown, field: string, resource: string): number {
@@ -69,6 +82,7 @@ function parseMaterial(value: unknown): Material {
   return {
     id,
     title,
+    author: nullableString(item.author, 'author', '素材'),
     content_hash: contentHash,
     locator,
     kind: kind as MaterialKind,

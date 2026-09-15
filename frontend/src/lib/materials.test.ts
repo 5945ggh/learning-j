@@ -7,6 +7,7 @@ import {
   fetchSentences,
   fetchSidecar,
   isSupportedImportFilename,
+  materialCoverUrl,
   materialDefaultTitle,
   materialFilenameExtension,
   parseEpubSpineIndex,
@@ -22,6 +23,18 @@ function response(body: unknown, status = 200): Response {
 }
 
 describe('material API contract', () => {
+  it('builds a same-origin cover endpoint only for managed EPUB materials', () => {
+    const epub = {
+      id: 'book/1',
+      kind: 'epub' as const,
+      storage_mode: 'managed_copy' as const,
+      copy_stored: true,
+    } as Parameters<typeof materialCoverUrl>[0]
+    expect(materialCoverUrl(epub)).toBe('/materials/book%2F1/publication/cover')
+    expect(materialCoverUrl({ ...epub, copy_stored: false })).toBeNull()
+    expect(materialCoverUrl({ ...epub, kind: 'text' as const })).toBeNull()
+  })
+
   it.each([
     ['missing', {}, null],
     ['negative', { spine_index: -1 }, null],
@@ -51,8 +64,26 @@ describe('material API contract', () => {
     }]))
     vi.stubGlobal('fetch', request)
 
-    await expect(fetchMaterials()).resolves.toMatchObject([{ id: 'fixture-id-001', kind: 'text' }])
+    await expect(fetchMaterials()).resolves.toMatchObject([{ id: 'fixture-id-001', kind: 'text', author: null }])
     expect(request).toHaveBeenCalledWith('/materials', { signal: undefined })
+  })
+
+  it('preserves optional EPUB author metadata from the material endpoint', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response([{
+      id: 'fixture-epub-author',
+      title: '作品',
+      author: 'テスト作者',
+      content_hash: 'hash',
+      locator: 'book.epub',
+      kind: 'epub',
+      copy_stored: true,
+      storage_mode: 'managed_copy',
+      source_sha256: 'raw-file-hash',
+      current_sidecar_id: null,
+      sentence_count: 0,
+    }])))
+
+    await expect(fetchMaterials()).resolves.toMatchObject([{ id: 'fixture-epub-author', author: 'テスト作者' }])
   })
 
   it('accepts code-point sentence anchors and non-numeric anchor payload values', async () => {

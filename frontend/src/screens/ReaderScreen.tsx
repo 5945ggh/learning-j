@@ -26,6 +26,11 @@ export function ReaderScreen() {
 
   useEffect(() => {
     let disposed = false
+    // Route params can change without remounting this screen.  Do not let a
+    // failed/EPUB load from the previous material choose this material's UI.
+    setMaterialTitle(`材料 ${materialId}`)
+    setMaterialKind(null)
+    setMaterialLoadError(null)
     materials.getMaterial(materialId)
       .then((material) => {
         if (disposed) return
@@ -54,9 +59,11 @@ export function ReaderScreen() {
     if (panel === 'outline') {
       return (
         <>
-          <ReaderSidebarHeader title="目录" hint="章节接口待接入" onClose={() => setPanel(null)} />
+          <ReaderSidebarHeader title="目录" hint={materialKind === 'epub' ? 'EPUB 章节由受控阅读器加载' : '按原文顺序阅读'} onClose={() => setPanel(null)} />
           <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4 text-sm text-muted-foreground">
-            <p>当前 P1/P2 API 提供有序 Sentence，不提供章节实体；阅读器会保留原文顺序与来源定位。</p>
+            <p>{materialKind === 'epub'
+              ? '使用上一章和下一章切换受控 EPUB 章节。书内跳转暂未接入，避免 iframe 导航与阅读器状态不同步。'
+              : '阅读器会保留原文顺序与来源定位。'}</p>
             <UnavailableBadge />
             <Link to={`/material/${encodeURIComponent(materialId)}`} className="rounded-md border border-border px-3 py-2 text-center text-sm text-foreground hover:bg-muted">查看材料详情</Link>
           </div>

@@ -21,6 +21,7 @@ import type {
 export const fixtureTextMaterial: Material = {
   id: 'fixture-id-001',
   title: 'fixture-sample',
+  author: null,
   content_hash: '9a107a153000cfc6e454f6430708b9b4b7db8f3f76e81dde420ec1c3a3b44a40',
   locator: 'fixture-sample.txt',
   kind: 'text',
@@ -34,6 +35,7 @@ export const fixtureTextMaterial: Material = {
 export const fixtureSubtitleMaterial: Material = {
   id: 'fixture-id-006',
   title: 'fixture-sample',
+  author: null,
   content_hash: 'd4e8866e776f2c1011d7df72b7710f378af6b7f8cbcd5739f329bac56a819abb',
   locator: 'fixture-sample.srt',
   kind: 'subtitle_video',
@@ -48,6 +50,7 @@ export const fixtureSubtitleMaterial: Material = {
 export const fixtureEpubMaterial: Material = {
   id: 'local-fixture-epub-001',
   title: 'ローカル fixture 作品',
+  author: 'fixture-author',
   content_hash: 'local-fixture-epub-content-hash',
   locator: 'local-fixture-sample.epub',
   kind: 'epub',
