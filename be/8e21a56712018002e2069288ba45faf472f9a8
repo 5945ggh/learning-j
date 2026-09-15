@@ -1,0 +1,22 @@
+docs/reader-foundation/README.md
+  h_c735ec7f46d14b 3,13,15-17,47
+docs/reader-foundation/delivery-plan-draft.md
+  h_c735ec7f46d14b 3,16-17,32
+docs/reader-foundation/scope-draft.md
+  h_c735ec7f46d14b 38
+docs/work-guidance/README.md
+  h_c735ec7f46d14b 9
+docs/work-guidance/RF-02.md
+  h_c735ec7f46d14b 920-925
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "be8e21a56712018002e2069288ba45faf472f9a8",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
